@@ -1,0 +1,208 @@
+/**
+ * bookmarkfs/src/bookmarkctl.c
+ * ----
+ *
+ * Copyright (C) 2024  CismonX <admin@cismon.net>
+ *
+ * This file is part of BookmarkFS.
+ *
+ * BookmarkFS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * BookmarkFS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with BookmarkFS.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include <errno.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <fcntl.h>
+#include <unistd.h>
+
+#include "fsck_util.h"
+#include "ioctl.h"
+#include "macros.h"
+#include "version.h"
+#include "xstd.h"
+
+// Forward declaration start
+static int  dispatch_subcmds (int, char *[]);
+static void print_help       (void);
+static void print_version    (void);
+static int  subcmd_fsck      (int, char *[]);
+static int  subcmd_permd     (int, char *[]);
+// Forward declaration end
+
+static int
+dispatch_subcmds (
+    int   argc,
+    char *argv[]
+) {
+    if (--argc < 1) {
+        log_puts("command not given; run 'bookmarkctl help' for usage");
+        return -1;
+    }
+    char const *cmd = *(++argv);
+
+    int status = 0;
+    if (0 == strcmp("permd", cmd)) {
+        status = subcmd_permd(argc, argv);
+    } else if (0 == strcmp("fsck", cmd)) {
+        status = subcmd_fsck(argc, argv);
+    } else if (0 == strcmp("help", cmd)) {
+        print_help();
+    } else if (0 == strcmp("version", cmd)) {
+        print_version();
+    } else {
+        log_printf("bad command '%s'; run 'bookmarkctl help' for usage", cmd);
+        status = -1;
+    }
+    return status;
+}
+
+static void
+print_help (void)
+{
+    puts("Usage: bookmarkctl <cmd> [args]\n"
+            "\n"
+            "Main commands:\n"
+            "  permd    Permute directory entries\n"
+            "  fsck     Check filesystem\n"
+            "\n"
+            "Other commands:\n"
+            "  help       Print help message\n"
+            "  version    Print version information\n"
+            "\n"
+            "See the bookmarkctl(1) manpage for more information,\n"
+            "or run 'info bookmarkfs' for the full user manual.\n"
+            "\n"
+            "Project homepage: <" BOOKMARKFS_HOMEPAGE_URL ">.");
+}
+
+static void
+print_version (void)
+{
+    printf("bookmarkctl (BookmarkFS) %d.%d.%d\n",
+            BOOKMARKFS_VER_MAJOR, BOOKMARKFS_VER_MINOR, BOOKMARKFS_VER_PATCH);
+}
+
+static int
+subcmd_fsck (
+    int   argc,
+    char *argv[]
+) {
+#define FSCK_NARGS  2
+    if (--argc != FSCK_NARGS) {
+        log_printf("fsck: " STRINGIFY(FSCK_NARGS) " args expected, %d given",
+                argc);
+        return -1;
+    }
+    char const *path  = *(++argv);
+    char const *opstr = *(++argv);
+
+    if (0 == strcmp("list", opstr)) {
+        // NOOP
+    } else {
+        log_printf("fsck: bad operation name '%s'", opstr);
+        return -1;
+    }
+
+    int dirfd = open(path, O_RDONLY | O_DIRECTORY);
+    if (dirfd < 0) {
+        log_printf("open(): %s: %s", path, strerror(errno));
+        return -1;
+    }
+
+    int status = -1;
+    do {
+        struct bookmarkfs_fsck_data fsck_data;
+        status = ioctl(dirfd, BOOKMARKFS_IOC_FSCK_NEXT, &fsck_data);
+        if (status < 0) {
+            log_printf("ioctl(): %s", strerror(errno));
+            break;
+        }
+        if (0 != explain_fsck_result(status, &fsck_data)) {
+            break;
+        }
+    } while (status != BOOKMARKFS_FSCK_RESULT_END);
+    close(dirfd);
+    return status;
+}
+
+static int
+subcmd_permd (
+    int   argc,
+    char *argv[]
+) {
+#define PERMD_NARGS  4
+    if (--argc != PERMD_NARGS) {
+        log_printf("permd: " STRINGIFY(PERMD_NARGS) " args expected, %d given",
+                argc);
+        return -1;
+    }
+    char const *path  = *(++argv);
+    char const *opstr = *(++argv);
+    char const *name1 = *(++argv);
+    char const *name2 = *(++argv);
+
+    struct bookmarkfs_permd_data permd_data;
+
+    if (0 == strcmp("swap", opstr)) {
+        permd_data.op = BOOKMARKFS_PERMD_OP_SWAP;
+    } else if (0 == strcmp("move-before", opstr)) {
+        permd_data.op = BOOKMARKFS_PERMD_OP_MOVE_BEFORE;
+    } else if (0 == strcmp("move-after", opstr)) {
+        permd_data.op = BOOKMARKFS_PERMD_OP_MOVE_AFTER;
+    } else {
+        log_printf("permd: bad operation name '%s'", opstr);
+        return -1;
+    }
+
+#define COPY_NAME(dst, src)                                        \
+    if ((dst) + sizeof(dst) == stpncpy(dst, src, sizeof(dst))) {   \
+        log_printf("permd: %s: %s", src, strerror(ENAMETOOLONG));  \
+        return -1;                                                 \
+    }
+    COPY_NAME(permd_data.name1, name1);
+    COPY_NAME(permd_data.name2, name2);
+
+    int dirfd = open(path, O_RDONLY | O_DIRECTORY);
+    if (dirfd < 0) {
+        log_printf("open(): %s: %s", path, strerror(errno));
+        return -1;
+    }
+
+    int status = ioctl(dirfd, BOOKMARKFS_IOC_PERMD, &permd_data);
+    if (status < 0) {
+        log_printf("ioctl(): %s", strerror(errno));
+    }
+    close(dirfd);
+    return status;
+}
+
+int
+main (
+    int   argc,
+    char *argv[]
+) {
+    if (0 != dispatch_subcmds(argc, argv)) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}

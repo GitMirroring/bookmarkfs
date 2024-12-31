@@ -1,0 +1,160 @@
+.TH FSCK.BOOKMARKFS 1 "Dec 01, 2024" 0.1.0 "BookmarkFS User Manual"
+.
+.SH NAME
+fsck.bookmarkfs - check and repair a BookmarkFS filesystem
+.
+.SH SYNOPSIS
+.B fsck.bookmarkfs
+.RI [ options ]
+.I pathname
+.
+.SH DESCRIPTION
+The
+.B fsck.bookmarkfs
+program checks and optionally repairs a BookmarkFS filesystem.
+.PP
+Unlike fsck on general-purpose filesystems (e.g. ext4), this program does not
+check the integrity or validity of a bookmark file.
+Instead, it checks for bookmark names that are not valid as filename
+(e.g. contains slash characters).
+.PP
+See the full user manual for details.
+.SS Online mode
+In online mode, fsck is performed on a mounted BookmarkFS filesystem.
+.PP
+The
+.I pathname
+argument refers to the directory to perform fsck on.
+.SS Offline mode
+In offline mode, fsck is performed directly on the bookmark storage
+via the corresponding backend.
+.PP
+The
+.I pathname
+argument is a colon-separated string
+.RI \[dq] mount_src : dir \[dq],
+where
+.I mount_src
+is equivalent to the
+.I src
+argument for
+.BR mount.bookmarkfs (1),
+and
+.I dir
+is the path to the directory to perform fsck on,
+relative to the root directory of the bookmark storage.
+.
+.SH OPTIONS
+.TP
+\fB\-o backend=\fIname\fR
+The backend used by the filesystem.
+.IP
+If this option is not provided, or
+.I name
+is empty, performs online fsck.
+.TP
+\fB\-o @\fIkey\fR[\fB=\fIvalue\fR]
+A backend-specific option.
+This option can be provided multiple times.
+.TP
+\fB\-o handler=\fIname\fR
+The handler for resolving errors found during fsck.
+.IP
+If this option is not provided, or
+.I name
+is empty, a built-in handler will be used.
+.TP
+\fB\-o %\fIkey\fR[\fB=\fIvalue\fR]
+A handler-specific option.
+This option can be provided multiple times.
+.TP
+.B "\-o repair"
+Attempt to repair errors found during fsck.
+.TP
+\fB\-o rl_app=\fIname\fR
+Readline application name in interactive mode.
+Defaults to "fsck.bookmarkfs".
+.TP
+.BR "\-o type=bookmark" | tag | keyword
+Bookmark type.
+Defaults to "bookmark".
+.IP
+This option is ignored when performing online fsck.
+.TP
+.B \-i
+Enable interactive mode.
+.TP
+.B \-R
+Perform fsck on subdirectories recursively.
+.IP
+This option is ignored when performing fsck on tags or keywords.
+.TP
+.B "\-o no_sandbox"
+Do not enable sandboxing features.
+.TP
+.B "\-o no_landlock"
+Do not use
+.BR landlock (7)
+for sandboxing.
+This option is ignored on non-Linux platforms.
+.TP
+.B \-h
+Print help text, and then exit.
+.TP
+.B \-V
+Print version and feature information, and then exit.
+.
+.SH EXIT STATUS
+.TP
+0
+The fsck operation is completed successfully.
+.TP
+1
+An error occurred.
+.
+.SH NOTES
+.SS Backends
+See the NOTES section in
+.BR mount.bookmarkfs (1)
+for details.
+.SS Handlers
+A BookmarkFS fsck handler provides a way to deal with errors found during fsck.
+In addition to the default built-in handler, there is also a "tcl" handler,
+which allows handling fsck errors with Tcl scripting.
+.PP
+Like backends, fsck handlers can also be implemented as loadable modules.
+See the full user manual for details.
+.SS Availability on FreeBSD
+Online fsck requires that the FUSE client supports
+.BR ioctl (2),
+which is currently not available on stable releases of FreeBSD.
+See the NOTES section in
+.BR bookmarkctl (1)
+for details.
+.PP
+Offline fsck does not have this limitation.
+.
+.SH SEE ALSO
+.BR mount.bookmarkfs (1),
+.BR landlock (7),
+.BR tcl (n)
+.PP
+The full BookmarkFS User Manual is maintained as a Texinfo document.
+To read it locally, run:
+.PP
+.in +4n
+.EX
+.B info bookmarkfs
+.EE
+.in
+.
+.SH COPYRIGHT
+Copyright (C) 2024  CismonX <admin@cismon.net>
+.PP
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+.PP
+You should have received a copy of the license along with this document.
+If not, see <https://www.gnu.org/licenses/fdl-1.3.html>.

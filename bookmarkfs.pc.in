@@ -1,0 +1,22 @@
+#
+# Copyright (C) 2024  CismonX <admin@cismon.net>
+#
+# Copying and distribution of this file, with or without modification, are
+# permitted in any medium without royalty, provided the copyright notice and
+# this notice are preserved.  This file is offered as-is, without any warranty.
+#
+
+package=@PACKAGE@
+version=@VERSION@
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+includedir=@includedir@
+libdir=@libdir@
+
+Name: ${package}
+Description: BookmarkFS
+Version: ${version}
+URL: https://nongnu.org/bookmarkfs
+Cflags: -I${includedir}
+Libs: -L${libdir} -lbookmarkfs_util

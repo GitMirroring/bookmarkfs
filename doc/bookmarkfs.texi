@@ -1,0 +1,309 @@
+\input texinfo  @c -*-texinfo-*-
+
+@setfilename bookmarkfs.info
+@include version.texi
+@settitle BookmarkFS User Manual
+
+@macro manpage {name, section, url}
+@uref{\url\,, @code{\name\(\section\)}}
+@end macro
+
+@macro linuxmanpage {name, section}
+@manpage{\name\, \section\,
+    https://man7.org/linux/man-pages/man\section\/\name\.\section\.html}
+@end macro
+
+@macro freebsdmanpage {name, section}
+@manpage{\name\, \section\,
+    https://man.freebsd.org/cgi/man.cgi?\name\(\section\)}
+@end macro
+
+@macro posixfuncmanpage {name}
+@manpage{\name\, 3p,
+    https://pubs.opengroup.org/onlinepubs/9799919799/functions/\name\.html}
+@end macro
+
+@tex
+\global\def\linkcolor{0 0 1}
+\global\def\urlcolor{0 0 1}
+\global\urefurlonlylinktrue
+@end tex
+
+@copying
+This manual is for BookmarkFS, version @value{VERSION}.
+
+@quotation
+Copyright @copyright{} 2024  CismonX <admin@@cismon.net>
+
+Permission is granted to copy, distribute and/or modify this document under
+the terms of the GNU Free Documentation License, Version 1.3 or any later
+version published by the Free Software Foundation; with no Invariant Sections,
+no Front-Cover Texts, and no Back-Cover Texts.  A copy of the license
+is included in the section entitled ``GNU Free Documentation License''.
+@end quotation
+@end copying
+
+@titlepage
+@title BookmarkFS
+@subtitle version @value{VERSION}
+@author CismonX
+
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+
+@end titlepage
+
+
+@summarycontents
+@contents
+
+@node Top
+@top BookmarkFS User Manual
+
+@insertcopying
+
+
+@node Overview
+@chapter Overview
+
+BookmarkFS is a FUSE-based pseudo-filesystem which provides an interface to
+the bookmark data of web browsers.
+
+Currently, the following browsers (and their derivatives) are supported:
+
+@itemize @bullet{}
+@item Firefox
+@item Chromium
+@end itemize
+
+BookmarkFS is free software, distributed under the terms of the GNU General
+Public License, either version 3, or any later version of the license.
+You should have received a copy of the GNU General Public License along with
+BookmarkFS.  If not, see @uref{https://www.gnu.org/licenses/}.
+
+
+@node Porting
+@section Porting BookmarkFS
+
+Currently, BookmarkFS only runs on GNU/Linux and FreeBSD.
+
+Although BookmarkFS sticks hard to POSIX and avoids using platform-specific
+features, porting it to other operating systems is not trivial.
+
+The major pitfall is the
+@uref{https://docs.kernel.org/filesystems/fuse.html, FUSE} dependency.
+Generally speaking, FUSE is Linux-only.  FreeBSD partially implements the
+FUSE protocol in its kernel, to the extent that BookmarkFS is mostly usable.
+However, that's not the case for other operating systems.
+
+For example, OpenBSD implements its own FUSE protocol, which is incompatible
+with the Linux one.  While OpenBSD does provide a libfuse-compatible library,
+however, it only covers the high-level API, and BookmarkFS uses the
+@uref{https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html, low-level API}.
+For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
+won't work if you're trying to port BookmarkFS to Microsoft Windows.
+
+
+@node Sandboxing
+@section Sandboxing
+
+A BookmarkFS backend can be instructed to enter a sandboxed state, where it
+irrevocably relinquishes most access to the system resources that it's not
+supposed to touch. For example, it can only access the directory that contains
+the bookmark file; it cannot establish socket connections; it cannot execute
+other files; ...
+
+This mechanism reduces the attack surface for exploit, if a vulnerability
+is discovered in BookmarkFS and/or its dependencies.
+However, it only deals with untrusted input, and cannot help if the
+operating system has already been compromised.
+
+Example of what ``untrusted input'' may include:
+
+@itemize @bullet{}
+@item Bookmark files that are @emph{not} created by the user using a
+trusted program (e.g. a file obtained from some random person on the internet).
+@item Filesystem calls from untrusted programs.  The program itself may be
+isolated, but it has a chance to escape the isolated environment
+if it can exploit BookmarkFS.
+@end itemize
+
+On Linux, sandboxing is achieved using @linuxmanpage{seccomp, 2} and
+@linuxmanpage{landlock, 7}.
+On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
+
+
+@node Contributing
+@section Contributing to BookmarkFS
+
+BookmarkFS is hosted on Savannah.  Write to the
+@uref{https://savannah.nongnu.org/mail/?group=bookmarkfs, mailing lists}
+for bug reports, feature requests, and other discussions.
+
+BookmarkFS is a personal hobby project, and is currently in
+experimental stage.  Thus, it it not yet ready for open collaboration,
+which means patches are generally rejected unless trivial (e.g. typo fix).
+
+
+@node Utilities
+@chapter Utility Programs
+
+
+@node mount.bookmarkfs
+@section @code{mount.bookmarkfs}
+
+
+@node fsck.bookmarkfs
+@section @code{fsck.bookmarkfs}
+
+
+@node mkfs.bookmarkfs
+@section @code{mkfs.bookmarkfs}
+
+
+@node bookmarkctl
+@section @code{bookmarkctl}
+
+
+@node Filesystem
+@chapter The Filesystem
+
+
+@node Hierarchy
+@section Filesystem Hierarchy
+
+
+@node Extended Attributes
+@section Extended Attributes
+
+BookmarkFS uses extended attributes to manage additional information associated
+with a bookmark.
+
+Extended attributes is a platform-specific feature.  On Linux, see
+@linuxmanpage{xattr, 7}.  On FreeBSD, see @freebsdmanpage{extattr, 2}.
+
+All BookmarkFS extended attributes fall under the ``user'' namespace,
+which means they have a @code{user.} name prefix on Linux, and should be
+accessed with @code{EXTATTR_NAMESPACE_USER} on FreeBSD.
+
+BookmarkFS does not define any common attributes, neither can users create
+arbitrary ones.  The backend decides which attributes are available during
+initialization, and all bookmark files share the same set of attributes.
+All attributes have a @code{bookmarkfs.} name prefix.
+
+For example, to get the GUID of a bookmark file (Firefox backend) on GNU/Linux:
+
+@example
+$ getfattr --absolute-names -n user.bookmarkfs.guid  \
+>         /mnt/firefox/bookmarks/toolbar/Example
+@end example
+
+The FreeBSD equivalent:
+
+@example
+$ getextattr user bookmarkfs.guid  \
+>         /mnt/firefox/bookmarks/toolbar/Example
+@end example
+
+
+@node Permute Directory Entries
+@section Permute Directory Entries
+
+POSIX does not specify the ordering of the directory entries retrieved from
+the directory stream using @posixfuncmanpage{readdir}.  It only guarantees
+that if an entry is not added or removed from the directory after the most
+recent call to @posixfuncmanpage{opendir} or @posixfuncmanpage{rewinddir},
+that entry is returned once and only once.
+
+This allows filesystem implementations to organize directory entries in a more
+relaxed manner.  There could be extra overhead to maintain a predictable
+ordering of directory entries, since they may not have a linear structure on
+modern on-disk filesystems (e.g. ext4 uses ``HTree'' for large directories).
+
+As for users of a filesystem, the order of directory entries generally
+does not matter.  If they care, they can add a prefix to the filename,
+and let the application do the sorting.
+
+However, the order of which a bookmark entry appears in the web browser
+sometimes does matter.  Thus, BookmarkFS guarantees it to be equivalent to the
+directory traversal order.  New entries are appended to the end; removed
+entries do not affect the order of other entries.
+
+
+@node Check for Errors
+@section Check for Errors
+
+
+@node Backends
+@chapter Backends
+
+In BookmarkFS, each backend provides a way to manipulate a certain kind of
+application bookmarks.
+
+BookmarkFS ships with two backends.  One for Firefox, the other for Chromium.
+If you which to add support for more backends, you may submit a feature request
+or implement one using the Backend API.
+
+Typically, backends are built into shared libraries, and are installed as:
+
+@example
+$@{pkglibdir@}/backend-$@{short_name@}$@{shlib_suffix@}
+@end example
+
+Where @code{$@{short_name@}} is the name passed to the frontend program, and
+@code{$@{shlib_suffix@}} is the common filename extension for shared library
+files on the current platform (e.g. @code{.so} on GNU/Linux and FreeBSD).
+
+For example, when mounting a BookmarkFS filesystem with:
+
+@example
+$ /usr/local/bin/mount.bookmarkfs -o backend=firefox  \
+>         ~/.mozilla/firefox/my-profile/places.sqlite /mnt/firefox
+@end example
+
+The @code{mount.bookmarkfs} program loads the bookmark file using the
+backend module @code{/usr/local/lib/bookmarkfs/backend-firefox.so}.
+
+
+@node Firefox
+@section Firefox Backend
+
+
+@node Chromium
+@section Chromium Backend
+
+
+@node Backend API
+@section Backend API
+
+
+@node Error Handlers
+@chapter Error Handlers
+
+
+@node Built-in Error Handler
+@section Built-in Error Handler
+
+
+@node Tcl-Based Error Handler
+@section Tcl-Based Error Handler
+
+
+@node Error Handler API
+@section Error Handler API
+
+
+@node General Index
+@appendix General Index
+
+@printindex cp
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+
+@include fdl.texi
+
+
+@bye

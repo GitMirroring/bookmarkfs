@@ -1,0 +1,143 @@
+.TH MOUNT.BOOKMARKFS 1 "Dec 01, 2024" 0.1.0 "BookmarkFS User Manual"
+.
+.SH NAME
+mount.bookmarkfs - mount a BookmarkFS filesystem
+.
+.SH SYNOPSIS
+.B mount.bookmarkfs
+.RI [ options ]
+.I src
+.I target
+.
+.SH DESCRIPTION
+The
+.B mount.bookmarkfs
+program mounts a BookmarkFS filesystem to the location specified by
+.IR target .
+.PP
+The
+.I src
+argument is presumably the pathname of a file that stores bookmark data.
+Its exact interpretation is backend-defined.
+.PP
+To unmount a BookmarkFS filesystem, use
+.BR fusermount3 (1)
+or
+.BR umount (8)
+on
+.IR target .
+.
+.SH OPTIONS
+.TP
+\fB\-o backend=\fIname\fR
+The backend used by the filesystem.
+This option is mandatory.
+.TP
+\fB\-o @\fIkey\fR[\fB=\fIvalue\fR]
+A backend-specific option.
+This option can be provided multiple times.
+.TP
+\fB\-o accmode=\fImode\fR
+File access mode.
+Defaults to 0700.
+.IP
+This option applies to both directories and regular files.
+Execution bits on regular files are masked off.
+.TP
+.B "\-o ctime"
+Maintains file change time, while modification time follows change time.
+If this option is not provided, maintains file modification time instead.
+.IP
+See the full user manual for the rationale behind this option.
+.TP
+.B "\-o eol"
+Adds a newline (ASCII LF character) to the end of each file.
+.TP
+\fB\-o file_max=\fIbytes\fR
+Max file size limit.
+Defaults to 32768.
+.TP
+.B "\-o no_sandbox"
+Do not enable sandboxing features.
+.TP
+.B "\-o no_landlock"
+Do not use
+.BR landlock (7)
+for sandboxing.
+This option is ignored on non-Linux platforms.
+.TP
+.B \-F
+Stay in the foreground, do not daemonize.
+.TP
+.B \-h
+Print help text, and then exit.
+.TP
+.B \-V
+Print version and feature information, and then exit.
+.
+.SH EXIT STATUS
+.TP
+0
+The filesystem is mounted successfully.
+.TP
+1
+An error occurred.
+.PP
+For the daemon process (or the main process if the
+.B \-F
+option is given):
+.TP
+0
+The filesystem is unmounted.
+.
+.SH NOTES
+.SS Backends
+In BookmarkFS, each backend provides a way to manipulate a certain kind of
+application bookmarks.
+The currently supported backends are "firefox" and "chromium".
+.PP
+Backends are implemented as loadable modules, and communicate with "frontend"
+prgrams using the BookmarkFS Backend API.
+New backends can be added without having to change existing code of BookmarkFS.
+.PP
+See the full user manual for details regarding the existing backends,
+and the specification of the BookmarkFS Backend API.
+.SS Extra options
+The options documented in this page is not a comprehensive list of all
+available options.
+Unrecognized options are passed to libfuse (and subsequently to the kernel,
+if applicable) as-is.
+.PP
+See the manual page for
+.BR mount.fuse3 (8)
+for details.
+.SS POSIX compatibility
+BookmarkFS is partially compatible with the filesystem specifications
+in POSIX.1.
+See the full user manual for details.
+.
+.SH SEE ALSO
+.BR fusermount (1),
+.BR landlock (7),
+.BR mount.fuse3 (8),
+.BR umount (8)
+.PP
+The full BookmarkFS User Manual is maintained as a Texinfo document.
+To read it locally, run:
+.PP
+.in +4n
+.EX
+.B info bookmarkfs
+.EE
+.in
+.
+.SH COPYRIGHT
+Copyright (C) 2024  CismonX <admin@cismon.net>
+.PP
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+.PP
+You should have received a copy of the license along with this document.
+If not, see <https://www.gnu.org/licenses/fdl-1.3.html>.
