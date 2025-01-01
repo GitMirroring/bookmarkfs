@@ -93,13 +93,15 @@ features, porting it to other operating systems is not trivial.
 
 The major pitfall is the
 @uref{https://docs.kernel.org/filesystems/fuse.html, FUSE} dependency.
-Generally speaking, FUSE is Linux-only.  FreeBSD partially implements the
-FUSE protocol in its kernel, to the extent that BookmarkFS is mostly usable.
+Generally speaking, FUSE is Linux-only.
+FreeBSD partially implements the FUSE protocol in its kernel,
+to the extent that BookmarkFS is mostly usable.
 However, that's not the case for other operating systems.
 
-For example, OpenBSD implements its own FUSE protocol, which is incompatible
-with the Linux one.  While OpenBSD does provide a libfuse-compatible library,
-however, it only covers the high-level API, and BookmarkFS uses the
+For example, OpenBSD implements its own FUSE protocol,
+which is incompatible with the Linux one.
+While OpenBSD does provide a libfuse-compatible library, however,
+it only covers the high-level API, and BookmarkFS uses the
 @uref{https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html, low-level API}.
 For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
 won't work if you're trying to port BookmarkFS to Microsoft Windows.
@@ -108,25 +110,25 @@ won't work if you're trying to port BookmarkFS to Microsoft Windows.
 @node Sandboxing
 @section Sandboxing
 
-A BookmarkFS backend can be instructed to enter a sandboxed state, where it
-irrevocably relinquishes most access to the system resources that it's not
-supposed to touch. For example, it can only access the directory that contains
-the bookmark file; it cannot establish socket connections; it cannot execute
-other files; ...
+A BookmarkFS backend can be instructed to enter a sandboxed state,
+where it irrevocably relinquishes most access to the system resources
+that it's not supposed to touch.
+For example, it can only access the directory that contains the bookmark file;
+it cannot establish socket connections; it cannot execute other files; ...
 
-This mechanism reduces the attack surface for exploit, if a vulnerability
-is discovered in BookmarkFS and/or its dependencies.
-However, it only deals with untrusted input, and cannot help if the
-operating system has already been compromised.
+This mechanism reduces the attack surface for exploit,
+if a vulnerability is discovered in BookmarkFS and/or its dependencies.
+However, it only deals with untrusted input,
+and cannot help if the operating system has already been compromised.
 
 Example of what ``untrusted input'' may include:
 
 @itemize @bullet{}
 @item Bookmark files that are @emph{not} created by the user using a
 trusted program (e.g. a file obtained from some random person on the internet).
-@item Filesystem calls from untrusted programs.  The program itself may be
-isolated, but it has a chance to escape the isolated environment
-if it can exploit BookmarkFS.
+@item Filesystem calls from untrusted programs.
+The program itself may be isolated, but it has a chance to escape
+the isolated environment if it can exploit BookmarkFS.
 @end itemize
 
 On Linux, sandboxing is achieved using @linuxmanpage{seccomp, 2} and
@@ -137,12 +139,14 @@ On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
 @node Contributing
 @section Contributing to BookmarkFS
 
-BookmarkFS is hosted on Savannah.  Write to the
+BookmarkFS is hosted on Savannah.
+Write to the
 @uref{https://savannah.nongnu.org/mail/?group=bookmarkfs, mailing lists}
 for bug reports, feature requests, and other discussions.
 
 BookmarkFS is a personal hobby project, and is currently in
-experimental stage.  Thus, it it not yet ready for open collaboration,
+experimental stage.
+Thus, it it not yet ready for open collaboration,
 which means patches are generally rejected unless trivial (e.g. typo fix).
 
 
@@ -173,8 +177,8 @@ which means patches are generally rejected unless trivial (e.g. typo fix).
 @node Hierarchy
 @section Filesystem Hierarchy
 
-BookmarkFS has multiple subsystems.  Each one appears as a directory under
-the mountpoint:
+BookmarkFS has multiple subsystems.
+Each one appears as a directory under the mountpoint:
 
 @example
 $@{mountpoint@}/bookmarks
@@ -205,19 +209,21 @@ $@{mountpoint@}/tags/$@{tag_name@}/$@{bookmark_name@}
 @end example
 
 The ``tags'' subsystem maintains a many-to-many mapping between bookmarks and
-their alternative names.  Each tag name appears as the filename for directory
-@code{$@{tag_name@}}, and @code{$@{bookmark_name@}} is a hard link to the
-bookmark file.  A bookmark directory cannot be associated with a tag.
+their alternative names.
+Each tag name appears as the filename for directory @code{$@{tag_name@}},
+and @code{$@{bookmark_name@}} is a hard link to the bookmark file.
+A bookmark directory cannot be associated with a tag.
 
 If multiple bookmark files with identical names are both associated with a tag,
 it is unspecified which one appears as an entry for the tag directory.
 However, consecutive lookups and @code{readdir()}s should produce consistent
 results for that file, provided that it is not renamed or deleted.
 
-Tag files behave differently from traditional hard links.  If the original
-bookmark file is renamed or deleted, it may also change accordingly.
-It may even link to another file that was previously shadowed.  Applications
-should tread lightly if they wish to cache tag directory entries.
+Tag files behave differently from traditional hard links.
+If the original bookmark file is renamed or deleted,
+it may also change accordingly.
+It may even link to another file that was previously shadowed.
+Applications should tread lightly if they wish to cache tag directory entries.
 
 To associate a bookmark with a tag, use @posixfuncmanpage{link}:
 
@@ -246,9 +252,9 @@ Each keyword name appears as the filename for regular file
 @code{$@{keyword_name@}}, which is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a keyword.
 
-To associate a bookmark with a keyword, use @code{link()},
-like we do with tags.  If the original file is already associated with
-another keyword, the operation fails with @code{EEXIST}.
+To associate a bookmark with a keyword, use @code{link()} like we do with tags.
+If the original file is already associated with another keyword,
+@code{link()} fails with @code{EEXIST}.
 
 
 @node Extended Attributes
@@ -257,16 +263,18 @@ another keyword, the operation fails with @code{EEXIST}.
 BookmarkFS uses extended attributes to manage additional information associated
 with a bookmark.
 
-Extended attributes is a platform-specific feature.  On Linux, see
-@linuxmanpage{xattr, 7}.  On FreeBSD, see @freebsdmanpage{extattr, 2}.
+Extended attributes is a platform-specific feature.
+On Linux, see @linuxmanpage{xattr, 7}.
+On FreeBSD, see @freebsdmanpage{extattr, 2}.
 
 All BookmarkFS extended attributes fall under the ``user'' namespace,
 which means they have a @code{user.} name prefix on Linux, and should be
 accessed with @code{EXTATTR_NAMESPACE_USER} on FreeBSD.
 
 BookmarkFS does not define any common attributes, neither can users create
-arbitrary ones.  The backend decides which attributes are available during
-initialization, and all bookmark files share the same set of attributes.
+arbitrary ones.
+The backend decides which attributes are available during initialization,
+and all bookmark files share the same set of attributes.
 All attributes have a @code{bookmarkfs.} name prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend) on GNU/Linux:
@@ -288,24 +296,28 @@ $ getextattr user bookmarkfs.guid  \
 @section Permute Directory Entries
 
 POSIX does not specify the ordering of the directory entries retrieved from
-the directory stream using @posixfuncmanpage{readdir}.  It only guarantees
-that if an entry is not added or removed from the directory after the most
-recent call to @posixfuncmanpage{opendir} or @posixfuncmanpage{rewinddir},
-that entry is returned once and only once.
+the directory stream using @posixfuncmanpage{readdir}.
+It only guarantees that if an entry is not added or removed from the directory
+after the most recent call to @posixfuncmanpage{opendir} or
+@posixfuncmanpage{rewinddir}, that entry is returned once and only once.
 
 This allows filesystem implementations to organize directory entries in a more
-relaxed manner.  There could be extra overhead to maintain a predictable
-ordering of directory entries, since they may not have a linear structure on
-modern on-disk filesystems (e.g. ext4 uses ``HTree'' for large directories).
+relaxed manner.
+There could be extra overhead to maintain a predictable ordering of
+directory entries, since they may not have a linear structure on modern
+on-disk filesystems (e.g. ext4 uses ``HTree'' for large directories).
 
 As for users of a filesystem, the order of directory entries generally
-does not matter.  If they care, they can add a prefix to the filename,
-and let the application do the sorting.
+does not matter.
+If they care, they can add a prefix to the filename, and let the application
+do the sorting.
 
 However, the order of which a bookmark entry appears in the web browser
-sometimes does matter.  Thus, BookmarkFS guarantees it to be equivalent to the
-directory traversal order.  New entries are appended to the end; removed
-entries do not affect the order of other entries.
+sometimes does matter.
+In BookmarkFS, it is guaranteed to be equivalent to the
+directory traversal order.
+New entries are appended to the end; removed entries do not affect
+the order of other entries.
 
 
 @node Check for Errors
@@ -317,10 +329,6 @@ entries do not affect the order of other entries.
 
 In BookmarkFS, each backend provides a way to manipulate a certain kind of
 application bookmarks.
-
-BookmarkFS ships with two backends.  One for Firefox, the other for Chromium.
-If you which to add support for more backends, you may submit a feature request
-or implement one using the Backend API.
 
 Typically, backends are built into shared libraries, and are installed as:
 
@@ -341,6 +349,11 @@ $ /usr/local/bin/mount.bookmarkfs -o backend=firefox  \
 
 The @code{mount.bookmarkfs} program loads the bookmark file using the
 backend module @code{/usr/local/lib/bookmarkfs/backend-firefox.so}.
+
+Currently, BookmarkFS ships with two backends.
+One for Firefox, the other for Chromium.
+If you which to add support for more backends,
+you may submit a feature request or implement one using the Backend API.
 
 
 @node Firefox
