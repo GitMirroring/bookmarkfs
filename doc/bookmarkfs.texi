@@ -173,6 +173,83 @@ which means patches are generally rejected unless trivial (e.g. typo fix).
 @node Hierarchy
 @section Filesystem Hierarchy
 
+BookmarkFS has multiple subsystems.  Each one appears as a directory under
+the mountpoint:
+
+@example
+$@{mountpoint@}/bookmarks
+$@{mountpoint@}/tags
+$@{mountpoint@}/keywords
+@end example
+
+If the backend does not support a subsystem, the corresponding directory
+does not exist.
+
+Currently all subsystem definitions are hard-coded within the
+@code{mount.bookmarkfs} program, and cannot be extended by the backend.
+
+
+@node Bookmarks
+@subsection Bookmarks
+
+@example
+$@{mountpoint@}/bookmarks/$@{bookmark_dir...@}/$@{bookmark_name@}
+@end example
+
+
+@node Tags
+@subsection Tags
+
+@example
+$@{mountpoint@}/tags/$@{tag_name@}/$@{bookmark_name@}
+@end example
+
+The ``tags'' subsystem maintains a many-to-many mapping between bookmarks and
+their alternative names.  Each tag name appears as the filename for directory
+@code{$@{tag_name@}}, and @code{$@{bookmark_name@}} is a hard link to the
+bookmark file.  A bookmark directory cannot be associated with a tag.
+
+If multiple bookmark files with identical names are both associated with a tag,
+it is unspecified which one appears as an entry for the tag directory.
+However, consecutive lookups and @code{readdir()}s should produce consistent
+results for that file, provided that it is not renamed or deleted.
+
+Tag files behave differently from traditional hard links.  If the original
+bookmark file is renamed or deleted, it may also change accordingly.
+It may even link to another file that was previously shadowed.  Applications
+should tread lightly if they wish to cache tag directory entries.
+
+To associate a bookmark with a tag, use @posixfuncmanpage{link}:
+
+@example
+fd = openat(dirfd, "tags/gnu/readline", O_CREAT | O_WRONLY, 0600);
+// Oops, fd == -1, errno == EPERM
+
+fd = linkat(dirfd, "bookmarks/other/readline", dirfd, "tags/gnu/readline", 0);
+// OK!
+@end example
+
+Make sure that the two files have identical names, otherwise @code{link()}
+fails with @code{EPERM}.
+
+
+@node Keywords
+@subsection Keywords
+
+@example
+$@{mountpoint@}/keywords/$@{keyword_name@}
+@end example
+
+The ``keywords'' subsystem maintains a one-to-one mapping between bookmarks
+and their alternative names, independent from tag names.
+Each keyword name appears as the filename for regular file
+@code{$@{keyword_name@}}, which is a hard link to the bookmark file.
+A bookmark directory cannot be associated with a keyword.
+
+To associate a bookmark with a keyword, use @code{link()},
+like we do with tags.  If the original file is already associated with
+another keyword, the operation fails with @code{EEXIST}.
+
 
 @node Extended Attributes
 @section Extended Attributes
