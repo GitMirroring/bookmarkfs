@@ -2444,7 +2444,7 @@ bookmark_permute (
         break;
 
       default:
-        unreachable();
+        return -EINVAL;
     }
     ctx->dirty = DIRTY_LEVEL_DATA;
 

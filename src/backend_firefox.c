@@ -926,6 +926,8 @@ mozbm_pos_shift (
                 return 0;
             }
             *pos_end_ptr = pos_end;
+        } else if (op != BOOKMARKFS_PERMD_OP_MOVE_AFTER) {
+            return -EINVAL;
         }
         ++pos_start;
     } else {
@@ -934,6 +936,8 @@ mozbm_pos_shift (
                 return 0;
             }
             *pos_end_ptr = pos_end;
+        } else if (op != BOOKMARKFS_PERMD_OP_MOVE_BEFORE) {
+            return -EINVAL;
         }
         --pos_start;
 
