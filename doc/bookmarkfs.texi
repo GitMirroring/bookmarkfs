@@ -277,18 +277,15 @@ The backend decides which attributes are available during initialization,
 and all bookmark files share the same set of attributes.
 All attributes have a @code{bookmarkfs.} name prefix.
 
-For example, to get the GUID of a bookmark file (Firefox backend) on GNU/Linux:
+For example, to get the GUID of a bookmark file (Firefox backend):
 
 @example
-$ getfattr --absolute-names -n user.bookmarkfs.guid  \
->         /mnt/firefox/bookmarks/toolbar/Example
-@end example
+// Linux
+len = fgetxattr(fd, "user.bookmarkfs.guid", buf, sizeof(buf));
 
-The FreeBSD equivalent:
-
-@example
-$ getextattr user bookmarkfs.guid  \
->         /mnt/firefox/bookmarks/toolbar/Example
+// FreeBSD
+len = extattr_get_fd(fd, EXTATTR_NAMESPACE_USER, "bookmarkfs.guid",
+        buf, sizeof(buf));
 @end example
 
 
