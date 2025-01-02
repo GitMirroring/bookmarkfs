@@ -228,10 +228,10 @@ Applications should tread lightly if they wish to cache tag directory entries.
 To associate a bookmark with a tag, use @posixfuncmanpage{link}:
 
 @example
-fd = openat(dirfd, "tags/gnu/readline", O_CREAT | O_WRONLY, 0600);
+fd = open("tags/gnu/readline", O_CREAT | O_WRONLY, 0600);
 // Oops, fd == -1, errno == EPERM
 
-fd = linkat(dirfd, "bookmarks/other/readline", dirfd, "tags/gnu/readline", 0);
+fd = link("bookmarks/other/readline", "tags/gnu/readline", 0);
 // OK!
 @end example
 
@@ -330,22 +330,12 @@ application bookmarks.
 Typically, backends are built into shared libraries, and are installed as:
 
 @example
-$@{pkglibdir@}/backend-$@{short_name@}$@{shlib_suffix@}
+$@{libdir@}/bookmarkfs/backend-$@{short_name@}$@{shlib_suffix@}
 @end example
 
 Where @code{$@{short_name@}} is the name passed to the frontend program, and
 @code{$@{shlib_suffix@}} is the common filename extension for shared library
 files on the current platform (e.g. @code{.so} on GNU/Linux and FreeBSD).
-
-For example, when mounting a BookmarkFS filesystem with:
-
-@example
-$ /usr/local/bin/mount.bookmarkfs -o backend=firefox  \
->         ~/.mozilla/firefox/my-profile/places.sqlite /mnt/firefox
-@end example
-
-The @code{mount.bookmarkfs} program loads the bookmark file using the
-backend module @code{/usr/local/lib/bookmarkfs/backend-firefox.so}.
 
 Currently, BookmarkFS ships with two backends.
 One for Firefox, the other for Chromium.
