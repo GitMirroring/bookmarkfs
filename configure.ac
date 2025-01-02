@@ -56,7 +56,7 @@ AC_RUN_IFELSE([
 
 # -- Checks for features --
 
-BOOKMARKFS_FEAT([bookmarkfs-util], [no], [the Bookmarkfs utility library])
+BOOKMARKFS_FEAT([bookmarkfs-util], [no], [the BookmarkFS utility library])
 
 BOOKMARKFS_FEAT([bookmarkctl], [no], [the bookmarkctl program])
 
@@ -138,7 +138,7 @@ BOOKMARKFS_FEAT([fsck-handler-tcl], [no], [Tcl-based fsck handler])
 
 AX_PTHREAD
 
-BOOKMARKFS_DEP([bookmarkfs], [>= 0.1], [The BookmarkFS utility library], [
+BOOKMARKFS_DEP([bookmarkfs], [>= 0.1], [BookmarkFS utility library], [
     AS_VAR_SET([enable_bookmarkfs_util], [no])
 ])
 
@@ -204,7 +204,7 @@ AC_COMPILE_IFELSE([
         AS_VAR_SET([macro_prefix_map], [yes])
     ], [
         AC_MSG_WARN(m4_normalize([
-            The -fmacro-prefix-map CPPFLAGS is not supported.
+            The `-fmacro-prefix-map' preprocessor flag is not supported.
         ]))
     ])
 ])
