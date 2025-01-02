@@ -289,8 +289,8 @@ len = extattr_get_fd(fd, EXTATTR_NAMESPACE_USER, "bookmarkfs.guid",
 @end example
 
 
-@node Permute Directory Entries
-@section Permute Directory Entries
+@node Directory Entry Ordering
+@section Directory Entry Ordering
 
 POSIX does not specify the ordering of the directory entries retrieved from
 the directory stream using @posixfuncmanpage{readdir}.
@@ -315,6 +315,64 @@ In BookmarkFS, it is guaranteed to be equivalent to the
 directory traversal order.
 New entries are appended to the end; removed entries do not affect
 the order of other entries.
+
+
+@node Permute Directory Entries
+@subsection Permute Directory Entries
+
+BookmarkFS provides an I/O control for rearranging directory entries:
+
+@example
+#include <bookmarkfs/ioctl.h>
+
+int ioctl (int @var{dirfd}, BOOKMARKFS_IOC_PERMD,
+        struct bookmarkfs_permd_data const *@var{argp});
+@end example
+
+The @code{bookmarkfs_permd_data} structure is defined as:
+
+@example
+struct bookmarkfs_permd_data @{
+    enum bookmarkfs_permd_op @var{op};
+
+    char @var{name1}[NAME_MAX + 1];
+    char @var{name2}[NAME_MAX + 1];
+@};
+@end example
+
+The @code{op} field denotes the operation to perform on @code{dirfd}:
+
+@table @code
+@item BOOKMARKFS_PERMD_OP_SWAP
+Exchange the positions of the directory entries represented by @code{name1}
+and @code{name2}.
+@item BOOKMARKFS_PERMD_OP_MOVE_BEFORE
+Move the directory entry represented by @code{name1} to the position just
+@emph{before} the one represented by @code{name2}.
+@item BOOKMARKFS_PERMD_OP_MOVE_AFTER
+Move the directory entry represented by @code{name1} to the position just
+@emph{after} the one represented by @code{name2}.
+@end table
+
+On success, @code{ioctl()} returns @code{0}.
+Otherwise, it returns @code{-1} and sets @code{errno}:
+
+@table @code
+@item EACCES
+Write or search permission is denied for the directory.
+@item EINVAL
+@code{op} is not one of the values defined in enum @code{bookmarkfs_permd_op}.
+@item EINVAL
+@code{name1} or @code{name2} is not a valid filename
+(e.g. empty string; contains slash character, ...).
+@item ENOENT
+The directory does not contain @code{name1} or @code{name2}.
+@item EPERM
+The backend does not support rearranging entries for this directory.
+@end table
+
+To ensure that the order change is visible to further @code{readdir()} calls,
+call @code{fsync()} or @code{close()} on @code{dirfd}.
 
 
 @node Check for Errors
