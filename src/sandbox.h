@@ -31,7 +31,6 @@
 
 int
 sandbox_enter (
-    int      fusefd,
     int      dirfd,
     uint32_t flags
 );

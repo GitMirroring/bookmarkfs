@@ -115,13 +115,11 @@ enter_sandbox (
         return 0;
     }
 
-    void *backend_ctx = ctx->backend_ctx;
-    int   fusefd      = fuse_session_fd(ctx->session);
     struct bookmarkfs_backend_init_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
         .tags_root_id      = UINT64_MAX,
     };
-    if (0 != ctx->backend_impl->backend_sandbox(backend_ctx, fusefd, &resp)) {
+    if (0 != ctx->backend_impl->backend_sandbox(ctx->backend_ctx, &resp)) {
         return -1;
     }
     debug_puts("sandbox entered");

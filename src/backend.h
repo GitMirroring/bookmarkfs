@@ -117,7 +117,6 @@ typedef int (bookmarkfs_backend_mkfs_func) (
 
 typedef int (bookmarkfs_backend_sandbox_func) (
     void                                *backend_ctx,
-    int                                  fusefd,
     struct bookmarkfs_backend_init_resp *resp
 );
 

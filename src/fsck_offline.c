@@ -440,7 +440,7 @@ fsck_sandbox (
     struct bookmarkfs_backend_init_resp info = {
         .bookmarks_root_id = UINT64_MAX,
     };
-    if (0 != BACKEND_CALL(ctx, backend_sandbox, -1, &info)) {
+    if (0 != BACKEND_CALL(ctx, backend_sandbox, &info)) {
         return -1;
     }
 

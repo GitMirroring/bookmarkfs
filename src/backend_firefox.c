@@ -2841,7 +2841,6 @@ backend_init (
 static int
 backend_sandbox (
     void                                *backend_ctx,
-    int                                  fusefd,
     struct bookmarkfs_backend_init_resp *resp
 ) {
     struct backend_ctx *ctx = backend_ctx;
@@ -2853,7 +2852,7 @@ backend_sandbox (
     // Currently there is no way to retrieve the file descriptors of the
     // open database/-wal/-shm/... files using the SQLite3 public API,
     // thus we're unable to exert fine-grained control over their capabilities.
-    if (unlikely(0 != sandbox_enter(fusefd, -1, 0))) {
+    if (unlikely(0 != sandbox_enter(-1, 0))) {
         return -1;
     }
 

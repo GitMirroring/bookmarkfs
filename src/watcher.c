@@ -303,7 +303,7 @@ worker_loop (
     uint32_t sandbox_flags = w->flags >> WATCHER_SANDBOX_FLAGS_OFFSET;
     if (!(sandbox_flags & SANDBOX_NOOP)) {
         sandbox_flags |= SANDBOX_READONLY;
-        if (unlikely(0 != sandbox_enter(-1, w->dirfd, sandbox_flags))) {
+        if (unlikely(0 != sandbox_enter(w->dirfd, sandbox_flags))) {
             goto end;
         }
         debug_puts("worker thread enters sandbox");

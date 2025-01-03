@@ -1820,7 +1820,6 @@ backend_init (
 static int
 backend_sandbox (
     void                                *backend_ctx,
-    int                                  fusefd,
     struct bookmarkfs_backend_init_resp *UNUSED_VAR(resp)
 ) {
     struct backend_ctx *ctx = backend_ctx;
@@ -1853,7 +1852,7 @@ backend_sandbox (
     if (ctx->flags & BOOKMARKFS_BACKEND_NO_LANDLOCK) {
         sandbox_flags |= SANDBOX_NO_LANDLOCK;
     }
-    return sandbox_enter(fusefd, ctx->dirfd, sandbox_flags);
+    return sandbox_enter(ctx->dirfd, sandbox_flags);
 }
 
 static int

@@ -149,7 +149,6 @@ landlock_restrict_self (
 
 int
 sandbox_enter (
-    int      UNUSED_VAR(fusefd),
     int      dirfd,
     uint32_t flags
 ) {
@@ -354,7 +353,6 @@ sandbox_enter (
 
 int
 sandbox_enter (
-    int      fusefd,
     int      dirfd,
     uint32_t flags
 ) {
@@ -371,16 +369,6 @@ sandbox_enter (
     if (unlikely(0 != cap_enter())) {
         log_printf("cap_enter(): %s", xstrerror(errno));
         return -1;
-    }
-
-    if (fusefd >= 0) {
-        cap_rights_t rights;
-        cap_rights_init(&rights, CAP_READ, CAP_WRITE, CAP_EVENT);
-
-        if (unlikely(0 != cap_rights_limit(fusefd, &rights))) {
-            log_printf("cap_rights_limit(): %s", xstrerror(errno));
-            return -1;
-        }
     }
 
     if (dirfd >= 0) {

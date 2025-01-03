@@ -423,7 +423,7 @@ fsck_sandbox (
     if (ctx->flags & BOOKMARKFS_BACKEND_NO_LANDLOCK) {
         flags |= SANDBOX_NO_LANDLOCK;
     }
-    return sandbox_enter(-1, ctx->dir_stack[0].fd, flags);
+    return sandbox_enter(ctx->dir_stack[0].fd, flags);
 }
 
 struct bookmarkfs_fsck_ops const fsck_online_ops = {
