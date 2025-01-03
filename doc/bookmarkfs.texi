@@ -200,6 +200,42 @@ Currently all subsystem definitions are hard-coded within the
 $@{mountpoint@}/bookmarks/$@{bookmark_dir...@}/$@{bookmark_name@}
 @end example
 
+The ``bookmarks'' subsystem maintains the hierarchical structure, names, URLs
+and other information of a bookmark storage.
+Each bookmark folder name appears as the filename for directory
+@code{$@{bookmark_dir@}}, and each @code{$@{bookmark_name@}} is a regular file
+that refers to a bookmark.
+
+The name of a bookmark file is usually the ``bookmark title'',
+which is the name that appears in the browser's bookmark manager.
+The content of a bookmark file is usually the URL associated with the bookmark.
+
+Not all bookmark names can be represented as a filename (e.g. contains
+slash character; longer than @code{NAME_MAX}; @dots{}).
+For a bookmark or bookmark folder with an invalid name, the corresponding file
+does not exist on the filesystem.
+To deal with such bookmarks, @pxref{Check for Errors};
+or you can instruct the backend to identify bookmarks using GUIDs
+instead of titles (and then access the titles via extended attributes).
+
+Some file attributes are used to represent bookmark metadata:
+
+@table @code
+@item st_ino
+ID of the bookmark (stored as lower bits).
+@item st_size
+Length of the bookmark URL in bytes.
+Always @code{0} for directories.
+@item st_atim
+Last access time of the bookmark.
+@item st_mtim
+Last modification time of the bookmark.
+@end table
+
+Additional information of a bookmark or bookmark folder can be accessed via
+the extended attributes of the corresponding file, for backends that
+supports it (@pxref{Extended Attributes}).
+
 
 @node Tags
 @subsection Tags
