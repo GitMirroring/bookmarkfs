@@ -114,7 +114,7 @@ A BookmarkFS backend can be instructed to enter a sandboxed state,
 where it irrevocably relinquishes most access to the system resources
 that it's not supposed to touch.
 For example, it can only access the directory that contains the bookmark file;
-it cannot establish socket connections; it cannot execute other files; ...
+it cannot establish socket connections; it cannot execute other files; @dots{}
 
 This mechanism reduces the attack surface for exploit,
 if a vulnerability is discovered in BookmarkFS and/or its dependencies.
@@ -150,8 +150,8 @@ Thus, it it not yet ready for open collaboration,
 which means patches are generally rejected unless trivial (e.g. typo fix).
 
 
-@node Utilities
-@chapter Utility Programs
+@node Programs
+@chapter Programs
 
 
 @node mount.bookmarkfs
@@ -227,7 +227,7 @@ Not all bookmark names can be represented as a filename (e.g. contains
 slash character; longer than @code{NAME_MAX}; @dots{}).
 For a bookmark or bookmark folder with an invalid name, the corresponding file
 does not exist on the filesystem.
-To deal with such bookmarks, @pxref{Check for Errors};
+To deal with such bookmarks, @pxref{Filesystem Check};
 or you can instruct the backend to identify bookmarks using GUIDs
 instead of titles (and then access the titles via extended attributes).
 
@@ -236,11 +236,14 @@ Some file attributes are used to represent bookmark metadata:
 @table @code
 @item st_ino
 ID of the bookmark (stored as lower bits).
+
 @item st_size
 Length of the bookmark URL in bytes.
 Always @code{0} for directories.
+
 @item st_atim
 Last access time of the bookmark.
+
 @item st_mtim
 Last modification time of the bookmark.
 @end table
@@ -395,9 +398,11 @@ The @code{op} field denotes the operation to perform on @code{dirfd}:
 @item BOOKMARKFS_PERMD_OP_SWAP
 Exchange the positions of the directory entries represented by @code{name1}
 and @code{name2}.
+
 @item BOOKMARKFS_PERMD_OP_MOVE_BEFORE
 Move the directory entry represented by @code{name1} to the position just
 @emph{before} the one represented by @code{name2}.
+
 @item BOOKMARKFS_PERMD_OP_MOVE_AFTER
 Move the directory entry represented by @code{name1} to the position just
 @emph{after} the one represented by @code{name2}.
@@ -409,13 +414,17 @@ Otherwise, it returns @code{-1} and sets @code{errno}:
 @table @code
 @item EACCES
 Write or search permission is denied for the directory.
+
 @item EINVAL
 @code{op} is not one of the values defined in enum @code{bookmarkfs_permd_op}.
+
 @item EINVAL
 @code{name1} or @code{name2} is not a valid filename
-(e.g. empty string; contains slash character, ...).
+(e.g. empty string; contains slash character, @dots{}).
+
 @item ENOENT
 The directory does not contain @code{name1} or @code{name2}.
+
 @item EPERM
 The backend does not support rearranging entries for this directory.
 @end table
@@ -424,8 +433,8 @@ To ensure that the order change is visible to further @code{readdir()} calls,
 call @code{fsync()} or @code{close()} on @code{dirfd}.
 
 
-@node Check for Errors
-@section Check for Errors
+@node Filesystem Check
+@section Filesystem Check
 
 
 @node Backends
