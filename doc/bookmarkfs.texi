@@ -173,6 +173,19 @@ which means patches are generally rejected unless trivial (e.g. typo fix).
 @node Filesystem
 @chapter The Filesystem
 
+When a BookmarkFS filesystem is mounted using the @code{mount.bookmarkfs}
+program, a daemon process acts as a proxy between the kernel (which relays
+filesystem requests to FUSE requests) and the backend (which manipulates
+actual bookmark data, @pxref{Backends}), thus providing POSIX
+(and platform-specific) filesystem API access to bookmarks.
+
+BookmarkFS is designed in the hope that web browser bookmarks
+can be managed flexibly using a combination of existing software,
+without having to reinvent the wheel.
+However, like most other pseudo-filesystems,
+it cannot be considered fully POSIX-compliant.
+Users should be aware of the limitations when using BookmarkFS.
+
 
 @node Hierarchy
 @section Filesystem Hierarchy
