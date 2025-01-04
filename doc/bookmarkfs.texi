@@ -309,6 +309,51 @@ If the original file is already associated with another keyword,
 @code{link()} fails with @code{EEXIST}.
 
 
+@node Error Codes
+@section Error Codes
+
+When a filesystem operation fails, the kernel returns an error code for the
+system call.
+In addition to common error codes, there's few more in BookmarkFS:
+
+@table @code
+@item EPERM
+Attempting to perform an unsupported operation.
+For example:
+
+@itemize @bullet{}
+@item @code{chmod()}, @code{chown()}, and other operations that makes no sense
+for web browser bookmarks.
+@item Moving a file across subsystems.
+@item Creating a bookmark file with a name that is not valid UTF-8
+(on Chromium backend).
+@end itemize
+
+@item EIO
+An unexpected internal error occurred, likely due to a bug in BookmarkFS,
+or a corruption in the bookmark storage.
+
+When this error occurs, a log message describing the situation may be printed
+to the standard error of the daemon process.
+Sometimes this error comes from the kernel-side FUSE implementation,
+and there's no error message.
+
+Once this error occurs, behavior of any further operations on the filesystem
+is undefined.
+
+@item ESTALE
+The file associated with the file descriptor no longer exists.
+
+The error may occur when the underlying bookmark storage has been modified by
+another process (e.g. a web browser) after opening a file.
+
+If the filesystem is mounted in exclusive mode, this error should not occur.
+@end table
+
+Other BookmarkFS-specific errors may occur.
+See the corresponding manual section for details.
+
+
 @node Extended Attributes
 @section Extended Attributes
 
