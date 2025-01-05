@@ -162,6 +162,132 @@ which means patches are generally rejected unless trivial (e.g. typo fix).
 @node mount.bookmarkfs
 @section @command{mount.bookmarkfs}
 
+@example
+mount.bookmarkfs [@var{options}] @var{src} @var{target}
+@end example
+
+The @command{mount.bookmarkfs} program mounts a BookmarkFS filesystem to the
+location specified by @var{target}.
+
+The @var{src} argument is presumably the pathname of a file that stores
+bookmark data.
+Its exact interpretation is backend-defined.
+
+To unmount a BookmarkFS filesystem, use @linuxmanpage{fusermount3, 1} or
+@linuxmanpage{umount, 8} on @var{target}.
+
+Available options:
+
+@table @option
+@item -o backend=@var{name}
+The backend used by the filesystem (@pxref{Backends}).
+This option is mandatory.
+
+@item -o @@@var{key}[=@var{value}]
+A backend-specific option.
+This option can be provided multiple times.
+
+@item -o accmode=@var{mode}
+File access mode.
+Defaults to @code{0700}.
+
+This option applies to both directories and regular files.
+Execution bits on regular files are masked off.
+
+Should be used in combination with @option{-o allow_other} for other users to
+access the files.
+
+@anchor{File Modification/Change Time}
+@cindex File Modification/Change Time
+@item -o ctime
+Maintain file change time, while modification time follows change time.
+If this option is not provided, maintain file modification time instead.
+
+Usually, a bookmark's ``modification time'' attribute behaves differently
+from both mtime and ctime.
+In Chromium, for instance, when a bookmark is renamed, neither itself
+nor the parent directory changes timestamp accordingly.
+
+BookmarkFS do not follow browser behavior here, and instead try to stay
+compatible with POSIX.
+Since a bookmark has only one ``modification time'' attribute instead of two,
+the user has to choose which one to maintain.
+If choosing mtime, ctime only updates when mtime does.
+Otherwise, mtime may change when the file content is not modified --
+inefficient but makes applications that depend on ctime less fragile.
+
+The kernel may cache file attributes, making ctime appear more ``correct''
+than what we claim.
+However, this behavior should not be relied upon.
+
+@item -o eol
+Add a newline (ASCII LF character) to the end of each file.
+
+Before writing the file content back to the backend,
+a trailing newline is automatically removed (if one exists).
+
+@item -o file_max=@var{bytes}
+Max file size limit.
+Defaults to @code{32768}.
+
+@item -o no_sandbox
+Do not enable sandboxing features (@pxref{Sandboxing}).
+
+@item -o no_landlock
+Do not use Landlock for sandboxing.
+This option is ignored on non-Linux platforms.
+
+Without Landlock, sandboxing offers less security.
+However, Landlock is a rather new feature (requires kernel version 5.13
+or later), thus we provide an option to disable it separately.
+
+@item -F
+Stay in the foreground, do not daemonize.
+
+@item -h
+Print help text, and then exit.
+@item -V
+Print version and feature information, and then exit.
+@end table
+
+Unrecognized options specified with @option{-o} are passed to libfuse
+(and subsequently to the kernel, if applicable) as-is.
+Notable options:
+
+@table @option
+@item -o rw
+Mount the filesystem read/write.
+
+By default, the filesystem is mounted read-only.
+This behavior won't change in the future, since the hackish nature of
+BookmarkFS makes it forever unstable.
+
+@quotation Warning
+Always backup the bookmarks before mounting it read/write, or risk losing
+your data!
+@end quotation
+
+@item -o debug
+Set libfuse log level to @code{FUSE_LOG_DEBUG}.
+Log messages related to each FUSE request will be printed to standard error.
+
+@item -o fsname
+The name that appears as the @code{fs_spec} field in @linuxmanpage{fstab, 5}.
+Defaults to the backend name.
+
+@item -o atime,diratime,relatime
+These options (and other atime-related ones) are ignored.
+
+BookmarkFS only supports @option{noatime} mounts,
+since the ``access time'' attribute of a bookmark necessarily means
+``the last time it was accessed from the browser''.
+As a bookmark management tool independent from the browser,
+BookmarkFS should never update that time automatically.
+
+Nonetheless, the user can still update atime explicitly (e.g. with
+@posixfuncmanpage{futimens}).
+@end table
+
 
 @node fsck.bookmarkfs
 @section @command{fsck.bookmarkfs}
@@ -251,6 +377,7 @@ Last access time of the bookmark.
 
 @item st_mtim
 Last modification time of the bookmark.
+@xref{File Modification/Change Time}.
 @end table
 
 Additional information of a bookmark or bookmark folder can be accessed via
