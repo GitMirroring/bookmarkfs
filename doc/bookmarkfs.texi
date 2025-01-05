@@ -23,6 +23,11 @@
     https://pubs.opengroup.org/onlinepubs/9799919799/functions/\name\.html}
 @end macro
 
+@c sometimes we don't want var name to be rendered UPPERCASE in Info
+@macro varx {name}
+@inlinefmtifelse{info, \name\, @var{\name\}}
+@end macro
+
 @tex
 \global\def\linkcolor{0 0 1}
 \global\def\urlcolor{0 0 1}
@@ -155,25 +160,25 @@ which means patches are generally rejected unless trivial (e.g. typo fix).
 
 
 @node mount.bookmarkfs
-@section @code{mount.bookmarkfs}
+@section @command{mount.bookmarkfs}
 
 
 @node fsck.bookmarkfs
-@section @code{fsck.bookmarkfs}
+@section @command{fsck.bookmarkfs}
 
 
 @node mkfs.bookmarkfs
-@section @code{mkfs.bookmarkfs}
+@section @command{mkfs.bookmarkfs}
 
 
 @node bookmarkctl
-@section @code{bookmarkctl}
+@section @command{bookmarkctl}
 
 
 @node Filesystem
 @chapter The Filesystem
 
-When a BookmarkFS filesystem is mounted using the @code{mount.bookmarkfs}
+When a BookmarkFS filesystem is mounted using the @command{mount.bookmarkfs}
 program, a daemon process acts as a proxy between the kernel (which relays
 filesystem requests to FUSE requests) and the backend (which manipulates
 actual bookmark data, @pxref{Backends}), thus providing POSIX
@@ -194,29 +199,29 @@ BookmarkFS has multiple subsystems.
 Each one appears as a directory under the mountpoint:
 
 @example
-$@{mountpoint@}/bookmarks
-$@{mountpoint@}/tags
-$@{mountpoint@}/keywords
+@var{$@{mountpoint@}}/bookmarks
+@var{$@{mountpoint@}}/tags
+@var{$@{mountpoint@}}/keywords
 @end example
 
 If the backend does not support a subsystem, the corresponding directory
 does not exist.
 
 Currently all subsystem definitions are hard-coded within the
-@code{mount.bookmarkfs} program, and cannot be extended by the backend.
+@command{mount.bookmarkfs} program, and cannot be extended by the backend.
 
 
 @node Bookmarks
 @subsection Bookmarks
 
 @example
-$@{mountpoint@}/bookmarks/$@{bookmark_dir...@}/$@{bookmark_name@}
+@var{$@{mountpoint@}}/bookmarks/@var{$@{bookmark_dir...@}}/@var{$@{bookmark@}}
 @end example
 
 The ``bookmarks'' subsystem maintains the hierarchical structure, names, URLs
 and other information of a bookmark storage.
 Each bookmark folder name appears as the filename for directory
-@code{$@{bookmark_dir@}}, and each @code{$@{bookmark_name@}} is a regular file
+@var{$@{bookmark_dir@}}, and each @var{$@{bookmark@}} is a regular file
 that refers to a bookmark.
 
 The name of a bookmark file is usually the ``bookmark title'',
@@ -257,13 +262,13 @@ supports it (@pxref{Extended Attributes}).
 @subsection Tags
 
 @example
-$@{mountpoint@}/tags/$@{tag_name@}/$@{bookmark_name@}
+@var{$@{mountpoint@}}/tags/@var{$@{tag_dir@}}/@var{$@{bookmark@}}
 @end example
 
 The ``tags'' subsystem maintains a many-to-many mapping between bookmarks and
 their alternative names.
-Each tag name appears as the filename for directory @code{$@{tag_name@}},
-and @code{$@{bookmark_name@}} is a hard link to the bookmark file.
+Each tag name appears as the filename for directory @var{$@{tag_dir@}},
+and @var{$@{bookmark@}} is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a tag.
 
 If multiple bookmark files with identical names are both associated with a tag,
@@ -295,13 +300,13 @@ fails with @code{EPERM}.
 @subsection Keywords
 
 @example
-$@{mountpoint@}/keywords/$@{keyword_name@}
+@var{$@{mountpoint@}}/keywords/@var{$@{keyword_name@}}
 @end example
 
 The ``keywords'' subsystem maintains a one-to-one mapping between bookmarks
 and their alternative names, independent from tag names.
 Each keyword name appears as the filename for regular file
-@code{$@{keyword_name@}}, which is a hard link to the bookmark file.
+@var{$@{keyword_name@}}, which is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a keyword.
 
 To associate a bookmark with a keyword, use @code{link()} like we do with tags.
@@ -422,22 +427,22 @@ BookmarkFS provides an I/O control for rearranging directory entries:
 @example
 #include <bookmarkfs/ioctl.h>
 
-int ioctl (int @var{dirfd}, BOOKMARKFS_IOC_PERMD,
-        struct bookmarkfs_permd_data const *@var{argp});
+int ioctl (int @varx{dirfd}, BOOKMARKFS_IOC_PERMD,
+        struct bookmarkfs_permd_data const *@varx{argp});
 @end example
 
 The @code{bookmarkfs_permd_data} structure is defined as:
 
 @example
 struct bookmarkfs_permd_data @{
-    enum bookmarkfs_permd_op @var{op};
+    enum bookmarkfs_permd_op op;
 
-    char @var{name1}[NAME_MAX + 1];
-    char @var{name2}[NAME_MAX + 1];
+    char name1[NAME_MAX + 1];
+    char name2[NAME_MAX + 1];
 @};
 @end example
 
-The @code{op} field denotes the operation to perform on @code{dirfd}:
+The @code{op} field denotes the operation to perform on the directory:
 
 @table @code
 @item BOOKMARKFS_PERMD_OP_SWAP
@@ -475,7 +480,7 @@ The backend does not support rearranging entries for this directory.
 @end table
 
 To ensure that the order change is visible to further @code{readdir()} calls,
-call @code{fsync()} or @code{close()} on @code{dirfd}.
+@code{fsync()} or @code{close()} the directory.
 
 
 @node Filesystem Check
@@ -491,11 +496,11 @@ application bookmarks.
 Typically, backends are built into shared libraries, and are installed as:
 
 @example
-$@{libdir@}/bookmarkfs/backend-$@{short_name@}$@{shlib_suffix@}
+@var{$@{pkglibdir@}}/backend-@var{$@{short_name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @code{$@{short_name@}} is the name passed to the frontend program, and
-@code{$@{shlib_suffix@}} is the common filename extension for shared library
+Where @var{$@{short_name@}} is the name passed to the frontend program, and
+@var{$@{shlib_suffix@}} is the common filename extension for shared library
 files on the current platform (e.g. @code{.so} on GNU/Linux and FreeBSD).
 
 Currently, BookmarkFS ships with two backends.
