@@ -23,6 +23,10 @@
     https://pubs.opengroup.org/onlinepubs/9799919799/functions/\name\.html}
 @end macro
 
+@macro linuxdoc {name, path}
+@uref{https://docs.kernel.org/\path\, \name\}
+@end macro
+
 @c sometimes we don't want var name to be rendered UPPERCASE in Info
 @macro varx {name}
 @inlinefmtifelse{info, \name\, @var{\name\}}
@@ -96,8 +100,7 @@ Currently, BookmarkFS only runs on GNU/Linux and FreeBSD.
 Although BookmarkFS sticks hard to POSIX and avoids using platform-specific
 features, porting it to other operating systems is not trivial.
 
-The major pitfall is the
-@uref{https://docs.kernel.org/filesystems/fuse.html, FUSE} dependency.
+The major pitfall is the @linuxdoc{FUSE, filesystems/fuse.html} dependency.
 Generally speaking, FUSE is Linux-only.
 FreeBSD partially implements the FUSE protocol in its kernel,
 to the extent that BookmarkFS is mostly usable.
@@ -499,11 +502,6 @@ On FreeBSD, see @freebsdmanpage{extattr, 2}.
 All BookmarkFS extended attributes fall under the ``user'' namespace,
 which means they have a @code{user.} name prefix on Linux, and should be
 accessed with @code{EXTATTR_NAMESPACE_USER} on FreeBSD.
-
-BookmarkFS does not define any common attributes, neither can users create
-arbitrary ones.
-The backend decides which attributes are available during initialization,
-and all bookmark files share the same set of attributes.
 All attributes have a @code{bookmarkfs.} name prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend):
@@ -516,6 +514,11 @@ len = fgetxattr(fd, "user.bookmarkfs.guid", buf, sizeof(buf));
 len = extattr_get_fd(fd, EXTATTR_NAMESPACE_USER, "bookmarkfs.guid",
         buf, sizeof(buf));
 @end example
+
+BookmarkFS does not define any common attributes, neither can users create
+arbitrary ones.
+The backend decides which attributes are available during initialization,
+and all bookmark files share the same set of attributes.
 
 
 @node Directory Entry Ordering
@@ -531,7 +534,9 @@ This allows filesystem implementations to organize directory entries in a more
 relaxed manner.
 There could be extra overhead to maintain a predictable ordering of
 directory entries, since they may not have a linear structure on modern
-on-disk filesystems (e.g. ext4 uses ``HTree'' for large directories).
+on-disk filesystems (e.g. ext4 uses
+@linuxdoc{htree, filesystems/ext4/dynamic.html#hash-tree-directories}
+for large directories).
 
 As for users of a filesystem, the order of directory entries generally
 does not matter.
@@ -628,7 +633,7 @@ Typically, backends are built into shared libraries, and are installed as:
 
 Where @var{$@{short_name@}} is the name passed to the frontend program, and
 @var{$@{shlib_suffix@}} is the common filename extension for shared library
-files on the current platform (e.g. @code{.so} on GNU/Linux and FreeBSD).
+files on the current platform (e.g. @file{.so} on GNU/Linux and FreeBSD).
 
 Currently, BookmarkFS ships with two backends.
 One for Firefox, the other for Chromium.
