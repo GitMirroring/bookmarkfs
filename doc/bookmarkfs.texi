@@ -231,6 +231,7 @@ Defaults to @code{32768}.
 @item -o no_sandbox
 Do not enable sandboxing features (@pxref{Sandboxing}).
 
+@anchor{Disabling Landlock}
 @item -o no_landlock
 Do not use Landlock for sandboxing.
 This option is ignored on non-Linux platforms.
@@ -289,6 +290,84 @@ Nonetheless, the user can still update atime explicitly (e.g. with
 
 @node fsck.bookmarkfs
 @section @command{fsck.bookmarkfs}
+
+@example
+fsck.bookmarkfs [@var{options}] @var{pathname}
+@end example
+
+The @command{fsck.bookmarkfs} program checks and optionally repairs a
+BookmarkFS filesystem.
+
+Unlike @command{fsck} on general-purpose filesystems (e.g. ext4),
+this program does not check the integrity or validity of a bookmark file --
+the underlying filesystem containing the bookmark storage is responsible for
+that.
+Instead, it checks for bookmark names that are not valid as filename
+(e.g. contains slash characters).
+@xref{Filesystem Check}.
+
+Available options:
+
+@table @option
+@item -o backend=@var{name}
+The backend used by the filesystem (@pxref{Backends}).
+
+If this option is not provided, or @var{name} is empty, performs online fsck.
+
+@item -o @@@var{key}[=@var{value}]
+A backend-specific option.
+This option can be provided multiple times.
+
+@item -o handler=@var{name}
+The handler for resolving errors found during fsck
+(@pxref{Filesystem-Check Handlers}).
+
+If this option is not provided, or @var{name} is empty,
+a built-in handler will be used.
+@xref{Built-in Filesystem-Check Handler}.
+
+@item -o %@var{key}[=@var{value}]
+A handler-specific option.
+This option can be provided multiple times.
+
+@item -o repair
+Attempt to repair errors found during fsck.
+
+@quotation Warning
+Always backup the bookmarks before repairing, or risk losing your data!
+@end quotation
+
+@item -o rl_app=@var{name}
+Readline application name in interactive mode.
+Defaults to ``fsck.bookmarkfs''.
+
+@item -o type=bookmark|tag|keyword
+Subsystem type (@pxref{Hierarchy}).
+Defaults to ``bookmark''.
+
+This option is ignored when performing online fsck.
+
+@item -i
+Enable interactive mode.
+@item -R
+Perform fsck on subdirectories recursively.
+
+This option is ignored when performing fsck on tags or keywords.
+
+@item -o no_sandbox
+Do not enable sandboxing features (@pxref{Sandboxing}).
+
+@item -o no_landlock
+Do not use Landlock for sandboxing.
+This option is ignored on non-Linux platforms.
+
+Also @pxref{Disabling Landlock}.
+
+@item -h
+Print help text, and then exit.
+@item -V
+Print version and feature information, and then exit.
+@end table
 
 
 @node mkfs.bookmarkfs
@@ -733,20 +812,20 @@ you may submit a feature request or implement one using the Backend API.
 @section Backend API
 
 
-@node Error Handlers
-@chapter Error Handlers
+@node Filesystem-Check Handlers
+@chapter Filesystem-Check Handlers
 
 
-@node Built-in Error Handler
-@section Built-in Error Handler
+@node Built-in Filesystem-Check Handler
+@section Built-in Handler
 
 
-@node Tcl-Based Error Handler
-@section Tcl-Based Error Handler
+@node Tcl-Based Filesystem-Check Handler
+@section Tcl-Based Handler
 
 
-@node Error Handler API
-@section Error Handler API
+@node Filesystem-Check Handler API
+@section Handler API
 
 
 @node General Index
