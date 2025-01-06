@@ -299,9 +299,94 @@ Nonetheless, the user can still update atime explicitly (e.g. with
 @node mkfs.bookmarkfs
 @section @command{mkfs.bookmarkfs}
 
+@example
+mkfs.bookmarkfs [@var{options}] @var{pathname}
+@end example
+
+The @command{mkfs.bookmarkfs} program creates a BookmarkFS filesystem
+on the file specified by @var{pathname}.
+
+Available options:
+
+@table @option
+@item -o backend=@var{name}
+The backend used by the filesystem (@pxref{Backends}).
+This option is mandatory.
+
+@item -o @@@var{key}[=@var{value}]
+A backend-specific option.
+This option can be provided multiple times.
+
+@item -o force
+Overwrite existing files when creating the filesystem.
+
+@item -h
+Print help text, and then exit.
+@item -V
+Print version and feature information, and then exit.
+@end table
+
 
 @node bookmarkctl
 @section @command{bookmarkctl}
+
+@example
+bookmarkctl @var{subcmd} [@var{args}]
+@end example
+
+The @command{bookmarkctl} program is a command-line wrapper for various
+I/O controls of a BookmarkFS filesystem.
+
+@example
+bookmarkctl permd @var{pathname} @var{op} @var{name1} @var{name2}
+@end example
+
+The @command{permd} sub-command re-arranges the order of the directory entries
+returned from @code{readdir()} calls.
+@xref{Permute Directory Entries}.
+
+The @var{pathname} argument is the path to the directory.
+The @var{name1} and @var{name2} arguments are filenames under that directory.
+
+The @var{op} argument is the operation to perform on the directory:
+
+@itemize @bullet{}
+@item @code{swap} -- @code{BOOKMARKFS_PERMD_OP_SWAP}
+@item @code{move-before} -- @code{BOOKMARKFS_PERMD_OP_MOVE_BEFORE}
+@item @code{move-after} -- @code{BOOKMARKFS_PERMD_OP_MOVE_AFTER}
+@end itemize
+
+@example
+bookmarkctl fsck @var{pathname} @var{op}
+@end example
+
+The @command{fsck} sub-command checks for errors within a
+BookmarkFS filesystem.
+@xref{Filesystem Check}.
+
+The @command{pathname} argument is the path to the directory
+to perform checks on.
+
+The @command{op} argument is the operation to perform on the directory:
+
+@itemize @bullet{}
+@item @code{list} -- Display a list of errors found under the given directory.
+Will not recurse into subdirectories.
+@end itemize
+
+For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
+
+@example
+bookmarkctl help
+@end example
+
+Print help text, and then exit.
+
+@example
+bookmarkctl version
+@end example
+
+Print version information, and then exit.
 
 
 @node Filesystem
