@@ -27,11 +27,6 @@
 @uref{https://docs.kernel.org/\path\, \name\}
 @end macro
 
-@c sometimes we don't want var name to be rendered UPPERCASE in Info
-@macro varx {name}
-@inlinefmtifelse{info, \name\, @var{\name\}}
-@end macro
-
 @tex
 \global\def\linkcolor{0 0 1}
 \global\def\urlcolor{0 0 1}
@@ -499,7 +494,7 @@ Applications should tread lightly if they wish to cache tag directory entries.
 
 To associate a bookmark with a tag, use @posixfuncmanpage{link}:
 
-@example
+@example C
 fd = open("tags/gnu/readline", O_CREAT | O_WRONLY, 0600);
 // Oops, fd == -1, errno == EPERM
 
@@ -591,7 +586,7 @@ All attributes have a @code{bookmarkfs.} name prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend):
 
-@example
+@example C
 // Linux
 len = fgetxattr(fd, "user.bookmarkfs.guid", buf, sizeof(buf));
 
@@ -641,16 +636,16 @@ the order of other entries.
 
 BookmarkFS provides an I/O control for rearranging directory entries:
 
-@example
+@example C
 #include <bookmarkfs/ioctl.h>
 
-int ioctl (int @varx{dirfd}, BOOKMARKFS_IOC_PERMD,
-        struct bookmarkfs_permd_data const *@varx{argp});
+int ioctl (int dirfd, BOOKMARKFS_IOC_PERMD,
+        struct bookmarkfs_permd_data const *argp);
 @end example
 
 The @code{bookmarkfs_permd_data} structure is defined as:
 
-@example
+@example C
 struct bookmarkfs_permd_data @{
     enum bookmarkfs_permd_op op;
 
