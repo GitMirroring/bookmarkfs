@@ -171,8 +171,11 @@ The @var{src} argument is presumably the pathname of a file that stores
 bookmark data.
 Its exact interpretation is backend-defined.
 
-To unmount a BookmarkFS filesystem, use @linuxmanpage{fusermount3, 1} or
+To unmount a BookmarkFS filesystem, run @linuxmanpage{fusermount3, 1} or
 @linuxmanpage{umount, 8} on @var{target}.
+The daemon process will automatically dismount the filesystem upon
+@code{SIGINT} or @code{SIGTERM} receipt, however, it only works in
+non-sandbox mode.
 
 Available options:
 
