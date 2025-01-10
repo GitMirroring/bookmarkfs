@@ -13,8 +13,8 @@ The
 .B fsck.bookmarkfs
 program checks and optionally repairs a BookmarkFS filesystem.
 .PP
-Unlike fsck on general-purpose filesystems (e.g. ext4), this program does not
-check the integrity or validity of a bookmark file.
+Unlike fsck for on-disk filesystems (e.g. ext4), this program
+does not check for data integrity of the bookmark storage.
 Instead, it checks for bookmark names that are not valid as filename
 (e.g. contains slash characters).
 .PP
@@ -24,25 +24,26 @@ In online mode, fsck is performed on a mounted BookmarkFS filesystem.
 .PP
 The
 .I pathname
-argument refers to the directory to perform fsck on.
+argument refers to the directory to operate on.
 .SS Offline mode
 In offline mode, fsck is performed directly on the bookmark storage
 via the corresponding backend.
 .PP
 The
 .I pathname
-argument is a colon-separated string
-.RI \[dq] mount_src : dir \[dq],
-where
-.I mount_src
-is equivalent to the
+argument is the path to the bookmark storage, equivalent to the
 .I src
 argument for
-.BR mount.bookmarkfs (1),
-and
+.BR mount.bookmarkfs (1).
+.PP
+Alternatively,
+.I pathname
+could be a colon-separated string
+.RI \[dq] src : dir \[dq],
+where
 .I dir
-is the path to the directory to perform fsck on,
-relative to the root directory of the bookmark storage.
+refers to the directory to operate on,
+relative to the root directory of the subsystem.
 .
 .SH OPTIONS
 .TP

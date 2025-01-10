@@ -296,12 +296,8 @@ fsck.bookmarkfs [@var{options}] @var{pathname}
 The @command{fsck.bookmarkfs} program checks and optionally repairs a
 BookmarkFS filesystem.
 
-Unlike @command{fsck} on general-purpose filesystems (e.g. ext4),
-this program does not check the integrity or validity of a bookmark file --
-the underlying filesystem containing the bookmark storage is responsible for
-that.
-Instead, it checks for bookmark names that are not valid as filename
-(e.g. contains slash characters).
+Filesystem check on BookmarkFS has a different purpose compared to
+on-disk filesystems.
 @xref{Filesystem Check}.
 
 Available options:
@@ -311,6 +307,25 @@ Available options:
 The backend used by the filesystem (@pxref{Backends}).
 
 If this option is not provided, or @var{name} is empty, performs online fsck.
+
+@table @asis
+@item Online Mode
+In online mode, fsck is performed on a mounted BookmarkFS filesystem
+using @code{ioctl()} (@pxref{Online Filesystem Check}).
+
+The @var{pathname} argument refers to the directory to operate on.
+
+@item Offline Mode
+In offline mode, fsck is performed directly on the bookmark storage via the
+corresponding backend.
+
+The @var{pathname} argument is the path to the bookmark storage, equivalent to
+the @var{src} argument given to @command{mount.bookmarkfs}.
+
+Alternatively, @var{pathname} could be specified in @code{@var{src}:@var{dir}}
+format, where @var{dir} refers to the directory to operate on,
+relative to the root directory of the subsystem.
+@end table
 
 @item -o @@@var{key}[=@var{value}]
 A backend-specific option.
@@ -522,8 +537,7 @@ The name of a bookmark file is usually the ``bookmark title'',
 which is the name that appears in the browser's bookmark manager.
 The content of a bookmark file is usually the URL associated with the bookmark.
 
-Not all bookmark names can be represented as a filename (e.g. contains
-slash character; longer than @code{NAME_MAX}; @dots{}).
+Not all bookmark names can be represented as a filename.
 For a bookmark or bookmark folder with an invalid name, the corresponding file
 does not exist on the filesystem.
 To deal with such bookmarks, @pxref{Filesystem Check};
@@ -782,6 +796,31 @@ To ensure that the order change is visible to further @code{readdir()} calls,
 
 @node Filesystem Check
 @section Filesystem Check
+
+On-disk filesystems may suffer from data corruption due to power loss
+or hardware failures, thus they usually provide a ``filesystem check''
+mechanism to detect and fix those problems.
+
+As a pseudo-filesystem, BookmarkFS does not check for data integrity,
+and ``filesystem check'' is given a new purpose:
+To check if a bookmark name is valid as a filename,
+and ``repair'' (rename) it if it isn't.
+
+A POSIX-compliant filesystem has various restrictions regarding filenames:
+
+@itemize @bullet{}
+@item must not contain slash characters
+@item must not be empty or longer than @code{NAME_MAX}
+@item must not duplicate with another file in the same directory
+@end itemize
+
+It is commonplace for bookmark names to not meet such criteria,
+thus a filesystem check is often necessary when switching to BookmarkFS
+from another bookmark management software.
+
+
+@node Online Filesystem Check
+@subsection Online Filesystem Check
 
 
 @node Backends
