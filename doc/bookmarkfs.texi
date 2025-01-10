@@ -207,10 +207,19 @@ nor the parent directory changes timestamp accordingly.
 BookmarkFS do not follow browser behavior here, and instead try to stay
 compatible with POSIX.
 Since a bookmark has only one ``modification time'' attribute instead of two,
-the user has to choose which one to maintain.
-If choosing mtime, ctime only updates when mtime does.
-Otherwise, mtime may change when the file content is not modified --
-inefficient but makes applications that depend on ctime less fragile.
+the user has to choose which one to maintain:
+
+@table @asis
+@item mtime
+ctime only updates when mtime does.
+
+@item ctime
+ctime updates normally; mtime always updates when ctime does,
+even if the file content is not modified.
+
+This behavior may be inefficient, but makes applications that depend on ctime
+less fragile.
+@end table
 
 The kernel may cache file attributes, making ctime appear more ``correct''
 than what we claim.
@@ -781,7 +790,7 @@ Write or search permission is denied for the directory.
 
 @item EINVAL
 @code{name1} or @code{name2} is not a valid filename
-(e.g. empty string; contains slash character, @dots{}).
+(e.g. empty string; contains slash character).
 
 @item ENOENT
 The directory does not contain entries named @code{name1} or @code{name2}.
