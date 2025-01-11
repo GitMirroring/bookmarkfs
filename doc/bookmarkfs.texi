@@ -831,6 +831,131 @@ from another bookmark management software.
 @node Online Filesystem Check
 @subsection Online Filesystem Check
 
+To perform filesystem check on a mounted BookmarkFS filesystem,
+use the following I/O controls:
+
+@example C
+#include <bookmarkfs/ioctl.h>
+
+int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_NEXT,
+        struct bookmarkfs_fsck_data *argp);
+
+int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_APPLY,
+        struct bookmarkfs_fsck_data *argp)
+
+int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
+@end example
+
+The @code{bookmarkfs_fsck_data} structure is defined as:
+
+@example C
+struct bookmarkfs_fsck_data @{
+    uint64_t id;
+    uint64_t extra;
+    char     name[NAME_MAX + 1];
+@};
+@end example
+
+Filesystem-check commands:
+
+@table @code
+@item BOOKMARKFS_IOC_FSCK_NEXT
+
+Find the next bookmark with invalid name under the directory.
+
+On success, @code{ioctl()} updates @var{argp}, and returns
+one of the values defined in enum @code{bookmarkfs_fsck_result}:
+
+@table @code
+@item BOOKMARKFS_FSCK_RESULT_END
+There are no more bookmarks with invalid name under the directory.
+
+Fields in @var{argp} have unspecified values.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE
+The bookmark name duplicates with another bookmark which appears earlier
+in the directory stream.
+
+Value of @code{extra} is the ID of the other bookmark.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR
+The bookmark contains a bad character (i.e. the ASCII ``/'' character).
+
+Value of @code{extra} is the byte offset where the bad character first appears
+in @code{name}.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_BADLEN
+The bookmark name is either longer than @code{NAME_MAX}, or an empty string.
+
+Value of @code{extra} is the length of the bookmark name, and @code{name}
+is truncated if longer than @code{NAME_MAX}.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT
+The bookmark name is either ``.'' or ``..''.
+
+Value of @code{extra} is unspecified.
+@end table
+
+On failure, @code{ioctl()} returns @code{-1}, and sets @code{errno}:
+
+@table @code
+@item EACCES
+Read permission is denied for the directory.
+
+@item EPERM
+The backend does not support fsck for this directory.
+@end table
+
+@item BOOKMARKFS_IOC_FSCK_APPLY
+
+``Repair'' a bookmark by renaming it.
+
+The @code{id} field must be set to a value previously obtained from
+@code{BOOKMARKFS_IOC_FSCK_NEXT} on the directory,
+otherwise the behavior is undefined.
+
+The @code{name} field should be set to the new name for the bookmark.
+The @code{extra} field is unused.
+
+On success, @code{ioctl()} updates @var{argp}, and returns
+one of the values defined in enum @code{bookmarkfs_fsck_result},
+like with @code{BOOKMARKFS_IOC_FSCK_NEXT}.
+Additionally, it may also return:
+
+@table @code
+@item BOOKMARKFS_FSCK_RESULT_NAME_INVALID
+The new name is not a valid bookmark name.
+
+Value of @code{extra} is a backend-specific reason code
+explaining why the bookmark name is invalid.
+It may equal to one of the following predefined values:
+
+@table @code
+@item BOOKMARKFS_NAME_INVALID_REASON_NOTUTF8
+The name is not valid UTF-8.
+@end table
+@end table
+
+On failure, @code{ioctl()} returns @code{-1}, and sets @code{errno}:
+
+@table @code
+@item EACCES
+Write or search permission is denied for the directory.
+@end table
+
+To ensure that the rename is visible to further lookups and @code{readdir()}
+calls, @code{fsync()} or @code{close()} the directory.
+
+@item BOOKMARKFS_IOC_FSCK_REWIND
+Reset the fsck state for the directory.
+
+Further @code{BOOKMARKFS_IOC_FSCK_NEXT} requests will start from the
+beginning of the directory stream.
+
+On success, @code{ioctl()} returns @code{0}.
+Otherwise, it returns @code{-1}, and sets @code{errno}.
+@end table
+
 
 @node Backends
 @chapter Backends
