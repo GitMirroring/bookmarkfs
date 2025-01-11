@@ -86,7 +86,7 @@ escape_control_chars (
 ) {
     int cnt = 0;
     for (char *end = stpncpy(dst, src, dst_max); dst < end; ++dst) {
-        if (iscntrl(*dst)) {
+        if (iscntrl((unsigned char)(*dst))) {
             *dst = ch;
             ++cnt;
         }
