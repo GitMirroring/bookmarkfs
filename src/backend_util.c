@@ -145,8 +145,8 @@ validate_filename_fsck (
         break;
 
       case FILENAME_DOTDOT:
-        extra  = BOOKMARKFS_NAME_INVALID_REASON_DOTDOT;
-        result = BOOKMARKFS_FSCK_RESULT_NAME_INVALID;
+        extra  = str[1] == '\0';
+        result = BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT;
         break;
 
       default:

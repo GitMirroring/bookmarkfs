@@ -41,27 +41,33 @@ explain_fsck_result (
     char name_buf[sizeof(data->name)];
     escape_control_chars(name_buf, sizeof(name_buf), data->name, '?');
 
-#define PRINT_FSCK_RESULT(s)  \
+#define PRINT_FSCK_RESULT(s, ...)  \
     printf("bookmark %" PRIu64 " name '%.*s' " s "\n", data->id,  \
-            (int)sizeof(name_buf), name_buf, data->extra);
+            (int)sizeof(name_buf), name_buf, __VA_ARGS__);
     switch (result) {
       case BOOKMARKFS_FSCK_RESULT_END:
         break;
 
       case BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE:
-        PRINT_FSCK_RESULT("duplicates with %" PRIu64);
+        PRINT_FSCK_RESULT("duplicates with %" PRIu64, data->extra);
         break;
 
       case BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR:
-        PRINT_FSCK_RESULT("contains a bad character at offset %" PRIu64);
+        PRINT_FSCK_RESULT("contains a bad character at offset %" PRIu64,
+                data->extra);
         break;
 
       case BOOKMARKFS_FSCK_RESULT_NAME_BADLEN:
-        PRINT_FSCK_RESULT("has invalid length %" PRIu64);
+        PRINT_FSCK_RESULT("has invalid length %" PRIu64, data->extra);
+        break;
+
+      case BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT:
+        PRINT_FSCK_RESULT("%s", "is invalid (must not be '.' or '..')");
         break;
 
       case BOOKMARKFS_FSCK_RESULT_NAME_INVALID:
-        PRINT_FSCK_RESULT("is invalid (reason number %" PRIu64 ")");
+        PRINT_FSCK_RESULT("is invalid (reason number %" PRIu64 ")",
+                data->extra);
         break;
 
       default:

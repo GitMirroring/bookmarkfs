@@ -250,6 +250,7 @@ fix_entry (
             break;
         }
         // fallthrough
+      case BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT:
       case BOOKMARKFS_FSCK_RESULT_NAME_INVALID:
         sprintf(data->name, "fsck-%" PRIu64, data->id);
         break;

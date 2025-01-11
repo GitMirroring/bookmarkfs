@@ -137,6 +137,7 @@ init_ctx (
     DO_SET_RESULT_VAR(interp, "nameDuplicate", NAME_DUPLICATE);
     DO_SET_RESULT_VAR(interp, "nameBadChar",   NAME_BADCHAR);
     DO_SET_RESULT_VAR(interp, "nameBadLen",    NAME_BADLEN);
+    DO_SET_RESULT_VAR(interp, "nameDotDot",    NAME_DOTDOT);
     DO_SET_RESULT_VAR(interp, "nameInvalid",   NAME_INVALID);
 
     struct stat stat_buf;
