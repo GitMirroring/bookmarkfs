@@ -155,16 +155,23 @@ On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
 @node mount.bookmarkfs
 @section @command{mount.bookmarkfs}
 
+The @command{mount.bookmarkfs} program mounts a BookmarkFS filesystem.
+
 @example
 mount.bookmarkfs [@var{options}] @var{src} @var{target}
 @end example
 
-The @command{mount.bookmarkfs} program mounts a BookmarkFS filesystem to the
-location specified by @var{target}.
+@table @var
+@item src
+The bookmark storage, presumably the pathname of a regular file
+that contains bookmark data.
 
-The @var{src} argument is presumably the pathname of a file that stores
-bookmark data.
-Its exact interpretation is backend-defined.
+The exact interpretation of this option is backend-defined.
+
+@item target
+Pathname to the directory where the filesystem shall be mounted on
+(i.e. the ``mountpoint'').
+@end table
 
 To unmount a BookmarkFS filesystem, run @linuxmanpage{fusermount3, 1} or
 @linuxmanpage{umount, 8} on @var{target}.
@@ -298,12 +305,12 @@ Nonetheless, the user can still update atime explicitly (e.g. with
 @node fsck.bookmarkfs
 @section @command{fsck.bookmarkfs}
 
+The @command{fsck.bookmarkfs} program checks and optionally repairs a
+BookmarkFS filesystem.
+
 @example
 fsck.bookmarkfs [@var{options}] @var{pathname}
 @end example
-
-The @command{fsck.bookmarkfs} program checks and optionally repairs a
-BookmarkFS filesystem.
 
 Filesystem check on BookmarkFS has a different purpose compared to
 on-disk filesystems.
@@ -395,12 +402,19 @@ Print version and feature information, and then exit.
 @node mkfs.bookmarkfs
 @section @command{mkfs.bookmarkfs}
 
+The @command{mkfs.bookmarkfs} program creates a new BookmarkFS filesystem.
+
 @example
 mkfs.bookmarkfs [@var{options}] @var{pathname}
 @end example
 
-The @command{mkfs.bookmarkfs} program creates a BookmarkFS filesystem
-on the file specified by @var{pathname}.
+@table @var
+@item pathname
+The underlying bookmark storage for the new filesystem.
+
+This option is equivalent to the @var{src} argument for
+@command{mount.bookmarkfs}.
+@end table
 
 Available options:
 
@@ -414,7 +428,7 @@ A backend-specific option.
 This option can be provided multiple times.
 
 @item -o force
-Overwrite existing files when creating the filesystem.
+If the file referred to by @var{pathname} already exists, overwrite it.
 
 @item -h
 Print help text, and then exit.
@@ -426,27 +440,36 @@ Print version and feature information, and then exit.
 @node bookmarkctl
 @section @command{bookmarkctl}
 
+The @command{bookmarkctl} program is a command-line wrapper for various
+I/O controls of a BookmarkFS filesystem.
+
 @example
 bookmarkctl @var{subcmd} [@var{args}]
 @end example
 
-The @command{bookmarkctl} program is a command-line wrapper for various
-I/O controls of a BookmarkFS filesystem.
+Sub-commands:
+
+@table @command
+@item permd
+Re-arranges the order of the directory entries obtained from @code{readdir()}.
+@xref{Permute Directory Entries}.
 
 @example
 bookmarkctl permd @var{pathname} @var{op} @var{name1} @var{name2}
 @end example
 
-The @command{permd} sub-command re-arranges the order of the directory entries
-returned from @code{readdir()} calls.
-@xref{Permute Directory Entries}.
+@table @var
+@item pathname
+Path to the directory.
 
-The @var{pathname} argument is the path to the directory.
-The @var{name1} and @var{name2} arguments are filenames under that directory.
+@item name1
+@item name2
+Filename of entries under the directory.
 
-The @var{op} argument is the operation to perform on the directory:
+@item op
+Operation to perform on the directory:
 
-@table @code
+@table @samp
 @item swap
 Exchange the positions of the directory entries represented by @var{name1}
 and @var{name2}.
@@ -459,38 +482,37 @@ Move the directory entry represented by @var{name1} to the position just
 Move the directory entry represented by @var{name1} to the position just
 @emph{after} the one represented by @var{name2}.
 @end table
+@end table
+
+@item fsck
+Check for errors within a BookmarkFS filesystem.
+@xref{Filesystem Check}.
 
 @example
 bookmarkctl fsck @var{pathname} @var{op}
 @end example
 
-The @command{fsck} sub-command checks for errors within a
-BookmarkFS filesystem.
-@xref{Filesystem Check}.
+@table @var
+@item pathname
+Path to the directory to perform checks on.
 
-The @var{pathname} argument is the path to the directory to perform checks on.
+@item op
+Operation to perform on the directory:
 
-The @var{op} argument is the operation to perform on the directory:
-
-@table @code
+@table @samp
 @item list
 Display a list of errors found under the given directory.
 Will not recurse into subdirectories.
 @end table
+@end table
 
 For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
 
-@example
-bookmarkctl help
-@end example
-
+@item help
 Print help text, and then exit.
-
-@example
-bookmarkctl version
-@end example
-
+@item version
 Print version information, and then exit.
+@end table
 
 
 @node Filesystem
@@ -993,7 +1015,7 @@ When mounting the filesystem, this pathname shall be passed as the @var{src}
 argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
 
-Backend-specific options:
+Backend-specific options (@command{mount.bookmarkfs} only):
 
 @table @option
 @item filename=title|guid
@@ -1005,7 +1027,7 @@ A bookmark GUID is a @rfcdoc{base64url-encoded, rfc4648#section-5}
 
 When creating a new file:
 
-@table @option
+@table @samp
 @item title
 The GUID is randomly generated by the backend.
 
@@ -1047,6 +1069,20 @@ It is recommended to perform a full filesystem check (@pxref{Filesystem Check})
 on the bookmark storage before mounting with this option.
 @end table
 
+If launched from @command{fsck.bookmarkfs}, all backend-specific options
+are ignored, and always enforces the @option{lock=exclusive} option.
+
+Backend-specific options (@command{mkfs.bookmarkfs} only):
+
+@table @option
+@item date_added=@var{timestamp}
+File creation time for the bookmark root directories.
+Defaults to the current time.
+
+Value of @var{timestamp} must be a decimal representing number of microseconds
+since the Unix epoch.
+@end table
+
 
 @node Chromium
 @section Chromium Backend
@@ -1067,7 +1103,7 @@ When mounting the filesystem, this pathname shall be passed as the @var{src}
 argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
 
-Backend-specific options:
+Backend-specific options (@command{mount.bookmarkfs} only):
 
 @table @option
 @item filename=title|guid
@@ -1086,7 +1122,7 @@ For example:
 
 When creating a new file:
 
-@table @option
+@table @samp
 @item title
 The GUID is randomly generated by the backend.
 It is guaranteed to be a valid version 4 UUID as specified by
@@ -1108,7 +1144,7 @@ The file watcher to use for the bookmark storage.
 Defaults to @samp{native} when the filesystem is mounted read-only,
 @samp{none} otherwise.
 
-@table @option
+@table @samp
 @item native
 Watch for file changes using platform-specific features.
 
@@ -1134,7 +1170,21 @@ to the filesystem.
 @end table
 @end table
 
-This backend does not scale well with large bookmark storage,
+If launched from @command{fsck.bookmarkfs}, all backend-specific options
+are ignored, and always enforces the @option{watcher=none} option.
+
+Backend-specific options (@command{mkfs.bookmarkfs} only):
+
+@table @option
+@item date_added=@var{timestamp}
+File creation time for the bookmark root directories.
+Defaults to the current time.
+
+Value of @var{timestamp} must be a decimal representing number of microseconds
+since the Windows @code{FILETIME} epoch (134774 days ahead of the Unix epoch).
+@end table
+
+The Chromium backend does not scale well with large bookmark storage,
 since it keeps everything in memory, and has to parse the entire JSON file
 whenever a reload is required.
 
