@@ -185,7 +185,7 @@ This option can be provided multiple times.
 
 @item -o accmode=@var{mode}
 File access mode.
-Defaults to @code{0700}.
+Defaults to @t{0700}.
 
 This option applies to both directories and regular files.
 Execution bits on regular files are masked off.
@@ -233,7 +233,7 @@ a trailing newline is automatically removed (if one exists).
 
 @item -o file_max=@var{bytes}
 Max file size limit.
-Defaults to @code{32768}.
+Defaults to @t{32768}.
 
 @item -o no_sandbox
 Do not enable sandboxing features (@pxref{Sandboxing}).
@@ -331,7 +331,7 @@ corresponding backend.
 The @var{pathname} argument is the path to the bookmark storage, equivalent to
 the @var{src} argument given to @command{mount.bookmarkfs}.
 
-Alternatively, @var{pathname} could be specified in @code{@var{src}:@var{dir}}
+Alternatively, @var{pathname} could be specified in @samp{@var{src}:@var{dir}}
 format, where @var{dir} refers to the directory to operate on,
 relative to the root directory of the subsystem.
 @end table
@@ -361,11 +361,11 @@ Always backup the bookmarks before repairing, or risk losing your data!
 
 @item -o rl_app=@var{name}
 Readline application name in interactive mode.
-Defaults to ``fsck.bookmarkfs''.
+Defaults to @samp{fsck.bookmarkfs}.
 
 @item -o type=bookmark|tag|keyword
 Subsystem type (@pxref{Hierarchy}).
-Defaults to ``bookmark''.
+Defaults to @samp{bookmark}.
 
 This option is ignored when performing online fsck.
 
@@ -561,7 +561,7 @@ ID of the bookmark (stored as lower bits).
 
 @item st_size
 Length of the bookmark URL in bytes.
-Always @code{0} for directories.
+Always @t{0} for directories.
 
 @item st_atim
 Last access time of the bookmark.
@@ -688,9 +688,9 @@ On Linux, see @linuxmanpage{xattr, 7}.
 On FreeBSD, see @freebsdmanpage{extattr, 2}.
 
 All BookmarkFS extended attributes fall under the ``user'' namespace,
-which means they have a @code{user.} name prefix on Linux, and should be
+which means they have a @samp{user.} name prefix on Linux, and should be
 accessed with @code{EXTATTR_NAMESPACE_USER} on FreeBSD.
-All attributes have a @code{bookmarkfs.} name prefix.
+All attributes have a @samp{bookmarkfs.} name prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend):
 
@@ -778,8 +778,8 @@ Move the directory entry represented by @code{name1} to the position just
 @emph{after} the one represented by @code{name2}.
 @end table
 
-On success, @code{ioctl()} returns @code{0}.
-Otherwise, it returns @code{-1} and sets @code{errno}:
+On success, @code{ioctl()} returns @t{0}.
+Otherwise, it returns @t{-1} and sets @code{errno}:
 
 @table @code
 @item EACCES
@@ -790,7 +790,7 @@ Write or search permission is denied for the directory.
 
 @item EINVAL
 @code{name1} or @code{name2} is not a valid filename
-(e.g. empty string; contains slash character).
+(e.g. empty string; contains @samp{/} character).
 
 @item ENOENT
 The directory does not contain entries named @code{name1} or @code{name2}.
@@ -818,7 +818,7 @@ and ``repair'' (rename) it if it isn't.
 A POSIX-compliant filesystem has various restrictions regarding filenames:
 
 @itemize @bullet{}
-@item must not contain slash characters
+@item must not contain @samp{/} characters
 @item must not be empty or longer than @code{NAME_MAX}
 @item must not duplicate with another file in the same directory
 @end itemize
@@ -879,7 +879,7 @@ in the directory stream.
 Value of @code{extra} is the ID of the other bookmark.
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR
-The bookmark contains a bad character (i.e. the ASCII ``/'' character).
+The bookmark contains a bad character (i.e. the ASCII @samp{/} character).
 
 Value of @code{extra} is the byte offset where the bad character first appears
 in @code{name}.
@@ -891,12 +891,12 @@ Value of @code{extra} is the length of the bookmark name, and @code{name}
 is truncated if longer than @code{NAME_MAX}.
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT
-The bookmark name is either ``.'' or ``..''.
+The bookmark name is either @samp{.} or @samp{..}.
 
 Value of @code{extra} is unspecified.
 @end table
 
-On failure, @code{ioctl()} returns @code{-1}, and sets @code{errno}:
+On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}:
 
 @table @code
 @item EACCES
@@ -936,7 +936,7 @@ The name is not valid UTF-8.
 @end table
 @end table
 
-On failure, @code{ioctl()} returns @code{-1}, and sets @code{errno}:
+On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}:
 
 @table @code
 @item EACCES
@@ -952,8 +952,8 @@ Reset the fsck state for the directory.
 Further @code{BOOKMARKFS_IOC_FSCK_NEXT} requests will start from the
 beginning of the directory stream.
 
-On success, @code{ioctl()} returns @code{0}.
-Otherwise, it returns @code{-1}, and sets @code{errno}.
+On success, @code{ioctl()} returns @t{0}.
+Otherwise, it returns @t{-1}, and sets @code{errno}.
 @end table
 
 
@@ -966,17 +966,13 @@ application bookmarks.
 Typically, backends are built into shared libraries, and are installed as:
 
 @example
-@var{$@{pkglibdir@}}/backend-@var{$@{short_name@}}@var{$@{shlib_suffix@}}
+@var{$@{pkglibdir@}}/backend-@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @var{$@{short_name@}} is the name passed to the frontend program, and
-@var{$@{shlib_suffix@}} is the common filename extension for shared library
-files on the current platform (e.g. @file{.so} on GNU/Linux and FreeBSD).
-
-Currently, BookmarkFS ships with two backends.
-One for Firefox, the other for Chromium.
-If you which to add support for more backends,
-you may submit a feature request or implement one using the Backend API.
+Where @var{$@{name@}} is the value given to the @option{-o handler=@var{name}}
+option of frontend programs, and @var{$@{shlib_suffix@}} is the common
+filename extension for shared library files on the current platform
+(e.g. @file{.so} on GNU/Linux and FreeBSD).
 
 
 @node Firefox
@@ -1002,7 +998,7 @@ Backend-specific options:
 @table @option
 @item filename=title|guid
 Whether to use the bookmark title or GUID as the bookmark file name.
-Defaults to ``title''.
+Defaults to @samp{title}.
 
 A bookmark GUID is a @rfcdoc{base64url-encoded, rfc4648#section-5}
 128-bit string uniquely associated with a bookmark or bookmark folder.
@@ -1026,8 +1022,8 @@ With @option{filename=title}, the GUID is available as an extended attribute
 
 @item lock=exclusive|normal
 The database connection locking mode for the bookmark storage.
-Defaults to ``normal'' when the filesystem is mounted read-only,
-``exclusive'' otherwise.
+Defaults to @samp{normal} when the filesystem is mounted read-only,
+@samp{exclusive} otherwise.
 
 This option corresponds to the
 @uref{https://www.sqlite.org/pragma.html#pragma_locking_mode,
@@ -1049,7 +1045,6 @@ This option may improve @code{readdir()} performance, however,
 making a false assumption results in a directory entry with duplicate names.
 It is recommended to perform a full filesystem check (@pxref{Filesystem Check})
 on the bookmark storage before mounting with this option.
-
 @end table
 
 
@@ -1077,7 +1072,7 @@ Backend-specific options:
 @table @option
 @item filename=title|guid
 Whether to use the bookmark title or GUID as the bookmark file name.
-Defaults to ``title''.
+Defaults to @samp{title}.
 
 A bookmark GUID is a hex-encoded 128-bit string uniquely associated
 with a bookmark or bookmark folder.
@@ -1110,8 +1105,8 @@ With @option{filename=title}, the GUID is available as an extended attribute
 
 @item watcher=native|fallback|none
 The file watcher to use for the bookmark storage.
-Defaults to ``native'' when the filesystem is mounted read-only,
-``none'' otherwise.
+Defaults to @samp{native} when the filesystem is mounted read-only,
+@samp{none} otherwise.
 
 @table @option
 @item native
@@ -1166,7 +1161,7 @@ shared libraries, and are installed as:
 @var{$@{pkglibdir@}}/fsck-handler-@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @var{$@{name@}} is the name passed to the @option{-o handler=@var{name}}
+Where @var{$@{name@}} is the value given to the @option{-o handler=@var{name}}
 option of @command{fsck.bookmarkfs}, and @var{$@{shlib_suffix@}} is the
 common filename extension for shared library files on the current platform
 (e.g. @file{.so} on GNU/Linux and FreeBSD).
@@ -1184,13 +1179,13 @@ Handler-specific options:
 @table @option
 @item prompt=@var{str}
 Readline prompt string.
-Defaults to ``@t{% }''.
+Defaults to @samp{% }.
 
 This option is ignored in non-interactive mode.
 
 @item translit=@var{char}
 Transliterate bad characters into @var{char}.
-Defaults to ``@t{_}''.
+Defaults to @samp{_}.
 @end table
 
 For each bookmark entry, the built-in handler prints a message
@@ -1201,7 +1196,7 @@ according to the following rules:
 
 @table @code
 @item BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE
-Append a ``@t{_@var{$@{counter@}}}'' suffix to the name, where
+Append a @samp{_@var{$@{counter@}}} suffix to the name, where
 @var{$@{counter@}} is a self-incrementing 32-bit integer in decimal format.
 
 If appending the suffix would exceed max name length, truncate the name first.
@@ -1216,7 +1211,7 @@ If the name is empty, see below:
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT
 @item BOOKMARKFS_FSCK_RESULT_NAME_INVALID
-Rename to ``@t{fsck-@var{$@{id@}}}'', where @var{$@{id@}} is the bookmark ID
+Rename to @samp{fsck-@var{$@{id@}}}, where @var{$@{id@}} is the bookmark ID
 in decimal format.
 @end table
 
@@ -1246,7 +1241,7 @@ Save applied changes.
 Save applied changes and quit.
 @end table
 
-The optional ``@t{-}'' suffix inhibits the default behavior of continuing
+The optional @samp{-} suffix inhibits the default behavior of continuing
 to the next entry, after the command completes successfully.
 
 
