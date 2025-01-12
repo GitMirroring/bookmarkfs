@@ -1155,9 +1155,99 @@ Chromium does not have such concepts.
 @node Filesystem-Check Handlers
 @chapter Filesystem-Check Handlers
 
+The filesystem-check handler is responsible for instructing the
+@command{fsck.bookmarkfs} program on what to do with each invalid
+bookmark name.
+
+Like backends, filesystem-check handlers are typically built into
+shared libraries, and are installed as:
+
+@example
+@var{$@{pkglibdir@}}/fsck-handler-@var{$@{name@}}@var{$@{shlib_suffix@}}
+@end example
+
+Where @var{$@{name@}} is the name passed to the @option{-o handler=@var{name}}
+option of @command{fsck.bookmarkfs}, and @var{$@{shlib_suffix@}} is the
+common filename extension for shared library files on the current platform
+(e.g. @file{.so} on GNU/Linux and FreeBSD).
+
 
 @node Built-in Filesystem-Check Handler
 @section Built-in Handler
+
+The built-in handler is shipped with the @command{fsck.bookmarkfs} program.
+It has minimal functionalities, but is capable enough to handle most
+common fsck scenarios.
+
+Handler-specific options:
+
+@table @option
+@item prompt=@var{str}
+Readline prompt string.
+Defaults to ``@t{% }''.
+
+This option is ignored in non-interactive mode.
+
+@item translit=@var{char}
+Transliterate bad characters into @var{char}.
+Defaults to ``@t{_}''.
+@end table
+
+For each bookmark entry, the built-in handler prints a message
+to standard output explaining why the bookmark name is invalid.
+
+When the @option{-o repair} option is given, the handler renames the bookmark
+according to the following rules:
+
+@table @code
+@item BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE
+Append a ``@t{_@var{$@{counter@}}}'' suffix to the name, where
+@var{$@{counter@}} is a self-incrementing 32-bit integer in decimal format.
+
+If appending the suffix would exceed max name length, truncate the name first.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR
+Transliterate the bad character into another character.
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_BADLEN
+If the name is too long, truncate it to @code{NAME_MAX} bytes.
+
+If the name is empty, see below:
+
+@item BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT
+@item BOOKMARKFS_FSCK_RESULT_NAME_INVALID
+Rename to ``@t{fsck-@var{$@{id@}}}'', where @var{$@{id@}} is the bookmark ID
+in decimal format.
+@end table
+
+In interactive mode, the handler prompts the user before applying the rename.
+The user may issue a command to indicate what to do with each entry:
+
+@table @command
+@item p
+Print the ID and new name of current entry.
+@item a[-]
+Apply the proposed rename for the current entry.
+@item e[-] @var{new_name}
+Change the proposed rename to @var{new_name} and then apply.
+@item c
+Continue to the next entry.
+@item s[-]
+Skip current directory.
+@item S[-]
+Skip current directory and all subdirectories.
+@item r[-]
+Rewind current directory.
+@item R[-]
+Rewind all.
+@item w[-]
+Save applied changes.
+@item q
+Save applied changes and quit.
+@end table
+
+The optional ``@t{-}'' suffix inhibits the default behavior of continuing
+to the next entry, after the command completes successfully.
 
 
 @node Tcl-Based Filesystem-Check Handler
