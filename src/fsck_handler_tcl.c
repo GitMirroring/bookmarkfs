@@ -43,6 +43,7 @@
 
 #define FSCK_HANDLER_UNSAFE        ( 1u << 24 )
 #define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 25 )
+#define FSCK_HANDLER_INITIALIZED   ( 1u << 26 )
 
 struct handler_ctx {
     Tcl_Interp *interp;
@@ -60,13 +61,14 @@ struct parsed_opts {
 };
 
 // Forward declaration start
-static void finalize_tcl  (void) FUNCATTR_DTOR;
-static int  init_ctx      (struct handler_ctx *);
-static int  parse_opts    (struct bookmarkfs_conf_opt const *,
-                           struct parsed_opts *);
-static void print_help    (void);
-static void print_version (void);
-static int  set_tcl_var   (Tcl_Interp *, char const *, size_t, int);
+static void         finalize_tcl  (void) FUNCATTR_DTOR;
+static int          init_handler  (struct handler_ctx *);
+static Tcl_Interp * init_interp   (uint32_t);
+static int          parse_opts    (struct bookmarkfs_conf_opt const *,
+                                   struct parsed_opts *);
+static void         print_help    (void);
+static void         print_version (void);
+static int          set_tcl_var   (Tcl_Interp *, char const *, size_t, int);
 // Forward declaration end
 
 static void
@@ -76,30 +78,54 @@ finalize_tcl (void)
 }
 
 static int
-init_ctx (
+init_handler (
     struct handler_ctx *ctx
 ) {
-    if (ctx->interp != NULL) {
+    if (ctx->flags & FSCK_HANDLER_INITIALIZED) {
         return 0;
     }
+
+    struct stat stat_buf;
+    if (unlikely(0 != fstat(ctx->script.fd, &stat_buf))) {
+        log_printf("fstat(): %s", xstrerror(errno));
+        return -1;
+    }
+
+    void *buf = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_MAX(PROT_READ),
+            MAP_PRIVATE, ctx->script.fd, 0);
+    if (unlikely(buf == MAP_FAILED)) {
+        log_printf("mmap(): %s", xstrerror(errno));
+        return -1;
+    }
+
+    Tcl_Interp *interp = ctx->interp;
+    int result = Tcl_EvalEx(interp, buf, stat_buf.st_size, TCL_EVAL_GLOBAL);
+    munmap(buf, stat_buf.st_size);
+    if (result != TCL_OK) {
+        log_printf("%s", Tcl_GetStringResult(interp));
+        return -1;
+    }
+    close(ctx->script.fd);
+    ctx->script.obj = Tcl_GetObjResult(interp);
+    Tcl_IncrRefCount(ctx->script.obj);
+
+    ctx->flags |= FSCK_HANDLER_INITIALIZED;
+    return 0;
+}
+
+static Tcl_Interp *
+init_interp (
+    uint32_t flags
+) {
     Tcl_Interp *interp = Tcl_CreateInterp();
-    if (ctx->flags & FSCK_HANDLER_UNSAFE) {
+    if (flags & FSCK_HANDLER_UNSAFE) {
         if (TCL_OK != Tcl_Init(interp)) {
             log_printf("%s", Tcl_GetStringResult(interp));
-            return -1;
+            goto fail;
         }
         Tcl_InitMemory(interp);
     } else {
         xassert(TCL_OK == Tcl_MakeSafe(interp));
-        // Safe interps do not have std channels by default.
-        Tcl_Channel chan = Tcl_GetStdChannel(TCL_STDOUT);
-        if (chan != NULL) {
-            Tcl_RegisterChannel(interp, chan);
-        }
-        chan = Tcl_GetStdChannel(TCL_STDERR);
-        if (chan != NULL) {
-            Tcl_RegisterChannel(interp, chan);
-        }
     }
 
 #define WITH_NAMESPACE(name)  "bookmarkfs::fsck::" name
@@ -108,7 +134,7 @@ init_ctx (
                 NULL, NULL)                                        \
     ) {                                                            \
         log_printf("%s", Tcl_GetStringResult(interp));             \
-        return -1;                                                 \
+        goto fail;                                                 \
     }
     DO_CREATE_NAMESPACE(interp, "handler");
     DO_CREATE_NAMESPACE(interp, "result");
@@ -119,9 +145,9 @@ init_ctx (
         goto fail;                                                           \
     }
     DO_SET_VAR(interp, "isInteractive",
-            !!(ctx->flags & BOOKMARKFS_FSCK_HANDLER_INTERACTIVE));
+            !!(flags & BOOKMARKFS_FSCK_HANDLER_INTERACTIVE));
     DO_SET_VAR(interp, "isReadonly",
-            !!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
+            !!(flags & BOOKMARKFS_BACKEND_READONLY));
     DO_SET_VAR(interp, "handler::next",         BOOKMARKFS_FSCK_NEXT);
     DO_SET_VAR(interp, "handler::apply",        BOOKMARKFS_FSCK_APPLY);
     DO_SET_VAR(interp, "handler::userInput",    BOOKMARKFS_FSCK_USER_INPUT);
@@ -140,32 +166,11 @@ init_ctx (
     DO_SET_RESULT_VAR(interp, "nameDotDot",    NAME_DOTDOT);
     DO_SET_RESULT_VAR(interp, "nameInvalid",   NAME_INVALID);
 
-    struct stat stat_buf;
-    if (unlikely(0 != fstat(ctx->script.fd, &stat_buf))) {
-        log_printf("fstat(): %s", xstrerror(errno));
-        goto fail;
-    }
-    void *buf = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_MAX(PROT_READ),
-            MAP_PRIVATE, ctx->script.fd, 0);
-    if (unlikely(buf == MAP_FAILED)) {
-        log_printf("mmap(): %s", xstrerror(errno));
-        goto fail;
-    }
-    int result = Tcl_EvalEx(interp, buf, stat_buf.st_size, TCL_EVAL_GLOBAL);
-    munmap(buf, stat_buf.st_size);
-    if (result != TCL_OK) {
-        log_printf("%s", Tcl_GetStringResult(interp));
-        goto fail;
-    }
-    close(ctx->script.fd);
-    ctx->script.obj = Tcl_GetObjResult(interp);
-    Tcl_IncrRefCount(ctx->script.obj);
-    ctx->interp = interp;
-    return 0;
+    return interp;
 
   fail:
     Tcl_DeleteInterp(interp);
-    return -1;
+    return NULL;
 }
 
 static int
@@ -250,13 +255,23 @@ fsck_handler_create (
         return -1;
     }
 
+    Tcl_Interp *interp = init_interp(flags);
+    if (interp == NULL) {
+        goto fail;
+    }
+
     struct handler_ctx *ctx = xmalloc(sizeof(*ctx));
     *ctx = (struct handler_ctx) {
+        .interp    = interp,
         .flags     = flags,
         .script.fd = fd,
     };
     *handler_ctx_ptr = ctx;
     return 0;
+
+  fail:
+    close(fd);
+    return -1;
 }
 
 static void
@@ -265,12 +280,12 @@ fsck_handler_destroy (
 ) {
     struct handler_ctx *ctx = handler_ctx;
 
-    if (ctx->interp != NULL) {
+    if (ctx->flags & FSCK_HANDLER_INITIALIZED) {
         Tcl_DecrRefCount(ctx->script.obj);
-        Tcl_DeleteInterp(ctx->interp);
     } else {
         close(ctx->script.fd);
     }
+    Tcl_DeleteInterp(ctx->interp);
     free(ctx);
 }
 
@@ -293,7 +308,7 @@ fsck_handler_run (
 ) {
     struct handler_ctx *ctx = handler_ctx;
 
-    if (0 != init_ctx(ctx)) {
+    if (0 != init_handler(ctx)) {
         return -1;
     }
     Tcl_Interp *interp = ctx->interp;
