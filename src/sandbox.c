@@ -269,6 +269,7 @@ sandbox_enter (
     if (flags & SANDBOX_NO_LANDLOCK) {
         goto apply_seccomp;
     }
+    status = -1;
 #ifdef BOOKMARKFS_SANDBOX_LANDLOCK
     int ruleset_version = landlock_create_ruleset(NULL, 0,
             LANDLOCK_CREATE_RULESET_VERSION);
@@ -326,20 +327,24 @@ sandbox_enter (
         log_printf("landlock_restrict_self(): %s", xstrerror(errno));
         goto free_ruleset;
     }
+    status = 0;
+
+  free_ruleset:
+    close(lrfd);
+
 #else
     log_printf("landlock is not supported on this build");
-    status = -1;
-    goto free_sfctx;
 #endif  /* defined(BOOKMARKFS_SANDBOX_LANDLOCK) */
+
+    if (status < 0) {
+        goto free_sfctx;
+    }
 
   apply_seccomp:
     status = seccomp_load(sfctx);
     if (unlikely(status != 0)) {
         log_printf("seccomp_load(): %s", xstrerror(-status));
     }
-
-  free_ruleset:
-    close(lrfd);
 
   free_sfctx:
     seccomp_release(sfctx);
