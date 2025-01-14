@@ -214,26 +214,18 @@ db_fcntl (
 
 sqlite3 *
 db_open (
-    char const *path,
-    bool        readonly
+    char const *path
 ) {
     sqlite3 *db;
-    int flags = SQLITE_OPEN_READWRITE;
-    if (readonly) {
-        flags = SQLITE_OPEN_READONLY;
-    }
-    flags |= SQLITE_OPEN_EXRESCODE;
+    int flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_EXRESCODE;
     if (SQLITE_OK != sqlite3_open_v2(path, &db, flags, NULL)) {
         log_printf("sqlite3_open_v2(): %s", sqlite3_errmsg(db));
         goto fail;
     }
-    if (!readonly) {
-        if (0 != sqlite3_db_readonly(db, "main")) {
-            log_puts("cannot open database for read/write");
-            goto fail;
-        }
+    if (0 != sqlite3_db_readonly(db, "main")) {
+        log_puts("cannot open database for read/write");
+        goto fail;
     }
-
     return db;
 
   fail:

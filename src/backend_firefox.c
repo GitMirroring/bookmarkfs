@@ -2683,7 +2683,7 @@ backend_create (
         return -1;
     }
 
-    sqlite3 *db = db_open(conf->store_path, readonly);
+    sqlite3 *db = db_open(conf->store_path);
     if (db == NULL) {
         return -1;
     }
@@ -3150,7 +3150,7 @@ backend_mkfs (
     // See also:
     // - <https://sqlite.org/forum/forumpost/c15bf2e7df289a5f>
     // - <https://sqlite.org/forum/forumpost/680cd395b4bc97c6>
-    sqlite3 *db = db_open(conf->store_path, false);
+    sqlite3 *db = db_open(conf->store_path);
     if (db == NULL) {
         goto end;
     }

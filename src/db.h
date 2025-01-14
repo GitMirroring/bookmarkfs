@@ -113,8 +113,7 @@ db_fcntl (
 
 sqlite3 *
 db_open (
-    char const *path,
-    bool        readonly
+    char const *path
 );
 
 int
