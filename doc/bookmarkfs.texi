@@ -133,7 +133,7 @@ if a vulnerability is discovered in BookmarkFS and/or its dependencies.
 However, it only deals with untrusted input,
 and cannot help if the operating system has already been compromised.
 
-Example of what ``untrusted input'' may include:
+Examples of what ``untrusted input'' may include:
 
 @itemize @bullet{}
 @item Bookmark files that are @emph{not} created by the user using a
@@ -169,9 +169,14 @@ that contains bookmark data.
 The exact interpretation of this option is backend-defined.
 
 @item target
-Pathname to the directory where the filesystem shall be mounted on
+Pathname of the directory where the filesystem shall be mounted to
 (i.e. the ``mountpoint'').
 @end table
+
+Files under the filesystem are assigned ownership according to
+the effective user ID and group ID of the calling process.
+On FreeBSD, you may wish to set the @samp{vfs.usermount}
+@freebsdmanpage{sysctl, 8} to @t{1} for unprivileged mounts.
 
 To unmount a BookmarkFS filesystem, run @linuxmanpage{fusermount3, 1} or
 @linuxmanpage{umount, 8} on @var{target}.
@@ -179,7 +184,7 @@ The daemon process will automatically dismount the filesystem upon
 @code{SIGINT} or @code{SIGTERM} receipt, however, it only works in
 non-sandbox mode.
 
-Available options:
+Options:
 
 @table @option
 @item -o backend=@var{name}
@@ -217,10 +222,10 @@ Since a bookmark has only one ``modification time'' attribute instead of two,
 the user has to choose which one to maintain:
 
 @table @asis
-@item mtime
+@item modification time
 ctime only updates when mtime does.
 
-@item ctime
+@item change time
 ctime updates normally; mtime always updates when ctime does,
 even if the file content is not modified.
 
@@ -271,22 +276,28 @@ Notable options:
 @item -o rw
 Mount the filesystem read/write.
 
-By default, the filesystem is mounted read-only.
-This behavior won't change in the future, since the hackish nature of
-BookmarkFS makes it forever unstable.
-
 @quotation Warning
-Always backup the bookmarks before mounting it read/write, or risk losing
-your data!
+Always backup the bookmark storage before mounting it read/write,
+or risk losing your data!
 @end quotation
+
+By default, the filesystem is mounted read-only.
+This behavior won't change in the future, due to the hackish nature of
+most BookmarkFS backends.
+
+When mounted read/write, other process must not write to the
+underlying bookmark storage, otherwise data corruption may occur.
 
 @item -o debug
 Set libfuse log level to @code{FUSE_LOG_DEBUG}.
 Log messages related to each FUSE request will be printed to standard error.
 
-@item -o fsname
-The name that appears as the @code{fs_spec} field in @linuxmanpage{fstab, 5}.
+@item -o fsname=@var{name}
+Name for the filesystem.
 Defaults to the backend name.
+
+This name is equivalent to the @code{fs_spec} field in @linuxmanpage{fstab, 5},
+and appears as the @samp{SOURCE} column in @linuxmanpage{findmnt, 8} output.
 
 @item -o atime,diratime,relatime
 These options (and other atime-related ones) are ignored.
@@ -316,7 +327,7 @@ Filesystem check on BookmarkFS has a different purpose compared to
 on-disk filesystems.
 @xref{Filesystem Check}.
 
-Available options:
+Options:
 
 @table @option
 @item -o backend=@var{name}
@@ -363,7 +374,7 @@ This option can be provided multiple times.
 Attempt to repair errors found during fsck.
 
 @quotation Warning
-Always backup the bookmarks before repairing, or risk losing your data!
+Always backup the bookmark storage before repairing, or risk losing your data!
 @end quotation
 
 @item -o rl_app=@var{name}
@@ -416,7 +427,7 @@ This option is equivalent to the @var{src} argument for
 @command{mount.bookmarkfs}.
 @end table
 
-Available options:
+Options:
 
 @table @option
 @item -o backend=@var{name}
@@ -554,12 +565,13 @@ Currently all subsystem definitions are hard-coded within the
 @node Bookmarks
 @subsection Bookmarks
 
+The ``bookmarks'' subsystem maintains the hierarchical structure, names, URLs
+and other information of a bookmark storage.
+
 @example
 @var{$@{mountpoint@}}/bookmarks/@var{$@{bookmark_dir...@}}/@var{$@{bookmark@}}
 @end example
 
-The ``bookmarks'' subsystem maintains the hierarchical structure, names, URLs
-and other information of a bookmark storage.
 Each bookmark folder name appears as the filename for directory
 @var{$@{bookmark_dir@}}, and each @var{$@{bookmark@}} is a regular file
 that refers to a bookmark.
@@ -601,12 +613,13 @@ supports it (@pxref{Extended Attributes}).
 @node Tags
 @subsection Tags
 
+The ``tags'' subsystem maintains a many-to-many mapping between bookmarks and
+their alternative names.
+
 @example
 @var{$@{mountpoint@}}/tags/@var{$@{tag_dir@}}/@var{$@{bookmark@}}
 @end example
 
-The ``tags'' subsystem maintains a many-to-many mapping between bookmarks and
-their alternative names.
 Each tag name appears as the filename for directory @var{$@{tag_dir@}},
 and @var{$@{bookmark@}} is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a tag.
@@ -639,12 +652,13 @@ fails with @code{EPERM}.
 @node Keywords
 @subsection Keywords
 
+The ``keywords'' subsystem maintains a one-to-one mapping between bookmarks
+and their alternative names, independent from tag names.
+
 @example
 @var{$@{mountpoint@}}/keywords/@var{$@{keyword_name@}}
 @end example
 
-The ``keywords'' subsystem maintains a one-to-one mapping between bookmarks
-and their alternative names, independent from tag names.
 Each keyword name appears as the filename for regular file
 @var{$@{keyword_name@}}, which is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a keyword.
@@ -991,10 +1005,10 @@ Typically, backends are built into shared libraries, and are installed as:
 @var{$@{pkglibdir@}}/backend-@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @var{$@{name@}} is the value given to the @option{-o handler=@var{name}}
-option of frontend programs, and @var{$@{shlib_suffix@}} is the common
-filename extension for shared library files on the current platform
-(e.g. @file{.so} on GNU/Linux and FreeBSD).
+Where @var{$@{name@}} is the backend name, equivalent to value given to the
+@option{-o backend=@var{name}} option of frontend programs,
+and @var{$@{shlib_suffix@}} is the common filename extension for shared library
+files on the current platform (e.g. @file{.so} on GNU/Linux and FreeBSD).
 
 
 @node Firefox
@@ -1014,6 +1028,8 @@ Firefox bookmarks are stored in a SQLite database under the profile directory:
 When mounting the filesystem, this pathname shall be passed as the @var{src}
 argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
+
+Backend name: @samp{firefox}.
 
 Backend-specific options (@command{mount.bookmarkfs} only):
 
@@ -1103,6 +1119,8 @@ When mounting the filesystem, this pathname shall be passed as the @var{src}
 argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
 
+Backend name: @samp{chromium}.
+
 Backend-specific options (@command{mount.bookmarkfs} only):
 
 @table @option
@@ -1146,14 +1164,19 @@ Defaults to @samp{native} when the filesystem is mounted read-only,
 
 @table @samp
 @item native
-Watch for file changes using platform-specific features.
+Watch for file changes using platform-specific features:
 
-On Linux, @linuxmanpage{fanotify, 7} is used.
+@table @asis
+@item Linux
+@linuxmanpage{fanotify, 7} is used.
 Requires kernel version 5.13 or later for unprivileged users.
+
 @linuxmanpage{inotify, 7} does not have this limitation, however,
 it is incompatible with our sandboxing design.
 
-On FreeBSD, @freebsdmanpage{kevent, 2} with @code{EVFILT_VNODE} is used.
+@item FreeBSD
+@freebsdmanpage{kevent, 2} with @code{EVFILT_VNODE} is used.
+@end table
 
 @item fallback
 Watch for file changes by checking @code{st_ino} and @code{st_mtim} attributes
@@ -1211,16 +1234,16 @@ shared libraries, and are installed as:
 @var{$@{pkglibdir@}}/fsck-handler-@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @var{$@{name@}} is the value given to the @option{-o handler=@var{name}}
-option of @command{fsck.bookmarkfs}, and @var{$@{shlib_suffix@}} is the
-common filename extension for shared library files on the current platform
-(e.g. @file{.so} on GNU/Linux and FreeBSD).
+Where @var{$@{name@}} is the handler name, equivalent to the value given to
+the @option{-o handler=@var{name}} option of @command{fsck.bookmarkfs},
+and @var{$@{shlib_suffix@}} is the common filename extension for shared library
+files on the current platform (e.g. @file{.so} on GNU/Linux and FreeBSD).
 
 
 @node Built-in Filesystem-Check Handler
 @section Built-in Handler
 
-The built-in handler is shipped with the @command{fsck.bookmarkfs} program.
+The built-in handler is linked into the @command{fsck.bookmarkfs} program.
 It has minimal functionalities, but is capable enough to handle most
 common fsck scenarios.
 
