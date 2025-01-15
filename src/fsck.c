@@ -423,11 +423,16 @@ parse_opts (
         }
         SUBOPT_OPT_FALLBACK() {
             char *opt = SUBOPT_STR;
-            if (opt[0] == '@') {
-                bookmarkfs_opts_add(&info->backend_opts, opt + 1);
-            } else if (opt[0] == '%') {
-                bookmarkfs_opts_add(&info->handler_opts, opt + 1);
-            } else {
+            switch (*(opt++)) {
+              case '@':
+                bookmarkfs_opts_add(&info->backend_opts, opt);
+                break;
+
+              case '%':
+                bookmarkfs_opts_add(&info->handler_opts, opt);
+                break;
+
+              default:
                 return SUBOPT_ERR_BAD_KEY();
             }
         }

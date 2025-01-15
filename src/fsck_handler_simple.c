@@ -309,8 +309,9 @@ parse_opts (
     }
     BACKEND_OPT_KEY("translit") {
         BACKEND_OPT_VAL_START
-        if (1 == strlen(BACKEND_OPT_VAL_STR)) {
-            translit = BACKEND_OPT_VAL_STR[0];
+        char const *str = BACKEND_OPT_VAL_STR;
+        if (str[0] != '\0' && str[0] != '/' && str[1] == '\0') {
+            translit = str[0];
         }
         BACKEND_OPT_VAL_END
     }
