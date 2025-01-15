@@ -40,11 +40,12 @@
 #include "prng.h"
 #include "xstd.h"
 
+#define DUMP_BUFSIZE  ( 32 * 1024 )
 struct dump_ctx {
-    int     fd;
-    char   *buf;
-    size_t  buf_len;
-    size_t  data_len;
+    int    fd;
+    size_t blksize;
+    size_t data_len;
+    char   buf[DUMP_BUFSIZE];
 };
 
 // Forward declaration start
@@ -61,11 +62,13 @@ dump_cb (
     struct dump_ctx *ctx = user_data;
 
     size_t new_len = ctx->data_len + buf_len;
-    if (new_len <= ctx->buf_len) {
+    if (new_len <= DUMP_BUFSIZE) {
         memcpy(ctx->buf + ctx->data_len, buf, buf_len);
         ctx->data_len = new_len;
         return 0;
     }
+    new_len %= ctx->blksize;
+    buf_len -= new_len;
 
     struct iovec bufv[] = {
         { .iov_base = ctx->buf,    .iov_len = ctx->data_len },
@@ -74,7 +77,8 @@ dump_cb (
     if (0 != write_iov(ctx->fd, bufv, 2)) {
         return -1;
     }
-    ctx->data_len = 0;
+    memcpy(ctx->buf, buf + buf_len, new_len);
+    ctx->data_len = new_len;
     return 0;
 }
 
@@ -200,16 +204,19 @@ json_dumpfd_ex (
         log_printf("fstat(): %s", xstrerror(errno));
         return -1;
     }
-    int status = -1;
+    size_t blksize = stat_buf.st_blksize;
+    if (unlikely(blksize == 0 || DUMP_BUFSIZE % blksize != 0)) {
+        debug_printf("unexpected st_blksize: %zu", blksize);
+        blksize = DUMP_BUFSIZE;
+    }
 
-    struct dump_ctx ctx = {
-        .fd      = fd,
-        .buf     = xmalloc(stat_buf.st_blksize),
-        .buf_len = stat_buf.st_blksize,
-    };
+    struct dump_ctx ctx;
+    ctx.fd       = fd,
+    ctx.blksize  = blksize,
+    ctx.data_len = 0;
     if (0 != json_dump_callback(json, dump_cb, &ctx, flags)) {
         log_puts("json_dump_callback() failed");
-        goto end;
+        return -1;
     }
     if (ctx.data_len > 0) {
         struct iovec buf = {
@@ -217,17 +224,13 @@ json_dumpfd_ex (
             .iov_len  = ctx.data_len,
         };
         if (0 != write_iov(fd, &buf, 1)) {
-            goto end;
+            return -1;
         }
     }
     if (unlikely(0 != xfsync(fd))) {
-        goto end;
+        return -1;
     }
-    status = 0;
-
-  end:
-    free(ctx.buf);
-    return status;
+    return 0;
 }
 
 json_t *
