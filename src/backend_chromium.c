@@ -2212,9 +2212,8 @@ bookmark_create (
     }
 
     // Lookup parent entry
-    unsigned long hashcode;
     struct node_entry *parent_entry
-        = lookup_id(ctx->id_map, parent_id, &hashcode, NULL);
+        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
     if (unlikely(parent_entry == NULL || parent_entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2260,17 +2259,18 @@ bookmark_create (
 
     // Build lookup entry
     entry = xmalloc(sizeof(*entry));
+    uint64_t id = stat_buf->id;
     *entry = (struct node_entry) {
-        .id        = ctx->max_id,
-        .parent_id = parent_entry->id,
+        .id        = id,
+        .parent_id = parent_id,
         .name      = name,
         .name_len  = name_len,
         .node      = node,
         .children  = is_dir ? json_object_sget(node, "children") : NULL,
     };
 
-    union hashmap_key key = { .u64 = ctx->max_id };
-    *hashmap_insert(ctx->id_map, key, hashcode) = entry;
+    union hashmap_key key = { .u64 = id };
+    *hashmap_insert(ctx->id_map, key, hash_digest(&id, sizeof(id))) = entry;
 
     void          *guid          = lctx.guid;
     unsigned long  hashcode_guid = lctx.hashcode;
