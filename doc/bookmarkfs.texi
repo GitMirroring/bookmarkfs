@@ -582,7 +582,7 @@ The content of a bookmark file is usually the URL associated with the bookmark.
 
 Not all bookmark names can be represented as a filename.
 For a bookmark or bookmark folder with an invalid name, the corresponding file
-does not exist on the filesystem.
+is not visible to lookups and @code{readdir()} calls.
 To deal with such bookmarks, @pxref{Filesystem Check};
 or you can instruct the backend to identify bookmarks using GUIDs
 instead of titles (and then access the titles via extended attributes).
@@ -745,9 +745,20 @@ The backend decides which attributes are available during initialization,
 and all bookmark files share the same set of attributes.
 
 
-@node Directory Entry Ordering
-@section Directory Entry Ordering
+@node Directory Entries
+@section Directory Entries
 
+@table @asis
+@item The @samp{.} and @samp{..} entries
+POSIX consider @samp{.} and @samp{..} as ``special'' filenames,
+which must refer to the current and parent directory, if they exist.
+
+These entries are optional, and BookmarkFS does not support them,
+for the sake of simplicity.
+Additionally, bookmarks with such names are hidden from the filesystem
+until fixed with fsck (@pxref{Filesystem Check}).
+
+@item Ordering of directory entries
 POSIX does not specify the ordering of the directory entries retrieved from
 the directory stream using @posixfuncmanpage{readdir}.
 It only guarantees that if an entry is not added or removed from the directory
@@ -773,6 +784,9 @@ In BookmarkFS, it is guaranteed to be equivalent to the
 directory traversal order.
 New entries are appended to the end; removed entries do not affect
 the order of other entries.
+
+To change the ordering of directory entries, @pxref{Permute Directory Entries}.
+@end table
 
 
 @node Permute Directory Entries
@@ -857,6 +871,7 @@ A POSIX-compliant filesystem has various restrictions regarding filenames:
 @item must not contain @samp{/} characters
 @item must not be empty or longer than @code{NAME_MAX}
 @item must not duplicate with another file in the same directory
+@item @samp{.} and @samp{..} must refer to the current and parent directory
 @end itemize
 
 It is commonplace for bookmark names to not meet such criteria,
