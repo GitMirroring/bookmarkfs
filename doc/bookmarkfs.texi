@@ -31,6 +31,10 @@
 @uref{https://datatracker.ietf.org/doc/html/\path\, \name\}
 @end macro
 
+@macro tcldoc {name, path}
+@uref{https://www.tcl.tk/man/tcl8.6.13/\path\, \name\}
+@end macro
+
 @copying
 This manual is for BookmarkFS, version @value{VERSION}.
 
@@ -919,6 +923,8 @@ Filesystem-check commands:
 
 Find the next bookmark with invalid name under the directory.
 
+@anchor{Filesystem-check Result Code}
+@cindex Filesystem-check Result Code
 On success, @code{ioctl()} updates @var{argp}, and returns
 one of the values defined in enum @code{bookmarkfs_fsck_result}:
 
@@ -1349,6 +1355,141 @@ to the next entry, after the command completes successfully.
 
 @node Tcl-Based Filesystem-Check Handler
 @section Tcl-Based Handler
+
+The Tcl-based handler allows fsck entries to be handled via Tcl scripting.
+
+Handler name: @samp{tcl}.
+
+Handler-specific options:
+
+@table @option
+@item script=@var{path}
+Path to the Tcl script file.
+This option is mandatory.
+
+The script is evaluated once after interpreter initialization.
+The evaluation result will be used as the command name for later executions.
+
+The following variables are set before script evaluation:
+
+@table @code
+@item $::bookmarkfs::fsck::isInteractive
+Equals to @t{1} if the @option{-i} option is given to @code{fsck.bookmarkfs},
+@t{0} otherwise.
+@item $::bookmarkfs::fsck::isReadonly
+Equals to @t{0} if the @option{-o repair} option is given to
+@code{fsck.bookmarkfs}, @t{1} otherwise.
+@end table
+
+@item unsafe
+Enable unsafe Tcl interpreter features.
+
+Should be used in combination with the @option{-o no_sandbox} option
+if you wish to access extra system resources (e.g. open local files).
+
+Without this option, the Tcl interpreter has limited functionalities
+as if created with @code{interp create -safe}.
+See @tcldoc{Safe Interpreters, TclCmd/interp.htm#M45}.
+@end table
+
+Each time @command{fsck.bookmarkfs} finds an entry,
+or completes a handler-initiated operation,
+the command returned from the script is executed with a single list argument.
+The first element of the list is an integer indicating the reason for
+this handler call:
+
+@table @code
+@item $::bookmarkfs::fsck::result::end
+@item $::bookmarkfs::fsck::result::nameDuplicate
+@item $::bookmarkfs::fsck::result::nameBadChar
+@item $::bookmarkfs::fsck::result::nameBadLen
+@item $::bookmarkfs::fsck::result::nameDotDot
+@item $::bookmarkfs::fsck::result::nameInvalid
+@xref{Filesystem-check Result Code} for the meaning of each value.
+
+Except for @code{$::bookmarkfs::fsck::result::end}, the second element
+is a list of information about the current entry:
+
+@enumerate 0
+@item The bookmark ID
+@item Extra information regarding the invalid name, equivalent to the
+@code{extra} field in structure @code{bookmarkfs_fsck_data}.
+@item Name of the bookmark
+@item ID of the parent directory
+@end enumerate
+
+@item -1
+If the command is being executed for the first time, or the previous execution
+returns @code{$::bookmarkfs::fsck::handler::next}, this value never appears.
+
+If the previous execution of the command returns
+@code{$::bookmarkfs::fsck::handler::userInput},
+the second element of the list is a string of user input.
+
+Otherwise, this value indicates that the previous operation is
+successfully performed on the entry.
+
+@end table
+
+The command should return a list indicating the operation to perform
+on the entry.
+First element of the list should be one of the following values:
+
+@table @code
+@item $::bookmarkfs::fsck::handler::next
+Continue to the next entry.
+
+@item $::bookmarkfs::fsck::handler::apply
+Apply change for the current entry.
+Not available in readonly mode.
+
+Second element of the list should be a string for the new name of the bookmark.
+
+@item $::bookmarkfs::fsck::handler::userInput
+Request for user input.
+Only available in interactive mode.
+
+Second element of the list should be a string for Readline prompt,
+equivalent to the @option{prompt=@var{str}} option of the built-in handler.
+
+@item $::bookmarkfs::fsck::handler::save
+Save applied changes.
+
+@item $::bookmarkfs::fsck::handler::stop
+Save applied changes and quit.
+
+Once this value is returned, the command will never be executed again.
+
+@item $::bookmarkfs::fsck::handler::rewind
+Rewind current directory.
+
+@item $::bookmarkfs::fsck::handler::skip
+Skip current directory.
+
+@item $::bookmarkfs::fsck::handler::skipChildren
+Skip current directory and all subdirectories.
+
+@item $::bookmarkfs::fsck::handler::reset
+Rewind all.
+@end table
+
+Here is an example script that simply prints each fsck entry
+(requires the @option{unsafe} option):
+
+@example tcl
+chan configure stdout -encoding utf-8
+coroutine whatever apply @{@{@} @{
+    set args [yield [info coroutine]]
+    while 1 @{
+        lassign $args why data
+        if @{$why > $::bookmarkfs::fsck::result::end@} @{
+            lassign $data id extra name parent
+            puts "id: $id, extra: $extra, name: $name, parent: $parent"
+        @}
+        set args [yield [list $::bookmarkfs::fsck::handler::next]]
+    @}
+@}@}
+@end example
 
 
 @node Filesystem-Check Handler API
