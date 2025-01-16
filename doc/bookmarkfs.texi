@@ -264,6 +264,7 @@ Stay in the foreground, do not daemonize.
 
 @item -h
 Print help text, and then exit.
+
 @item -V
 Print version and feature information, and then exit.
 @end table
@@ -389,6 +390,7 @@ This option is ignored when performing online fsck.
 
 @item -i
 Enable interactive mode.
+
 @item -R
 Perform fsck on subdirectories recursively.
 
@@ -405,6 +407,7 @@ Also @pxref{Disabling Landlock}.
 
 @item -h
 Print help text, and then exit.
+
 @item -V
 Print version and feature information, and then exit.
 @end table
@@ -443,6 +446,7 @@ If the file referred to by @var{pathname} already exists, overwrite it.
 
 @item -h
 Print help text, and then exit.
+
 @item -V
 Print version and feature information, and then exit.
 @end table
@@ -521,6 +525,7 @@ For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
 
 @item help
 Print help text, and then exit.
+
 @item version
 Print version information, and then exit.
 @end table
@@ -1309,22 +1314,31 @@ The user may issue a command to indicate what to do with each entry:
 @table @command
 @item p
 Print the ID and new name of current entry.
+
 @item a[-]
 Apply the proposed rename for the current entry.
+
 @item e[-] @var{new_name}
 Change the proposed rename to @var{new_name} and then apply.
+
 @item c
 Continue to the next entry.
+
 @item s[-]
 Skip current directory.
+
 @item S[-]
 Skip current directory and all subdirectories.
+
 @item r[-]
 Rewind current directory.
+
 @item R[-]
 Rewind all.
+
 @item w[-]
 Save applied changes.
+
 @item q
 Save applied changes and quit.
 @end table
