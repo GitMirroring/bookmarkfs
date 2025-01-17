@@ -118,6 +118,23 @@ For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
 won't work if you're trying to port BookmarkFS to Microsoft Windows.
 
 
+@node Limitations on FreeBSD
+@section Limitations on FreeBSD
+
+Currently, the FreeBSD @freebsdmanpage{fusefs, 5} implementation does not
+support @code{FUSE_IOCTL}.
+All custom @freebsdmanpage{ioctl, 2} calls on a FUSE filesystem fail
+with @code{ENOTTY} without the requests being sent to the FUSE server.
+
+Thus, BookmarkFS features that depend on @code{ioctl()} do not work
+on FreeBSD, which includes:
+
+@itemize @bullet{}
+@item Permute directory entries (@pxref{Permute Directory Entries})
+@item Online filesystem check (@pxref{Online Filesystem Check})
+@end itemize
+
+
 @node Sandboxing
 @section Sandboxing
 
@@ -154,6 +171,13 @@ On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
 
 @node Programs
 @chapter Programs
+
+BookmarkFS ships with programs that provide users with a command-line
+interface to create, mount, fix, and manage BookmarkFS filesystems.
+
+Those programs do not work on their own, and usually require a ``backend''
+for low-level functionalities.
+@xref{Backends}.
 
 
 @node mount.bookmarkfs
@@ -313,8 +337,8 @@ since the ``access time'' attribute of a bookmark necessarily means
 As a bookmark management tool independent from the browser,
 BookmarkFS should never update that time automatically.
 
-Nonetheless, the user can still update atime explicitly (e.g. with
-@posixfuncmanpage{futimens}).
+Nonetheless, the user is still allowed to explicitly update atime
+(e.g. with @posixfuncmanpage{futimens}).
 @end table
 
 
@@ -546,7 +570,7 @@ actual bookmark data, @pxref{Backends}), thus providing POSIX
 
 BookmarkFS is designed in the hope that web browser bookmarks
 can be managed flexibly using a combination of existing software,
-without having to reinvent the wheel.
+without having to ``reinvent the wheel''.
 However, like most other pseudo-filesystems,
 it cannot be considered fully POSIX-compliant.
 Users should be aware of the limitations when using BookmarkFS.
@@ -854,6 +878,10 @@ Write or search permission is denied for the directory.
 @item ENOENT
 The directory does not contain entries named @code{name1} or @code{name2}.
 
+@item ENOTTY
+The kernel does not support @code{FUSE_IOCTL}.
+@xref{Limitations on FreeBSD}.
+
 @item EPERM
 The backend does not support rearranging entries for this directory.
 @end table
@@ -963,9 +991,6 @@ On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}:
 @table @code
 @item EACCES
 Read permission is denied for the directory.
-
-@item EPERM
-The backend does not support fsck for this directory.
 @end table
 
 @item BOOKMARKFS_IOC_FSCK_APPLY
@@ -973,7 +998,7 @@ The backend does not support fsck for this directory.
 ``Repair'' a bookmark by renaming it.
 
 The @code{id} field must be set to a value previously obtained from
-@code{BOOKMARKFS_IOC_FSCK_NEXT} on the directory,
+@code{BOOKMARKFS_IOC_FSCK_NEXT} with the same @var{dirfd},
 otherwise the behavior is undefined.
 
 The @code{name} field should be set to the new name for the bookmark.
@@ -1016,6 +1041,17 @@ beginning of the directory stream.
 
 On success, @code{ioctl()} returns @t{0}.
 Otherwise, it returns @t{-1}, and sets @code{errno}.
+@end table
+
+Common error codes for all filesystem-check ioctls:
+
+@table @code
+@item ENOTTY
+The kernel does not support @code{FUSE_IOCTL}.
+@xref{Limitations on FreeBSD}.
+
+@item EPERM
+The backend does not support fsck for this directory.
 @end table
 
 
@@ -1081,9 +1117,6 @@ with @code{EPERM}.
 Also set the GUID string as the bookmark title.
 @end table
 
-With @option{filename=title}, the GUID is available as an extended attribute
-(@pxref{Extended Attributes}), and vise versa.
-
 @item lock=exclusive|normal
 The database connection locking mode for the bookmark storage.
 Defaults to @samp{normal} when the filesystem is mounted read-only,
@@ -1121,8 +1154,36 @@ Backend-specific options (@command{mkfs.bookmarkfs} only):
 File creation time for the bookmark root directories.
 Defaults to the current time.
 
-Value of @var{timestamp} must be a decimal representing number of microseconds
-since the Unix epoch.
+Format of @var{timestamp} is equivalent to the @samp{date_added}
+extended attribute (see below).
+@end table
+
+Extended attributes:
+
+@table @samp
+@item title
+The bookmark title.
+Only available with @option{filename=guid}.
+
+This value is allowed be set to any string that is valid UTF-8,
+and does not have to be valid as a filename.
+
+@item guid
+The bookmark GUID.
+Only available with @option{filename=title}.
+
+@item description
+An arbitrary text associated with the bookmark.
+
+Usually, when bookmarking a page in the browser, this value is
+set to the @code{content} attribute of the @code{<meta>} element
+whose @code{name} is @samp{description}.
+
+@item date_added
+The bookmark creation time.
+
+Value is a decimal integer representing number of microseconds since
+the Unix epoch.
 @end table
 
 
@@ -1180,9 +1241,6 @@ with @code{EPERM}.
 Also set the GUID string as the bookmark title.
 @end table
 
-With @option{filename=title}, the GUID is available as an extended attribute
-(@pxref{Extended Attributes}), and vise versa.
-
 @item watcher=native|fallback|none
 The file watcher to use for the bookmark storage.
 Defaults to @samp{native} when the filesystem is mounted read-only,
@@ -1229,21 +1287,50 @@ Backend-specific options (@command{mkfs.bookmarkfs} only):
 File creation time for the bookmark root directories.
 Defaults to the current time.
 
-Value of @var{timestamp} must be a decimal representing number of microseconds
-since the Windows @code{FILETIME} epoch (134774 days ahead of the Unix epoch).
+Format of @var{timestamp} is equivalent to the @samp{date_added}
+extended attribute (see below).
 @end table
 
-The Chromium backend does not scale well with large bookmark storage,
-since it keeps everything in memory, and has to parse the entire JSON file
+Extended attributes:
+
+@table @samp
+@item title
+The bookmark title.
+Only available with @option{filename=guid}.
+
+This value is allowed be set to any string that is valid UTF-8,
+and does not have to be valid as a filename.
+
+@item guid
+The bookmark GUID.
+Only available with @option{filename=title}.
+
+@item date_added
+The bookmark creation time.
+
+Value is a decimal integer representing number of microseconds since
+the Windows @code{FILETIME} epoch (134774 days ahead of the Unix epoch).
+@end table
+
+Notable limitations:
+
+@itemize @bullet{}
+@item Does not scale well with large bookmark storage,
+since everything is kept in memory, and the entire JSON file has to be parsed
 whenever a reload is required.
 
-Another limitation is the lack of tags (@pxref{Tags}) and keywords
-(@pxref{Keywords}) support.
-Chromium does not have such concepts.
+@item No support for tags (@pxref{Tags}) and keywords (@pxref{Keywords}),
+since Chromium does not have such concepts.
+@end itemize
 
 
 @node Backend API
 @section Backend API
+
+@quotation Note
+This section is work-in-progress.
+Come back later!
+@end quotation
 
 
 @node Filesystem-Check Handlers
@@ -1494,6 +1581,11 @@ coroutine whatever apply @{@{@} @{
 
 @node Filesystem-Check Handler API
 @section Handler API
+
+@quotation Note
+This section is work-in-progress.
+Come back later!
+@end quotation
 
 
 @node General Index
