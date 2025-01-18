@@ -165,6 +165,9 @@ do_fsck (
             if (result < 0) {
                 return -1;
             }
+            if (result == BOOKMARKFS_FSCK_RESULT_END) {
+                result = -1;
+            }
             goto run_handler;
         }
 #ifdef BOOKMARKFS_INTERACTIVE_FSCK

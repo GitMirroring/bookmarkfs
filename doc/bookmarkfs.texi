@@ -1486,7 +1486,6 @@ The first element of the list is an integer indicating the reason for
 this handler call:
 
 @table @code
-@item $::bookmarkfs::fsck::result::end
 @item $::bookmarkfs::fsck::result::nameDuplicate
 @item $::bookmarkfs::fsck::result::nameBadChar
 @item $::bookmarkfs::fsck::result::nameBadLen
@@ -1494,8 +1493,7 @@ this handler call:
 @item $::bookmarkfs::fsck::result::nameInvalid
 @xref{Filesystem-check Result Code} for the meaning of each value.
 
-Except for @code{$::bookmarkfs::fsck::result::end}, the second element
-is a list of information about the current entry:
+The second element is a list of information about the current entry:
 
 @enumerate 0
 @item The bookmark ID
@@ -1569,7 +1567,7 @@ coroutine whatever apply @{@{@} @{
     set args [yield [info coroutine]]
     while 1 @{
         lassign $args why data
-        if @{$why > $::bookmarkfs::fsck::result::end@} @{
+        if @{$why > -1@} @{
             lassign $data id extra name parent
             puts "id: $id, extra: $extra, name: $name, parent: $parent"
         @}

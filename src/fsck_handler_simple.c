@@ -279,10 +279,8 @@ handle_entry (
 
     int control = BOOKMARKFS_FSCK_NEXT;
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
-        if (why != BOOKMARKFS_FSCK_RESULT_END) {
-            fix_entry(ctx, why, entry_data);
-            control = BOOKMARKFS_FSCK_APPLY;
-        }
+        fix_entry(ctx, why, entry_data);
+        control = BOOKMARKFS_FSCK_APPLY;
     }
 #ifdef BOOKMARKFS_INTERACTIVE_FSCK
     if (ctx->flags & BOOKMARKFS_FSCK_HANDLER_INTERACTIVE) {

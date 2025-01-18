@@ -159,7 +159,6 @@ init_interp (
     DO_SET_VAR(interp, "handler::reset",        BOOKMARKFS_FSCK_RESET);
 #define DO_SET_RESULT_VAR(interp, name, val)  \
     DO_SET_VAR(interp, "result::" name, BOOKMARKFS_FSCK_RESULT_##val)
-    DO_SET_RESULT_VAR(interp, "end",           END);
     DO_SET_RESULT_VAR(interp, "nameDuplicate", NAME_DUPLICATE);
     DO_SET_RESULT_VAR(interp, "nameBadChar",   NAME_BADCHAR);
     DO_SET_RESULT_VAR(interp, "nameBadLen",    NAME_BADLEN);
@@ -365,6 +364,10 @@ fsck_handler_run (
         break;
 
       case BOOKMARKFS_FSCK_APPLY:
+        if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
+            log_puts("cannot apply, fsck is running in readonly mode");
+            return -1;
+        }
         if (TCL_OK != Tcl_ListObjIndex(interp, result_obj, 1, &data_obj)) {
             log_puts("bad return value, no new name given");
             return -1;
