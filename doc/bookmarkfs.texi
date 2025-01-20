@@ -134,6 +134,9 @@ on FreeBSD, which includes:
 @item Online filesystem check (@pxref{Online Filesystem Check})
 @end itemize
 
+Meanwhile, FreeBSD does not support @code{FUSE_READDIRPLUS} and directory
+entry caching, which makes listing directory entries less efficient.
+
 
 @node Sandboxing
 @section Sandboxing
@@ -261,8 +264,8 @@ This behavior may be inefficient, but makes applications that depend on ctime
 less fragile.
 @end table
 
-The kernel may cache file attributes, making ctime appear more ``correct''
-than what we claim.
+The kernel may automatically update and cache ctime,
+making it more ``correct'' than what we expect.
 However, this behavior should not be relied upon.
 
 @item -o eol
@@ -409,6 +412,8 @@ Always backup the bookmark storage before repairing, or risk losing your data!
 @item -o rl_app=@var{name}
 Readline application name in interactive mode.
 Defaults to @samp{fsck.bookmarkfs}.
+
+@xref{Conditional Init Constructs,,, readline, GNU Readline Library}.
 
 @item -o type=bookmark|tag|keyword
 Subsystem type (@pxref{Hierarchy}).
@@ -706,7 +711,7 @@ If the original file is already associated with another keyword,
 
 When a filesystem operation fails, the kernel returns an error code for the
 system call.
-In addition to common error codes, there's few more in BookmarkFS:
+In addition to common error codes, there are a few more in BookmarkFS:
 
 @table @code
 @item EPERM
@@ -1370,7 +1375,8 @@ Defaults to @samp{% }.
 This option is ignored in non-interactive mode.
 
 @item translit=@var{char}
-Transliterate bad characters into @var{char}.
+Transliterate bad (@samp{/}) characters into @var{char}
+(must be a single ASCII character).
 Defaults to @samp{_}.
 @end table
 
