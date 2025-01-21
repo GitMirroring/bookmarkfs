@@ -1427,6 +1427,92 @@ Some can be optional and set to @code{NULL}, if the backend
 does not support the corresponding features.
 
 
+@node Initialize Backend
+@subsection Initialize Backend
+
+The @code{backend_init} function is called by the frontend program
+before calling any other functions (except for @code{backend_info}).
+If not @code{NULL}, it is guaranteed to be called exactly once
+throughout the lifetime of the process.
+
+@example C
+typedef int (bookmarkfs_backend_init_func) (
+    uint32_t flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BACKEND_LIB_READY
+Indicates that the utility library is already initialized.
+
+Some frontend programs use the utility library.
+If they do, they always initialize it before initializing the backend.
+The utility library must not be initialized multiple times,
+otherwise the behavior is undefined.
+
+@item BOOKMARKFS_FRONTEND_FSCK
+@item BOOKMARKFS_FRONTEND_MOUNT
+@item BOOKMARKFS_FRONTEND_MKFS
+Denotes the frontend program that launches the backend.
+These flags are mutually exclusive.
+@end table
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
+
+
+@node Get Backend Information
+@subsection Get Backend Information
+
+If not @code{NULL}, the @code{backend_info} function is called when the user
+instructs the frontend program to print information about the backend.
+
+When this function is called, the backend should write a human-readable
+message of the corresponding information to standard output.
+
+@example C
+typedef void (bookmarkfs_backend_info_func) (
+    uint32_t flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BACKEND_INFO_HELP
+Indicates that the backend should print a help message.
+Mutually exclusive with @code{BOOKMARKFS_BACKEND_INFO_VERSION}.
+
+The message should contain a brief description of this backend,
+as well as a list of backend-specific options.
+
+@item BOOKMARKFS_BACKEND_INFO_VERSION
+Indicates that the backend should print a version message.
+Mutually exclusive with @code{BOOKMARKFS_BACKEND_INFO_HELP}.
+
+In addition to the version number, the version message may also contain
+dependency versions, compile-time options, and other information
+that can be used to determine a specific version of the backend.
+
+@item BOOKMARKFS_FRONTEND_FSCK
+@item BOOKMARKFS_FRONTEND_MOUNT
+@item BOOKMARKFS_FRONTEND_MKFS
+Denotes the frontend program that launches the backend.
+These flags are mutually exclusive.
+@end table
+@end table
+
+
 @node Filesystem-Check Handlers
 @chapter Filesystem-Check Handlers
 
