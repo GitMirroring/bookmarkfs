@@ -222,6 +222,20 @@ Options:
 The backend used by the filesystem (@pxref{Backends}).
 This option is mandatory.
 
+@anchor{Alternative Backend Name}
+Alternatively, @var{name} could be specified in
+@samp{@var{lib_path}:@var{sym_name}} format, where:
+
+@table @var
+@item lib_path@
+Presumably the pathname to the backend library.
+Its exact interpretation is equivalent to the first argument for
+@posixfuncmanpage{dlopen}.
+
+@item sym_name
+@xref{Backend Symbol Name Format}.
+@end table
+
 @item -o @@@var{key}[=@var{value}]
 A backend-specific option.
 This option can be provided multiple times.
@@ -359,13 +373,8 @@ Filesystem check on BookmarkFS has a different purpose compared to
 on-disk filesystems.
 @xref{Filesystem Check}.
 
-Options:
-
-@table @option
-@item -o backend=@var{name}
-The backend used by the filesystem (@pxref{Backends}).
-
-If this option is not provided, or @var{name} is empty, performs online fsck.
+Depending on the options specified, filesystem check works either in
+online or offline mode:
 
 @table @asis
 @item Online Mode
@@ -386,6 +395,18 @@ format, where @var{dir} refers to the directory to operate on,
 relative to the root directory of the subsystem.
 @end table
 
+Options:
+
+@table @option
+@item -o backend=@var{name}
+The backend used by the filesystem (@pxref{Backends}).
+
+Value of @var{name} could be specified in an alternative format.
+@xref{Alternative Backend Name}.
+
+If this option is not provided, or @var{name} is empty, performs online fsck.
+Otherwise perform offline fsck.
+
 @item -o @@@var{key}[=@var{value}]
 A backend-specific option.
 This option can be provided multiple times.
@@ -393,6 +414,19 @@ This option can be provided multiple times.
 @item -o handler=@var{name}
 The handler for resolving errors found during fsck
 (@pxref{Filesystem-Check Handlers}).
+
+Alternatively, @var{name} could be specified in
+@samp{@var{lib_path}:@var{sym_name}} format, where:
+
+@table @var
+@item lib_path@
+Presumably the pathname to the fsck handler library.
+Its exact interpretation is equivalent to the first argument for
+@posixfuncmanpage{dlopen}.
+
+@item sym_name
+@xref{Filesystem-Check Handler Symbol Name Format}.
+@end table
 
 If this option is not provided, or @var{name} is empty,
 a built-in handler will be used.
@@ -469,6 +503,9 @@ Options:
 @item -o backend=@var{name}
 The backend used by the filesystem (@pxref{Backends}).
 This option is mandatory.
+
+Value of @var{name} could be specified in an alternative format.
+@xref{Alternative Backend Name}.
 
 @item -o @@@var{key}[=@var{value}]
 A backend-specific option.
@@ -1072,7 +1109,7 @@ Typically, backends are built into shared libraries, and are installed as:
 @var{$@{pkglibdir@}}/backend-@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
-Where @var{$@{name@}} is the backend name, equivalent to value given to the
+Where @var{$@{name@}} is the backend name, equivalent to the value given to the
 @option{-o backend=@var{name}} option of frontend programs,
 and @var{$@{shlib_suffix@}} is the common filename extension for shared library
 files on the current platform (e.g. @file{.so} on GNU/Linux and FreeBSD).
@@ -1332,10 +1369,58 @@ since Chromium does not have such concepts.
 @node Backend API
 @section Backend API
 
-@quotation Note
-This section is work-in-progress.
-Come back later!
+The Backend API specifies how a BookmarkFS backend communicates with a
+frontend program (e.g. @command{mount.bookmarkfs}).
+
+@quotation Warning
+Currently BookmarkFS is experimental.
+Content in this section may change drastically without prior notice.
 @end quotation
+
+@anchor{Backend Symbol Name Format}
+@cindex Backend Symbol Name Format
+To implement the Backend API, a backend library should expose a symbol
+with the following name:
+
+@example
+bookmarkfs_backend_@var{$@{name@}}
+@end example
+
+Where @var{$@{name@}} is equivalent to the value given to the
+@option{-o backend=@var{name}} option of frontend programs.
+
+The symbol should name a data object identifier of the following type:
+
+@example C
+#include <bookmarkfs/backend.h>
+
+struct bookmarkfs_backend @{
+    bookmarkfs_backend_create_func  *backend_create;
+    bookmarkfs_backend_free_func    *backend_free;
+    bookmarkfs_backend_info_func    *backend_info;
+    bookmarkfs_backend_init_func    *backend_init;
+    bookmarkfs_backend_mkfs_func    *backend_mkfs;
+    bookmarkfs_backend_sandbox_func *backend_sandbox;
+    bookmarkfs_backend_sync_func    *backend_sync;
+
+    bookmarkfs_bookmark_get_func     *bookmark_get;
+    bookmarkfs_bookmark_list_func    *bookmark_list;
+    bookmarkfs_bookmark_lookup_func  *bookmark_lookup;
+
+    bookmarkfs_bookmark_create_func  *bookmark_create;
+    bookmarkfs_bookmark_delete_func  *bookmark_delete;
+    bookmarkfs_bookmark_fsck_func    *bookmark_fsck;
+    bookmarkfs_bookmark_permute_func *bookmark_permute;
+    bookmarkfs_bookmark_rename_func  *bookmark_rename;
+    bookmarkfs_bookmark_set_func     *bookmark_set;
+
+    bookmarkfs_object_free_func  *object_free;
+@};
+@end example
+
+Each field is a function pointer provided by the backend.
+Some can be optional and set to @code{NULL}, if the backend
+does not support the corresponding features.
 
 
 @node Filesystem-Check Handlers
@@ -1586,10 +1671,43 @@ coroutine whatever apply @{@{@} @{
 @node Filesystem-Check Handler API
 @section Handler API
 
-@quotation Note
-This section is work-in-progress.
-Come back later!
+The Filesystem-Check API specifies how a fsck handler communicates with
+@command{fsck.bookmarkfs}.
+
+@quotation Warning
+Currently BookmarkFS is experimental.
+Content in this section may change drastically without prior notice.
 @end quotation
+
+@anchor{Filesystem-Check Handler Symbol Name Format}
+@cindex Filesystem-Check Handler Symbol Name Format
+To implement the Filesystem-Check Handler API, a fsck handler library
+should expose a symbol with the following name:
+
+@example
+bookmarkfs_fsck_handler_@var{$@{name@}}
+@end example
+
+Where @var{$@{name@}} is equivalent to the value given to the
+@option{-o handler=@var{name}} option of @command{fsck.bookmarkfs}.
+
+The symbol should name a data object identifier of the following type:
+
+@example C
+#include <bookmarkfs/fsck_handler.h>
+
+struct bookmarkfs_fsck_handler @{
+    bookmarkfs_fsck_handler_info_func *info;
+
+    bookmarkfs_fsck_handler_create_func  *create;
+    bookmarkfs_fsck_handler_destroy_func *destroy;
+
+    bookmarkfs_fsck_handler_run_func *run;
+@};
+@end example
+
+Each field is a function pointer provided by the fsck handler,
+all of which are mandatory (must not be @code{NULL}).
 
 
 @node General Index
