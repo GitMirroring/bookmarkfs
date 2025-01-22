@@ -67,6 +67,10 @@ struct fsck_dir {
 #define FSCK_DIR_DONE  ( 1u << 0 )
 
 // Forward declaration start
+#ifdef __linux__
+static ssize_t getdents (int, void *, size_t);
+#endif
+
 static int  next_subdir   (struct fsck_ctx *, struct fsck_dir *,
                            struct dirent const **);
 static int  open_subdir   (int, char const *, uint64_t *);
@@ -75,22 +79,31 @@ static void print_help    (void);
 static void print_version (void);
 // Forward declaration end
 
+#ifdef __linux__
+
+static ssize_t
+getdents (
+    int     dirfd,
+    void   *buf,
+    size_t  bufsize
+) {
+    return syscall(SYS_getdents64, dirfd, buf, bufsize);
+}
+
+#endif  /* defined(__linux__) */
+
 static int
 next_subdir (
     struct fsck_ctx      *ctx,
     struct fsck_dir      *dir,
     struct dirent const **dent_ptr
 ) {
-#ifdef __linux__
-#  define getdents(...)  syscall(SYS_getdents64, __VA_ARGS__)
-#endif
-#define DIRENT_BUFSIZE  4096
-
     size_t start = dir->dent_start;
     size_t off   = dir->dent_off;
     size_t len   = ctx->dent_buf_used;
     while (1) {
         if (off == len) {
+#define DIRENT_BUFSIZE  4096
             if (start + DIRENT_BUFSIZE > ctx->dent_buf_size) {
                 ctx->dent_buf_size = start + DIRENT_BUFSIZE;
                 ctx->dent_buf = xrealloc(ctx->dent_buf, ctx->dent_buf_size);
