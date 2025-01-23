@@ -154,7 +154,7 @@ xrealloc (
 /**
  * Like strerror(), but MT-Safe.
  *
- * NOTE: strerror() is MT-Safe in some implementations (e.g. glibc >= 2.32),
+ * NOTE: strerror() is MT-Safe in some implementations (e.g., glibc >= 2.32),
  *       but POSIX does not enforce that.
  */
 BOOKMARKFS_INTERNAL

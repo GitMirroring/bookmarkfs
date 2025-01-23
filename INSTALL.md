@@ -164,7 +164,7 @@ Notes
  ### Targeting 32-bit Platforms
 
   BookmarkFS requires 64-bit `off_t` and `time_t`, which may not be supported
-  on 32-bit platforms (e.g. i386 FreeBSD does not support 64-bit `time_t`).
+  on 32-bit platforms (e.g., i386 FreeBSD does not support 64-bit `time_t`).
 
   If using Autoconf 2.72 or later, the configuration script automatically
   performs checks and defines necessary macros, and fails if unsupported.

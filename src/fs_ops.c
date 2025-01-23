@@ -90,7 +90,7 @@
 #define send_reply(name, ...)  \
     reply_errcheck(fuse_reply_##name(__VA_ARGS__), #name, __LINE__)
 
-// Some platforms (e.g. Arm Morello) have 128-bit pointers,
+// Some platforms (e.g., Arm Morello) have 128-bit pointers,
 // where we cannot safely store a pointer to `fi->fh`.
 #if defined(SIZEOF_UINTPTR_T) && (SIZEOF_UINTPTR_T > 8)
 #  error "sizeof(uintptr_t) > sizeof(uint64_t)"

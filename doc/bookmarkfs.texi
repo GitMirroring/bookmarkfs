@@ -160,8 +160,8 @@ and cannot help if the operating system has already been compromised.
 Examples of what ``untrusted input'' may include:
 
 @itemize @bullet{}
-@item Bookmark files that are @emph{not} created by the user using a
-trusted program (e.g. a file obtained from some random person on the internet).
+@item Bookmark files that are @emph{not} created by the user using a trusted
+program (e.g., a file obtained from some random person on the internet).
 @item Filesystem calls from untrusted programs.
 The program itself may be isolated, but it has a chance to escape
 the isolated environment if it can exploit BookmarkFS.
@@ -201,7 +201,7 @@ The exact interpretation of this option is backend-defined.
 
 @item target
 Pathname of the directory where the filesystem shall be mounted to
-(i.e. the ``mountpoint'').
+(i.e., the ``mountpoint'').
 @end table
 
 Files under the filesystem are assigned ownership according to
@@ -355,7 +355,7 @@ As a bookmark management tool independent from the browser,
 BookmarkFS should never update that time automatically.
 
 Nonetheless, the user is still allowed to explicitly update atime
-(e.g. with @posixfuncmanpage{futimens}).
+(e.g., with @posixfuncmanpage{futimens}).
 @end table
 
 
@@ -779,7 +779,7 @@ is undefined.
 The file associated with the file descriptor no longer exists.
 
 The error may occur when the underlying bookmark storage has been modified by
-another process (e.g. a web browser) after opening a file.
+another process (e.g., a web browser) after opening a file.
 
 If the filesystem is mounted in exclusive mode, this error should not occur.
 @end table
@@ -844,7 +844,7 @@ This allows filesystem implementations to organize directory entries in a more
 relaxed manner.
 There could be extra overhead to maintain a predictable ordering of
 directory entries, since they may not have a linear structure on modern
-on-disk filesystems (e.g. ext4 uses
+on-disk filesystems (e.g., ext4 uses
 @linuxdoc{htree, filesystems/ext4/dynamic.html#hash-tree-directories}
 for large directories).
 
@@ -915,7 +915,7 @@ Write or search permission is denied for the directory.
 
 @item EINVAL
 @code{name1} or @code{name2} is not a valid filename
-(e.g. empty string; contains @samp{/} character).
+(e.g., empty string; contains @samp{/} character).
 
 @item ENOENT
 The directory does not contain entries named @code{name1} or @code{name2}.
@@ -1011,7 +1011,7 @@ in the directory stream.
 Value of @code{extra} is the ID of the other bookmark.
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR
-The bookmark contains a bad character (i.e. the ASCII @samp{/} character).
+The bookmark contains a bad character (i.e., the ASCII @samp{/} character).
 
 Value of @code{extra} is the byte offset where the bad character first appears
 in @code{name}.
@@ -1115,7 +1115,7 @@ The backend name, equivalent to the value given to the
 
 @item $@{shlib_suffix@}
 The common filename extension for shared library files on the current platform
-(e.g. @file{.so} on GNU/Linux and FreeBSD).
+(e.g., @file{.so} on GNU/Linux and FreeBSD).
 @end table
 
 
@@ -1374,7 +1374,7 @@ since Chromium does not have such concepts.
 @section Backend API
 
 The Backend API specifies how a BookmarkFS backend communicates with a
-frontend program (e.g. @command{mount.bookmarkfs}).
+frontend program (e.g., @command{mount.bookmarkfs}).
 
 @quotation Warning
 Currently BookmarkFS is experimental.
@@ -1663,7 +1663,7 @@ The pointer will be passed to further function calls on this context.
 
 @item bookmarks_root_id
 ID of the bookmark root directory
-(i.e. @file{@var{$@{mountpoint@}}/bookmarks}).
+(i.e., @file{@var{$@{mountpoint@}}/bookmarks}).
 Must not be greater than @code{BOOKMARKFS_MAX_ID}.
 
 If sandboxing is requested, and the ID cannot be determined in a safe way
@@ -1671,7 +1671,7 @@ before entering sandbox, the backend may leave this field as-is or set it
 to @code{UINT64_MAX}.
 
 @item tags_root_id
-ID of the tags root directory (i.e. @file{@var{$@{mountpoint@}}/tags}).
+ID of the tags root directory (i.e., @file{@var{$@{mountpoint@}}/tags}).
 Must not be greater than @code{BOOKMARKFS_MAX_ID}.
 
 This field should be left as-is or set to @code{UINT64_MAX},
@@ -1733,7 +1733,7 @@ The handler name, equivalent to the value given to the
 
 @item $@{shlib_suffix@}
 The common filename extension for shared library files on the current platform
-(e.g. @file{.so} on GNU/Linux and FreeBSD).
+(e.g., @file{.so} on GNU/Linux and FreeBSD).
 @end table
 
 
@@ -1857,7 +1857,7 @@ Equals to @t{0} if the @option{-o repair} option is given to
 Enable unsafe Tcl interpreter features.
 
 Should be used in combination with the @option{-o no_sandbox} option
-if you wish to access extra system resources (e.g. open local files).
+if you wish to access extra system resources (e.g., open local files).
 
 Without this option, the Tcl interpreter has limited functionalities
 as if created with @code{interp create -safe}.

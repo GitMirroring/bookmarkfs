@@ -3142,7 +3142,7 @@ backend_mkfs (
     // symbolic link, and SQLite choose to resolve it with readlink(2)
     // instead of directly open it (see unixFullPathname() in src/os_unix.c),
     // which does not solve the TOCTOU problem.  Also, /dev/fd is not portable
-    // (e.g. FreeBSD does not mount fdescfs by default).
+    // (e.g., FreeBSD does not mount fdescfs by default).
     //
     // Theoretically we could implement a "VFS shim" to workaround this
     // problem, but that does not seem to be worthwhile.

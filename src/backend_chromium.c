@@ -1831,7 +1831,7 @@ backend_sandbox (
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
         // Do not lazy-init iconv in sandbox mode,
-        // since it may want to load modules (e.g. from /usr/lib/gconv).
+        // since it may want to load modules (e.g., from /usr/lib/gconv).
         if (0 != init_iconv(&ctx->cd)) {
             return -1;
         }
