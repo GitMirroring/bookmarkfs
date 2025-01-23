@@ -450,7 +450,7 @@ Defaults to @samp{fsck.bookmarkfs}.
 @xref{Conditional Init Constructs,,, readline, GNU Readline Library}.
 
 @item -o type=bookmark|tag|keyword
-Subsystem type (@pxref{Hierarchy}).
+Subsystem type (@pxref{Filesystem Hierarchy}).
 Defaults to @samp{bookmark}.
 
 This option is ignored when performing online fsck.
@@ -618,7 +618,7 @@ it cannot be considered fully POSIX-compliant.
 Users should be aware of the limitations when using BookmarkFS.
 
 
-@node Hierarchy
+@node Filesystem Hierarchy
 @section Filesystem Hierarchy
 
 BookmarkFS has multiple subsystems.
@@ -712,7 +712,7 @@ Applications should tread lightly if they wish to cache tag directory entries.
 
 To associate a bookmark with a tag, use @posixfuncmanpage{link}:
 
-@example C
+@example c
 fd = open("tags/gnu/readline", O_CREAT | O_WRONLY, 0600);
 // Oops, fd == -1, errno == EPERM
 
@@ -805,7 +805,7 @@ All attributes have a @samp{bookmarkfs.} name prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend):
 
-@example C
+@example c
 // Linux
 len = fgetxattr(fd, "user.bookmarkfs.guid", buf, sizeof(buf));
 
@@ -869,7 +869,7 @@ To change the ordering of directory entries, @pxref{Permute Directory Entries}.
 
 BookmarkFS provides an I/O control for rearranging directory entries:
 
-@example C
+@example c
 #include <bookmarkfs/ioctl.h>
 
 int ioctl (int dirfd, BOOKMARKFS_IOC_PERMD,
@@ -878,7 +878,7 @@ int ioctl (int dirfd, BOOKMARKFS_IOC_PERMD,
 
 The @code{bookmarkfs_permd_data} structure is defined as:
 
-@example C
+@example c
 struct bookmarkfs_permd_data @{
     enum bookmarkfs_permd_op op;
 
@@ -964,7 +964,7 @@ from another bookmark management software.
 To perform filesystem check on a mounted BookmarkFS filesystem,
 use the following I/O controls:
 
-@example C
+@example c
 #include <bookmarkfs/ioctl.h>
 
 int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_NEXT,
@@ -978,7 +978,7 @@ int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
 
 The @code{bookmarkfs_fsck_data} structure is defined as:
 
-@example C
+@example c
 struct bookmarkfs_fsck_data @{
     uint64_t id;
     uint64_t extra;
@@ -993,8 +993,8 @@ Filesystem-check commands:
 
 Find the next bookmark with invalid name under the directory.
 
-@anchor{Filesystem-check Result Code}
-@cindex Filesystem-check Result Code
+@anchor{Filesystem-Check Result Code}
+@cindex Filesystem-Check Result Code
 On success, @code{ioctl()} updates @var{argp}, and returns
 one of the values defined in enum @code{bookmarkfs_fsck_result}:
 
@@ -1395,7 +1395,7 @@ Where @var{$@{name@}} is equivalent to the value given to the
 
 The symbol should name a data object identifier of the following type:
 
-@example C
+@example c
 #include <bookmarkfs/backend.h>
 
 struct bookmarkfs_backend @{
@@ -1435,7 +1435,7 @@ before calling any other functions (except for @code{backend_info}).
 If not @code{NULL}, it is guaranteed to be called exactly once
 throughout the lifetime of the process.
 
-@example C
+@example c
 typedef int (bookmarkfs_backend_init_func) (
     uint32_t flags
 );
@@ -1476,7 +1476,7 @@ instructs the frontend program to print information about the backend.
 When this function is called, the backend should write a human-readable
 message of the corresponding information to standard output.
 
-@example C
+@example c
 typedef void (bookmarkfs_backend_info_func) (
     uint32_t flags
 );
@@ -1677,7 +1677,7 @@ this handler call:
 @item $::bookmarkfs::fsck::result::nameBadLen
 @item $::bookmarkfs::fsck::result::nameDotDot
 @item $::bookmarkfs::fsck::result::nameInvalid
-@xref{Filesystem-check Result Code} for the meaning of each value.
+@xref{Filesystem-Check Result Code} for the meaning of each value.
 
 The second element is a list of information about the current entry:
 
@@ -1712,7 +1712,7 @@ Continue to the next entry.
 
 @item $::bookmarkfs::fsck::handler::apply
 Apply change for the current entry.
-Not available in readonly mode.
+Not available in read-only mode.
 
 Second element of the list should be a string for the new name of the bookmark.
 
@@ -1788,7 +1788,7 @@ Where @var{$@{name@}} is equivalent to the value given to the
 
 The symbol should name a data object identifier of the following type:
 
-@example C
+@example c
 #include <bookmarkfs/fsck_handler.h>
 
 struct bookmarkfs_fsck_handler @{
