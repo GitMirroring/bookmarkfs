@@ -1801,8 +1801,42 @@ struct bookmarkfs_fsck_handler @{
 @};
 @end example
 
-Each field is a function pointer provided by the fsck handler,
-all of which are mandatory (must not be @code{NULL}).
+Each field is a function pointer provided by the fsck handler.
+Some can be optional and set to @code{NULL}, if the backend
+does not support the corresponding features.
+
+
+@node Get Handler Information
+@subsection Get Handler Information
+
+If not @code{NULL}, the @code{info} function is called when the user
+instructs @command{fsck.bookmarkfs} to print information about the handler.
+
+When this function is called, the handler should write a human-readable
+message of the corresponding information to standard output.
+
+@example c
+typedef void (bookmarkfs_fsck_handler_info_func) (
+    uint32_t flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_FSCK_HANDLER_INFO_HELP
+@item BOOKMARKFS_FSCK_HANDLER_INFO_VERSION
+Indicates that the backend should print a help/version message.
+
+These flags are analogous to the corresponding flags in the
+@code{backend_info} function of the backend API.
+@xref{Get Backend Information}.
+@end table
+@end table
 
 
 @node General Index
