@@ -1513,6 +1513,205 @@ These flags are mutually exclusive.
 @end table
 
 
+@node Create Backend Context
+@subsection Create Backend Context
+
+A backend context maintains internal states for manipulating a specific
+bookmark storage.
+
+Each BookmarkFS filesystem mounted by @command{mount.bookmarkfs} is
+backed by a backend context.
+The context is created before mount, and destroyed after dismount.
+Operations on the filesystem, if applicable, are fulfilled by invoking
+the corresponding backend functions on the context.
+
+To create a backend context, the @code{backend_create} function is called.
+It must not be @code{NULL}.
+
+@example c
+typedef int (bookmarkfs_backend_create_func) (
+    struct bookmarkfs_backend_conf const  *conf,
+    struct bookmarkfs_backend_create_resp *resp
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item conf
+Backend configuration items.
+
+The @code{bookmarkfs_backend_conf} structure is defined as:
+
+@example c
+struct bookmarkfs_backend_conf @{
+    uint32_t  version;
+    uint32_t  flags;
+    char     *store_path;
+
+    struct bookmarkfs_conf_opt *opts;
+@};
+@end example
+
+@table @code
+@item version
+Version number of the frontend program, equivalent to the
+@code{BOOKMARKFS_VERNUM} macro in @file{bookmarkfs/version.h}.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BACKEND_READONLY
+Indicates that the filesystem is mounted read-only, and the frontend program
+will not call functions that may write to the bookmark storage.
+
+@item BOOKMARKFS_BACKEND_CTIME
+Indicates that the @option{-o ctime} option is given to
+@code{mount.bookmarkfs}.
+
+@item BOOKMARKFS_BACKEND_NO_SANDBOX
+Indicates that the @option{-o no_sandbox} option is given to
+@code{mount.bookmarkfs}.
+
+@item BOOKMARKFS_BACKEND_NO_LANDLOCK
+Indicates that the @option{-o no_landlock} option is given to
+@code{mount.bookmarkfs}.
+
+@item BOOKMARKFS_BACKEND_FSCK_ONLY
+Indicates that the backend is launched from @command{fsck.bookmarkfs}.
+
+The backend must claim exclusive access to the bookmark storage, and only
+the @code{bookmark_lookup}, @code{bookmark_list} and @code{bookmark_fsck}
+functions will be called on the bookmarks.
+@end table
+
+@item store_path
+Path to the bookmark storage, equivalent to the @var{src} argument passed to
+@command{mount.bookmarkfs}.
+
+The string is guaranteed to be NUL-terminated, and valid throughout
+the lifetime of the current backend.
+The backend is free to modify the string, however, it must not write past
+the string boundary.
+
+@item opts
+Linked list of backend-specific options, @code{NULL} if there are none.
+
+The @code{bookmarkfs_conf_opt} structure is defined as:
+
+@example c
+struct bookmarkfs_conf_opt @{
+    char *key;
+    char *val;
+
+    struct bookmarkfs_conf_opt *next;
+@};
+@end example
+
+@table @code
+@item key
+@item val
+Key and value of the current option.
+If the option does not have a value (no @samp{=} character present),
+@code{val} is @code{NULL}.
+
+When not @code{NULL}, the strings are guaranteed to be NUL-terminated,
+and valid throughout the lifetime of the current backend context.
+The backend is free to modify the strings, however, it must not write past
+the string boundary.
+
+@item next
+Pointer to the next option, @code{NULL} if there are no more options.
+@end table
+
+The backend must not re-assign the fields in @code{opt}.
+@end table
+
+@item resp
+Information of the new backend context.
+
+The initial content of this argument is unspecified.
+When the backend context is successfully created, the backend should
+populate this argument with appropriate values.
+
+The @code{bookmarkfs_backend_create_resp} structure is defined as:
+
+@example c
+struct bookmarkfs_backend_create_resp @{
+    char const *name;
+    void       *backend_ctx;
+    uint64_t    bookmarks_root_id;
+    uint64_t    tags_root_id;
+    char const *bookmark_attrs;
+    uint32_t    flags;
+@};
+@end example
+
+@table @code
+@item name
+Name of the backend context, used as default value for the
+@option{-o fsname=@var{name}} option of @command{mount.bookmarkfs}.
+
+Must be a NUL-terminated string valid at least until the next function call
+on this backend context.
+
+@item backend_ctx
+An opaque pointer referring to the backend context.
+
+The pointer will be passed to further function calls on this context.
+
+@item bookmarks_root_id
+ID of the bookmark root directory
+(i.e. @file{@var{$@{mountpoint@}}/bookmarks}).
+Must not be greater than @code{BOOKMARKFS_MAX_ID}.
+
+If sandboxing is requested, and the ID cannot be determined in a safe way
+before entering sandbox, the backend may leave this field as-is or set it
+to @code{UINT64_MAX}.
+
+@item tags_root_id
+ID of the tags root directory (i.e. @file{@var{$@{mountpoint@}}/tags}).
+Must not be greater than @code{BOOKMARKFS_MAX_ID}.
+
+This field should be left as-is or set to @code{UINT64_MAX},
+if one of the following conditions is met:
+
+@itemize @bullet{}
+@item Sandboxing is requested, and the ID cannot be determined in a safe way
+before entering sandbox.
+@item The backend does not support tags for this context (@pxref{Tags}).
+@end itemize
+
+@item bookmark_attrs
+Names of extended attributes (@pxref{Extended Attributes}) supported
+for this backend context.
+
+Must be a concatenation of NUL-terminated strings valid throughout
+the lifetime of this backend context.
+An empty string denotes the end of list.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BACKEND_EXCLUSIVE
+Indicates that the backend claims exclusive access to the bookmark storage.
+
+In exclusive mode, modifications to the bookmark storage only come from
+the frontend, and the frontend program may perform optimizations based on
+this assumption.
+
+@item BOOKMARKFS_BACKEND_HAS_KEYWORD
+Indicates that the backend supports keywords for this context
+(@pxref{Keywords}).
+@end table
+@end table
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
+
+
 @node Filesystem-Check Handlers
 @chapter Filesystem-Check Handlers
 
