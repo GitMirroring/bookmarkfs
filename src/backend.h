@@ -90,13 +90,13 @@ enum bookmarkfs_object_type {
 };
 
 struct bookmarkfs_backend_conf;
-struct bookmarkfs_backend_init_resp;
+struct bookmarkfs_backend_create_resp;
 struct bookmarkfs_bookmark_entry;
 struct bookmarkfs_bookmark_stat;
 
 typedef int (bookmarkfs_backend_create_func) (
-    struct bookmarkfs_backend_conf const *conf,
-    struct bookmarkfs_backend_init_resp  *resp
+    struct bookmarkfs_backend_conf const  *conf,
+    struct bookmarkfs_backend_create_resp *resp
 );
 
 typedef void (bookmarkfs_backend_free_func) (
@@ -116,8 +116,8 @@ typedef int (bookmarkfs_backend_mkfs_func) (
 );
 
 typedef int (bookmarkfs_backend_sandbox_func) (
-    void                                *backend_ctx,
-    struct bookmarkfs_backend_init_resp *resp
+    void                                  *backend_ctx,
+    struct bookmarkfs_backend_create_resp *resp
 );
 
 typedef int (bookmarkfs_backend_sync_func) (
@@ -248,7 +248,7 @@ struct bookmarkfs_backend {
     bookmarkfs_bookmark_rename_func  *bookmark_rename;
     bookmarkfs_bookmark_set_func     *bookmark_set;
 
-    bookmarkfs_object_free_func  *object_free;
+    bookmarkfs_object_free_func *object_free;
 };
 
 struct bookmarkfs_backend_conf {
@@ -259,7 +259,7 @@ struct bookmarkfs_backend_conf {
     struct bookmarkfs_conf_opt *opts;
 };
 
-struct bookmarkfs_backend_init_resp {
+struct bookmarkfs_backend_create_resp {
     char const *name;
     void       *backend_ctx;
     uint64_t    bookmarks_root_id;

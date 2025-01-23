@@ -1691,8 +1691,8 @@ store_load (
 
 static int
 backend_create (
-    struct bookmarkfs_backend_conf const *conf,
-    struct bookmarkfs_backend_init_resp  *resp
+    struct bookmarkfs_backend_conf const  *conf,
+    struct bookmarkfs_backend_create_resp *resp
 ) {
 #ifndef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
     if (!(conf->flags & BOOKMARKFS_READONLY)) {
@@ -1819,8 +1819,8 @@ backend_init (
 
 static int
 backend_sandbox (
-    void                                *backend_ctx,
-    struct bookmarkfs_backend_init_resp *UNUSED_VAR(resp)
+    void                                  *backend_ctx,
+    struct bookmarkfs_backend_create_resp *UNUSED_VAR(resp)
 ) {
     struct backend_ctx *ctx = backend_ctx;
 

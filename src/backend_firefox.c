@@ -2660,8 +2660,8 @@ store_check_cb (
 
 static int
 backend_create (
-    struct bookmarkfs_backend_conf const *conf,
-    struct bookmarkfs_backend_init_resp  *resp
+    struct bookmarkfs_backend_conf const  *conf,
+    struct bookmarkfs_backend_create_resp *resp
 ) {
     bool readonly = conf->flags & BOOKMARKFS_BACKEND_READONLY;
     if (!readonly) {
@@ -2840,8 +2840,8 @@ backend_init (
 
 static int
 backend_sandbox (
-    void                                *backend_ctx,
-    struct bookmarkfs_backend_init_resp *resp
+    void                                  *backend_ctx,
+    struct bookmarkfs_backend_create_resp *resp
 ) {
     struct backend_ctx *ctx = backend_ctx;
 

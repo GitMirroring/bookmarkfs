@@ -115,7 +115,7 @@ enter_sandbox (
         return 0;
     }
 
-    struct bookmarkfs_backend_init_resp resp = {
+    struct bookmarkfs_backend_create_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
         .tags_root_id      = UINT64_MAX,
     };
@@ -213,7 +213,7 @@ init_backend (
         }
     }
 
-    struct bookmarkfs_backend_init_resp resp = {
+    struct bookmarkfs_backend_create_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
         .tags_root_id      = UINT64_MAX,
         .bookmark_attrs    = "",

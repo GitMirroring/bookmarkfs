@@ -293,7 +293,7 @@ fsck_create (
         .store_path = path,
         .opts       = opts,
     };
-    struct bookmarkfs_backend_init_resp resp = {
+    struct bookmarkfs_backend_create_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
         .tags_root_id      = UINT64_MAX,
     };
@@ -437,7 +437,7 @@ fsck_sandbox (
 ) {
     struct fsck_ctx *ctx = fsck_ctx;
 
-    struct bookmarkfs_backend_init_resp info = {
+    struct bookmarkfs_backend_create_resp info = {
         .bookmarks_root_id = UINT64_MAX,
     };
     if (0 != BACKEND_CALL(ctx, backend_sandbox, &info)) {
