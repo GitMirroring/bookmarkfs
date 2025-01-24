@@ -2140,6 +2140,137 @@ The pointer referring to the handler context.
 @end table
 
 
+@node Run Handler
+@subsection Run Handler
+
+Each time @command{fsck.bookmarkfs} finds and entry, or completes a
+handler-initiated operation, the @code{run} function is called.
+It must not be @code{NULL}.
+
+@example c
+typedef int (bookmarkfs_fsck_handler_run_func) (
+    void                               *handler_ctx,
+    int                                 why,
+    union bookmarkfs_fsck_handler_data *data
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item handler_ctx
+The pointer referring to the handler context.
+
+@item why
+Reason code for this handler call:
+
+@table @asis
+@item Non-negative value
+The @command{fsck.bookmarkfs} program has found an entry.
+
+@xref{Filesystem-Check Result Code} for possible values.
+However, @code{BOOKMARKFS_FSCK_RESULT_END} is handled by
+@command{fsck.bookmarkfs} and never appears.
+
+@item @t{-1}
+Indicates that an operation instructed by the previous return value
+of this function is successfully performed.
+
+If @code{run} is being called for the first time, or the previous invocation
+returns @code{BOOKMARKFS_FSCK_NEXT}, this value never appears.
+@end table
+
+@item data
+Information for this handler call.
+
+The @code{bookmarkfs_fsck_handler_data} union is defined as:
+
+@example c
+union bookmarkfs_fsck_handler_data @{
+    struct bookmarkfs_fsck_handler_entry entry;
+    char *str;
+@};
+@end example
+
+@table @code
+@item entry
+Information for the bookmark entry.
+This field is set when @code{why} is non-negative.
+
+The @code{bookmarkfs_fsck_handler_entry} structure is defined as:
+
+@example c
+struct bookmarkfs_fsck_handler_entry @{
+    uint64_t parent_id;
+
+    struct bookmarkfs_fsck_data data;
+@};
+@end example
+
+@table @code
+@item parent_id
+ID of the bookmark folder that contains this bookmark entry.
+
+@item data
+@xref{Online Filesystem Check} for the definition of the
+@code{bookmarkfs_fsck_data} structure.
+@end table
+
+@item str
+A NUL-terminated string.
+
+This field is set to the user input string when @code{why} is @t{-1}, and the
+previous invocation of @code{run} returns @code{BOOKMARKFS_FSCK_USER_INPUT}.
+
+The string is only guaranteed to be valid until the function returns.
+@end table
+@end table
+
+On success, the function should return one of the following values,
+indicating the operation to perform:
+
+@table @code
+@item BOOKMARKFS_FSCK_NEXT
+Continue to the next entry.
+
+@item BOOKMARKFS_FSCK_APPLY
+Apply change for the current entry.
+Not available in read-only mode.
+
+The handler should copy the new name for the bookmark to
+@code{data->entry.data.name}.
+
+@item BOOKMARKFS_FSCK_USER_INPUT
+Request for user input.
+Only available in interactive mode.
+
+The handler should set @code{data->str} to a prompt string for Readline.
+The string must be valid until the next function call on this handler context.
+
+@item BOOKMARKFS_FSCK_SAVE
+Save applied changes.
+
+@item BOOKMARKFS_FSCK_STOP
+Save applied changes and quit.
+
+The @code{run} function is guaranteed not to be called again for this context.
+
+@item BOOKMARKFS_FSCK_REWIND
+Rewind current directory.
+
+@item BOOKMARKFS_FSCK_SKIP
+Skip current directory.
+
+@item BOOKMARKFS_FSCK_SKIP_CHILDREN
+Skip current directory and all subdirectories.
+
+@item BOOKMARKFS_FSCK_RESET
+Rewind all.
+@end table
+
+On error, the function should return @t{-1}.
+
+
 @node General Index
 @appendix General Index
 
