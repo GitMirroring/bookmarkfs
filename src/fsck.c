@@ -344,7 +344,7 @@ init_handler (
         flags |= BOOKMARKFS_FSCK_HANDLER_INTERACTIVE;
     }
     if (info->flags.readonly) {
-        flags |= BOOKMARKFS_BACKEND_READONLY;
+        flags |= BOOKMARKFS_FSCK_HANDLER_READONLY;
     }
     if (0 != handler->create(info->handler_opts, flags, &ctx->handler_ctx)) {
         return -1;

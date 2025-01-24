@@ -28,16 +28,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "backend.h"
 #include "backend_util.h"
 #include "fsck_handler.h"
 #include "fsck_util.h"
 #include "ioctl.h"
 #include "xstd.h"
 
-#define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 24 )
-#define FSCK_HANDLER_HAS_ENTRY     ( 1u << 25 )
-#define FSCK_HANDLER_INHIBIT_NEXT  ( 1u << 26 )
+#define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 16 )
+#define FSCK_HANDLER_HAS_ENTRY     ( 1u << 17 )
+#define FSCK_HANDLER_INHIBIT_NEXT  ( 1u << 18 )
 
 struct handler_ctx {
     uint64_t parent_id;
@@ -133,7 +132,7 @@ handle_input (
         strncpy(ctx->data_buf.name, next, sizeof(ctx->data_buf.name));
         // fallthrough
       case 'a':
-        if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
+        if (ctx->flags & BOOKMARKFS_FSCK_HANDLER_READONLY) {
             log_puts("cannot apply, fsck is running in readonly mode");
             control = expect_input(ctx, &data->str);
             break;
@@ -278,7 +277,7 @@ handle_entry (
     }
 
     int control = BOOKMARKFS_FSCK_NEXT;
-    if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
+    if (!(ctx->flags & BOOKMARKFS_FSCK_HANDLER_READONLY)) {
         fix_entry(ctx, why, entry_data);
         control = BOOKMARKFS_FSCK_APPLY;
     }

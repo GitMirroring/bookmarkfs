@@ -34,16 +34,15 @@
 
 #include <tcl.h>
 
-#include "backend.h"
 #include "backend_util.h"
 #include "fsck_handler.h"
 #include "macros.h"
 #include "version.h"
 #include "xstd.h"
 
-#define FSCK_HANDLER_UNSAFE        ( 1u << 24 )
-#define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 25 )
-#define FSCK_HANDLER_INITIALIZED   ( 1u << 26 )
+#define FSCK_HANDLER_UNSAFE        ( 1u << 16 )
+#define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 17 )
+#define FSCK_HANDLER_INITIALIZED   ( 1u << 18 )
 
 struct handler_ctx {
     Tcl_Interp *interp;
@@ -147,7 +146,7 @@ init_interp (
     DO_SET_VAR(interp, "isInteractive",
             !!(flags & BOOKMARKFS_FSCK_HANDLER_INTERACTIVE));
     DO_SET_VAR(interp, "isReadonly",
-            !!(flags & BOOKMARKFS_BACKEND_READONLY));
+            !!(flags & BOOKMARKFS_FSCK_HANDLER_READONLY));
     DO_SET_VAR(interp, "handler::next",         BOOKMARKFS_FSCK_NEXT);
     DO_SET_VAR(interp, "handler::apply",        BOOKMARKFS_FSCK_APPLY);
     DO_SET_VAR(interp, "handler::userInput",    BOOKMARKFS_FSCK_USER_INPUT);
@@ -364,7 +363,7 @@ fsck_handler_run (
         break;
 
       case BOOKMARKFS_FSCK_APPLY:
-        if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
+        if (ctx->flags & BOOKMARKFS_FSCK_HANDLER_READONLY) {
             log_puts("cannot apply, fsck is running in readonly mode");
             return -1;
         }
