@@ -971,7 +971,7 @@ int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_NEXT,
         struct bookmarkfs_fsck_data *argp);
 
 int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_APPLY,
-        struct bookmarkfs_fsck_data *argp)
+        struct bookmarkfs_fsck_data *argp);
 
 int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
 @end example
@@ -1028,12 +1028,7 @@ The bookmark name is either @samp{.} or @samp{..}.
 Value of @code{extra} is unspecified.
 @end table
 
-On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}:
-
-@table @code
-@item EACCES
-Read permission is denied for the directory.
-@end table
+On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}.
 
 @item BOOKMARKFS_IOC_FSCK_APPLY
 ``Repair'' a bookmark by renaming it.
@@ -1109,6 +1104,10 @@ Typically, backends are built into shared libraries, and are installed as:
 @end example
 
 @table @var
+@item $@{pkglibdir@}
+Presumably @file{@var{$@{prefix@}}/lib/bookmarkfs}.
+@xref{Uniform,, The Uniform Naming Scheme, automake, GNU Automake}.
+
 @item $@{name@}
 The backend name, equivalent to the value given to the
 @option{-o backend=@var{name}} option of frontend programs.
@@ -1753,6 +1752,10 @@ shared libraries, and are installed as:
 @end example
 
 @table @var
+@item $@{pkglibdir@}
+Presumably @file{@var{$@{prefix@}}/lib/bookmarkfs}.
+@xref{Uniform,, The Uniform Naming Scheme, automake, GNU Automake}.
+
 @item $@{name@}
 The handler name, equivalent to the value given to the
 @option{-o handler=@var{name}} option of @command{fsck.bookmarkfs}.
