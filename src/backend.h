@@ -99,7 +99,7 @@ typedef int (bookmarkfs_backend_create_func) (
     struct bookmarkfs_backend_create_resp *resp
 );
 
-typedef void (bookmarkfs_backend_free_func) (
+typedef void (bookmarkfs_backend_destroy_func) (
     void *backend_ctx
 );
 
@@ -230,7 +230,7 @@ typedef void (bookmarkfs_object_free_func) (
 
 struct bookmarkfs_backend {
     bookmarkfs_backend_create_func  *backend_create;
-    bookmarkfs_backend_free_func    *backend_free;
+    bookmarkfs_backend_destroy_func *backend_destroy;
     bookmarkfs_backend_info_func    *backend_info;
     bookmarkfs_backend_init_func    *backend_init;
     bookmarkfs_backend_mkfs_func    *backend_mkfs;

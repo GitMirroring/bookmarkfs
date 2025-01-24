@@ -101,7 +101,7 @@ destroy_ctx (
         fuse_session_destroy(ctx->session);
     }
     if (ctx->backend_impl != NULL) {
-        ctx->backend_impl->backend_free(ctx->backend_ctx);
+        ctx->backend_impl->backend_destroy(ctx->backend_ctx);
     }
     bookmarkfs_unload(ctx->backend_handle);
 }

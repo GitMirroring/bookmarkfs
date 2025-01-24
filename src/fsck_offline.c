@@ -348,7 +348,7 @@ fsck_create (
     return 0;
 
   fail:
-    backend->backend_free(resp.backend_ctx);
+    backend->backend_destroy(resp.backend_ctx);
     return -1;
 }
 
@@ -361,7 +361,7 @@ fsck_destroy (
     for (size_t idx = 0; idx <= ctx->dir_stack_top; ++idx) {
         free_dir(ctx, ctx->dir_stack + idx);
     }
-    ctx->backend->backend_free(ctx->backend_ctx);
+    ctx->backend->backend_destroy(ctx->backend_ctx);
     free(ctx->dir_stack);
     free(ctx);
 }

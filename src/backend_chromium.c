@@ -1760,7 +1760,7 @@ backend_create (
 }
 
 static void
-backend_free (
+backend_destroy (
     void *backend_ctx
 ) {
     struct backend_ctx *ctx = backend_ctx;
@@ -2703,7 +2703,7 @@ bookmark_set (
 BOOKMARKFS_API
 struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
     .backend_create  = backend_create,
-    .backend_free    = backend_free,
+    .backend_destroy = backend_destroy,
     .backend_info    = backend_info,
     .backend_init    = backend_init,
     .backend_sandbox = backend_sandbox,

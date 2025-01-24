@@ -1400,7 +1400,7 @@ The symbol should name a data object identifier of the following type:
 
 struct bookmarkfs_backend @{
     bookmarkfs_backend_create_func  *backend_create;
-    bookmarkfs_backend_free_func    *backend_free;
+    bookmarkfs_backend_destroy_func *backend_destroy;
     bookmarkfs_backend_info_func    *backend_info;
     bookmarkfs_backend_init_func    *backend_init;
     bookmarkfs_backend_mkfs_func    *backend_mkfs;
