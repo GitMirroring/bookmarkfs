@@ -1404,11 +1404,10 @@ struct bookmarkfs_backend @{
     bookmarkfs_backend_init_func    *backend_init;
     bookmarkfs_backend_mkfs_func    *backend_mkfs;
     bookmarkfs_backend_sandbox_func *backend_sandbox;
-    bookmarkfs_backend_sync_func    *backend_sync;
 
-    bookmarkfs_bookmark_get_func     *bookmark_get;
-    bookmarkfs_bookmark_list_func    *bookmark_list;
-    bookmarkfs_bookmark_lookup_func  *bookmark_lookup;
+    bookmarkfs_bookmark_get_func    *bookmark_get;
+    bookmarkfs_bookmark_list_func   *bookmark_list;
+    bookmarkfs_bookmark_lookup_func *bookmark_lookup;
 
     bookmarkfs_bookmark_create_func  *bookmark_create;
     bookmarkfs_bookmark_delete_func  *bookmark_delete;
@@ -1416,6 +1415,7 @@ struct bookmarkfs_backend @{
     bookmarkfs_bookmark_permute_func *bookmark_permute;
     bookmarkfs_bookmark_rename_func  *bookmark_rename;
     bookmarkfs_bookmark_set_func     *bookmark_set;
+    bookmarkfs_bookmark_sync_func    *bookmark_sync;
 
     bookmarkfs_object_free_func *object_free;
 @};
@@ -1581,8 +1581,8 @@ Indicates that the @option{-o no_landlock} option is given to
 Indicates that the backend is launched from @command{fsck.bookmarkfs}.
 
 The backend must claim exclusive access to the bookmark storage, and only
-the @code{bookmark_lookup}, @code{bookmark_list} and @code{bookmark_fsck}
-functions will be called on the bookmarks.
+the @code{bookmark_lookup}, @code{bookmark_list}, @code{bookmark_fsck}
+and @code{bookmark_sync} functions will be called on the bookmarks.
 @end table
 
 @item store_path

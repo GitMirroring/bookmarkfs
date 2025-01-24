@@ -266,7 +266,7 @@ fsck_control (
         if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
             break;
         }
-        return ctx->backend->backend_sync(ctx->backend_ctx);
+        return ctx->backend->bookmark_sync(ctx->backend_ctx);
 
       default:
         unreachable();

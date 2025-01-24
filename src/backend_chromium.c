@@ -2184,16 +2184,6 @@ backend_mkfs (
 }
 
 static int
-backend_sync (
-    void *backend_ctx
-) {
-    struct backend_ctx *ctx = backend_ctx;
-    debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
-
-    return store_save(ctx);
-}
-
-static int
 bookmark_create (
     void                            *backend_ctx,
     uint64_t                         parent_id,
@@ -2698,6 +2688,16 @@ bookmark_set (
     return 0;
 }
 
+static int
+bookmark_sync (
+    void *backend_ctx
+) {
+    struct backend_ctx *ctx = backend_ctx;
+    debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
+
+    return store_save(ctx);
+}
+
 #endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
 
 BOOKMARKFS_API
@@ -2717,12 +2717,12 @@ struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
 
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
     .backend_mkfs = backend_mkfs,
-    .backend_sync = backend_sync,
 
     .bookmark_create  = bookmark_create,
     .bookmark_delete  = bookmark_delete,
     .bookmark_permute = bookmark_permute,
     .bookmark_rename  = bookmark_rename,
     .bookmark_set     = bookmark_set,
+    .bookmark_sync    = bookmark_sync,
 #endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
 };

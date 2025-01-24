@@ -1818,7 +1818,7 @@ fs_op_fsync (
         goto end;
     }
 
-    status = ctx.backend_impl->backend_sync(ctx.backend_ctx);
+    status = ctx.backend_impl->bookmark_sync(ctx.backend_ctx);
 
   end:
     send_reply(err, req, -status);
@@ -1851,7 +1851,7 @@ fs_op_fsyncdir (
         goto end;
     }
 
-    status = ctx.backend_impl->backend_sync(ctx.backend_ctx);
+    status = ctx.backend_impl->bookmark_sync(ctx.backend_ctx);
 
   end:
     send_reply(err, req, -status);

@@ -120,10 +120,6 @@ typedef int (bookmarkfs_backend_sandbox_func) (
     struct bookmarkfs_backend_create_resp *resp
 );
 
-typedef int (bookmarkfs_backend_sync_func) (
-    void *backend_ctx
-);
-
 typedef int (bookmarkfs_bookmark_create_func) (
     void                            *backend_ctx,
     uint64_t                         parent_id,
@@ -222,6 +218,10 @@ typedef int (bookmarkfs_bookmark_set_func) (
     size_t      val_len
 );
 
+typedef int (bookmarkfs_bookmark_sync_func) (
+    void *backend_ctx
+);
+
 typedef void (bookmarkfs_object_free_func) (
     void                        *backend_ctx,
     void                        *object,
@@ -235,11 +235,10 @@ struct bookmarkfs_backend {
     bookmarkfs_backend_init_func    *backend_init;
     bookmarkfs_backend_mkfs_func    *backend_mkfs;
     bookmarkfs_backend_sandbox_func *backend_sandbox;
-    bookmarkfs_backend_sync_func    *backend_sync;
 
-    bookmarkfs_bookmark_get_func     *bookmark_get;
-    bookmarkfs_bookmark_list_func    *bookmark_list;
-    bookmarkfs_bookmark_lookup_func  *bookmark_lookup;
+    bookmarkfs_bookmark_get_func    *bookmark_get;
+    bookmarkfs_bookmark_list_func   *bookmark_list;
+    bookmarkfs_bookmark_lookup_func *bookmark_lookup;
 
     bookmarkfs_bookmark_create_func  *bookmark_create;
     bookmarkfs_bookmark_delete_func  *bookmark_delete;
@@ -247,6 +246,7 @@ struct bookmarkfs_backend {
     bookmarkfs_bookmark_permute_func *bookmark_permute;
     bookmarkfs_bookmark_rename_func  *bookmark_rename;
     bookmarkfs_bookmark_set_func     *bookmark_set;
+    bookmarkfs_bookmark_sync_func    *bookmark_sync;
 
     bookmarkfs_object_free_func *object_free;
 };
