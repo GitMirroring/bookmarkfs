@@ -1598,6 +1598,7 @@ the string boundary.
 @item opts
 Linked list of backend-specific options, @code{NULL} if there are none.
 
+@anchor{Backend-Specific Options}
 The @code{bookmarkfs_conf_opt} structure is defined as:
 
 @example c
@@ -1710,6 +1711,31 @@ Indicates that the backend supports keywords for this context
 @end table
 
 The function should return @t{0} on success, and @t{-1} on error.
+
+
+@node Destroy Backend Context
+@subsection Destroy Backend Context
+
+When a backend context is no longer used, the @code{backend_destroy} function
+is called.
+It must not be @code{NULL}.
+
+The backend should release all system resources associated with this context.
+If changes have been made to the bookmark storage, the backend should
+try to persist them.
+
+@example c
+typedef void (bookmarkfs_backend_destroy_func) (
+    void *backend_ctx
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+@end table
 
 
 @node Filesystem-Check Handlers
@@ -2035,6 +2061,79 @@ These flags are analogous to the corresponding flags in the
 @code{backend_info} function of the backend API.
 @xref{Get Backend Information}.
 @end table
+@end table
+
+
+@node Create Handler Context
+@subsection Create Handler Context
+
+A filesystem-check handler context maintains internal states for
+handling fsck entries.
+
+To create a handler context, the @code{create} function is called.
+It must not be @code{NULL}.
+
+@example c
+typedef int (bookmarkfs_fsck_handler_create_func) (
+    struct bookmarkfs_conf_opt const  *opts,
+    uint32_t                           flags,
+    void                             **handler_ctx_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item opts
+Linked list of handler-specific options, @code{NULL} if there are none.
+
+Handler-specific option should be processed in the same way as
+backend-specific options.
+@xref{Backend-Specific Options}.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_FSCK_HANDLER_INTERACTIVE
+Indicates that the @option{-i} option is given to @command{fsck.bookmarkfs}.
+
+@item BOOKMARKFS_FSCK_HANDLER_READONLY
+Indicates that the @option{-o repair} option is @emph{not} given to
+@command{fsck.bookmarkfs}.
+@end table
+
+@item handler_ctx_ptr
+Pointer to an opaque pointer referring to the handler context.
+
+The initial value of that pointer is unspecified.
+It should be set by the handler when the handler context is
+successfully created.
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
+
+
+@node Destroy Handler Context
+@subsection Destroy Handler Context
+
+When a handler context is no longer used, the @code{destroy} function
+is called.
+It must not be @code{NULL}.
+
+The handler should release all system resources associated with this context.
+
+@example c
+typedef void (bookmarkfs_fsck_handler_destroy_func) (
+    void *handler_ctx
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item handler_ctx
+The pointer referring to the handler context.
 @end table
 
 
