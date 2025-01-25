@@ -200,6 +200,7 @@ sandbox_enter (
         SCMP_RULE_NOARG(close,      20),
         SCMP_RULE_NOARG(fallocate,  30),
         SCMP_RULE_NOARG(fcntl,      100),
+        SCMP_RULE_NOARG(fdatasync,  30),
         SCMP_RULE_NOARG(flock,      20),
         SCMP_RULE_NOARG(fstat,      100),
         SCMP_RULE_NOARG(fstat64,    100),

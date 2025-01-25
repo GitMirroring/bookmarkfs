@@ -2601,11 +2601,7 @@ store_init (
     uint64_t *bookmarks_root_id_ptr,
     uint64_t *tags_root_id_ptr
 ) {
-    int status = db_check(db);
-    if (status < 0) {
-        return status;
-    }
-    status = -EIO;
+    int status = -EIO;
 
     char const *sql = "SELECT `id` FROM `moz_bookmarks` WHERE `guid` = ?";
     sqlite3_stmt *stmt = db_prepare(db, sql, strlen(sql), false);
@@ -2719,9 +2715,12 @@ backend_create (
     if (0 != db_pragma(db, pragmas, DB_PRAGMA_ITEMS_CNT(pragmas))) {
         goto close_db;
     }
+    if (0 != db_check(db)) {
+        goto close_db;
+    }
 
     uint64_t bookmarks_root_id = UINT64_MAX;
-    uint64_t tags_root_id     = UINT64_MAX;
+    uint64_t tags_root_id      = UINT64_MAX;
     if (conf->flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
         // Defer initialization in sandbox mode, so that
         // user-provided data is only read after entering sandbox.
