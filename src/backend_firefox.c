@@ -1603,14 +1603,14 @@ store_new (
     sqlite3 *db,
     int64_t  date_added
 ) {
-#define CREATE_TABLE(tbl, cols)  \
-    { STR_WITHLEN("CREATE TABLE `moz_" tbl "` (" cols")") }
-#define CREATE_INDEX_(u, tbl, idx, suff, cols)  \
-    "CREATE " u "INDEX `moz_" tbl "_" idx suff "` ON `moz_" tbl "` (" cols ")"
-#define CREATE_INDEX(tbl, idx, cols)  \
-    { STR_WITHLEN(CREATE_INDEX_("", tbl, idx, "index", cols)) }
-#define CREATE_UINDEX(tbl, idx, cols)  \
-    { STR_WITHLEN(CREATE_INDEX_("UNIQUE ", tbl, idx, "_unique", cols)) }
+#define CREATE_TABLE_EX(tbl, cols, extra)  \
+    { STR_WITHLEN("CREATE TABLE `moz_" tbl "` (" cols")" extra) }
+#define CREATE_TABLE(tbl, cols)  CREATE_TABLE_EX(tbl, cols, "")
+#define CREATE_INDEX_(u, tbl, idx, cols)  \
+    { STR_WITHLEN("CREATE " u "INDEX `moz_" tbl "_" idx "`"  \
+                                " ON `moz_" tbl "` (" cols ")") }
+#define CREATE_INDEX(tbl, idx, cols)   CREATE_INDEX_("",        tbl, idx, cols)
+#define CREATE_UINDEX(tbl, idx, cols)  CREATE_INDEX_("UNIQUE ", tbl, idx, cols)
 
     struct sql_withlen {
         char const *str;
@@ -1619,65 +1619,192 @@ store_new (
         // moz_bookmarks
         CREATE_TABLE("bookmarks",
             "`id`"                " INTEGER PRIMARY KEY, "
-            "`type`"              " INTEGER, "
-            "`fk`"                " INTEGER DEFAULT NULL, "
-            "`parent`"            " INTEGER, "
-            "`position`"          " INTEGER, "
-            "`title`"             " LONGVARCHAR, "
-            "`keyword_id`"        " INTEGER, "
+            "`type`"              " INT, "
+            "`fk`"                " INT DEFAULT NULL, "
+            "`parent`"            " INT, "
+            "`position`"          " INT, "
+            "`title`"             " TEXT, "
+            "`keyword_id`"        " INT, "
             "`folder_type`"       " TEXT, "
-            "`dateAdded`"         " INTEGER, "
-            "`lastModified`"      " INTEGER, "
+            "`dateAdded`"         " INT, "
+            "`lastModified`"      " INT, "
             "`guid`"              " TEXT, "
-            "`syncStatus`"        " INTEGER NOT NULL DEFAULT 0, "
-            "`syncChangeCounter`" " INTEGER NOT NULL DEFAULT 1"
+            "`syncStatus`"        " INT NOT NULL DEFAULT 0, "
+            "`syncChangeCounter`" " INT NOT NULL DEFAULT 1"
         ),
-        CREATE_INDEX("bookmarks", "item", "`fk`, `type`"),
-        CREATE_INDEX("bookmarks", "parent", "`parent`, `position`"),
-        CREATE_INDEX("bookmarks", "itemlastmodified", "`fk`, `lastModified`"),
-        CREATE_INDEX("bookmarks", "dateadded", "`dateAdded`"),
-        CREATE_UINDEX("bookmarks", "guid", "`guid`"),
+        CREATE_INDEX("bookmarks", "itemindex", "`fk`, `type`"),
+        CREATE_INDEX("bookmarks", "parentindex", "`parent`, `position`"),
+        CREATE_INDEX("bookmarks", "itemlastmodifiedindex",
+                "`fk`, `lastModified`"),
+        CREATE_INDEX("bookmarks", "dateaddedindex", "`dateAdded`"),
+        CREATE_UINDEX("bookmarks", "guid_uniqueindex", "`guid`"),
         // moz_origins
         CREATE_TABLE("origins",
             "`id`"                  " INTEGER PRIMARY KEY, "
             "`prefix`"              " TEXT NOT NULL, "
             "`host`"                " TEXT NOT NULL, "
-            "`frecency`"            " INTEGER NOT NULL, "
-            "`recalc_frecency`"     " INTEGER NOT NULL DEFAULT 0, "
-            "`alt_frecency`"        " INTEGER, "
-            "`recalc_alt_frecency`" " INTEGER NOT NULL DEFAULT 0, "
+            "`frecency`"            " INT NOT NULL, "
+            "`recalc_frecency`"     " INT NOT NULL DEFAULT 0, "
+            "`alt_frecency`"        " INT, "
+            "`recalc_alt_frecency`" " INT NOT NULL DEFAULT 0, "
             "UNIQUE (`prefix`, `host`)"
         ),
         // moz_places
         CREATE_TABLE("places",
             "`id`"                  " INTEGER PRIMARY KEY, "
-            "`url`"                 " LONGVARCHAR, "
-            "`title`"               " LONGVARCHAR, "
-            "`rev_host`"            " LONGVARCHAR, "
-            "`visit_count`"         " INTEGER DEFAULT 0, "
-            "`hidden`"              " INTEGER DEFAULT 0 NOT NULL, "
-            "`typed`"               " INTEGER DEFAULT 0 NOT NULL, "
-            "`frecency`"            " INTEGER DEFAULT -1 NOT NULL, "
-            "`last_visit_date`"     " INTEGER, "
+            "`url`"                 " TEXT, "
+            "`title`"               " TEXT, "
+            "`rev_host`"            " TEXT, "
+            "`visit_count`"         " INT DEFAULT 0, "
+            "`hidden`"              " INT DEFAULT 0 NOT NULL, "
+            "`typed`"               " INT DEFAULT 0 NOT NULL, "
+            "`frecency`"            " INT DEFAULT -1 NOT NULL, "
+            "`last_visit_date`"     " INT, "
             "`guid`"                " TEXT, "
-            "`foreign_count`"       " INTEGER DEFAULT 0 NOT NULL, "
-            "`url_hash`"            " INTEGER DEFAULT 0 NOT NULL, "
+            "`foreign_count`"       " INT DEFAULT 0 NOT NULL, "
+            "`url_hash`"            " INT DEFAULT 0 NOT NULL, "
             "`description`"         " TEXT, "
             "`preview_image_url`"   " TEXT, "
             "`site_name`"           " TEXT, "
-            "`origin_id`"           " INTEGER REFERENCES `moz_origins`(`id`), "
-            "`recalc_frecency`"     " INTEGER NOT NULL DEFAULT 0, "
-            "`alt_frecency`"        " INTEGER, "
-            "`recalc_alt_frecency`" " INTEGER NOT NULL DEFAULT 0"
+            "`origin_id`"           " INT REFERENCES `moz_origins`(`id`), "
+            "`recalc_frecency`"     " INT NOT NULL DEFAULT 0, "
+            "`alt_frecency`"        " INT, "
+            "`recalc_alt_frecency`" " INT NOT NULL DEFAULT 0"
         ),
+        CREATE_INDEX("places", "url_hashindex", "`url_hash`"),
+        CREATE_INDEX("places", "hostindex", "`rev_host`"),
+        CREATE_INDEX("places", "visitcount", "`visit_count`"),
+        CREATE_INDEX("places", "frecencyindex", "`frecency`"),
+        CREATE_INDEX("places", "lastvisitdateindex", "`last_visit_date`"),
+        CREATE_UINDEX("places", "guid_uniqueindex", "`guid`"),
+        CREATE_INDEX("places", "originidindex", "`origin_id`"),
+        CREATE_INDEX("places", "altfrecencyindex", "`alt_frecency`"),
         // moz_keywords
         CREATE_TABLE("keywords",
             "`id`"        " INTEGER PRIMARY KEY AUTOINCREMENT, "
             "`keyword`"   " TEXT UNIQUE, "
-            "`place_id`"  " INTEGER, "
+            "`place_id`"  " INT, "
             "`post_data`" " TEXT"
         ),
-        CREATE_UINDEX("keywords", "placepostdata", "`place_id`, `post_data`"),
+        CREATE_UINDEX("keywords", "placepostdata_uniqueindex",
+                "`place_id`, `post_data`"),
+        // moz_anno_attributes
+        CREATE_TABLE("anno_attributes",
+            "`id`"   " INTEGER PRIMARY KEY, "
+            "`name`" " TEXT UNIQUE NOT NULL"
+        ),
+        // moz_annos
+        CREATE_TABLE("annos",
+            "`id`"                " INTEGER PRIMARY KEY, "
+            "`place_id`"          " INT NOT NULL, "
+            "`anno_attribute_id`" " INT, "
+            "`content`"           " TEXT, "
+            "`flags`"             " INT DEFAULT 0, "
+            "`expiration`"        " INT DEFAULT 0, "
+            "`type`"              " INT DEFAULT 0, "
+            "`dateAdded`"         " INT DEFAULT 0, "
+            "`lastModified`"      " INT DEFAULT 0"
+        ),
+        CREATE_UINDEX("annos", "placeattributeindex",
+                "`place_id`, `anno_attribute_id`"),
+        // moz_bookmarks_deleted
+        CREATE_TABLE("bookmarks_deleted",
+            "`guid`"        " TEXT PRIMARY KEY, "
+            "`dateRemoved`" " INT NOT NULL DEFAULT 0"
+        ),
+        // moz_historyvisits
+        CREATE_TABLE("historyvisits",
+            "`id`"                " INTEGER PRIMARY KEY, "
+            "`from_visit`"        " INT, "
+            "`place_id`"          " INT, "
+            "`visit_date`"        " INT, "
+            "`visit_type`"        " INT, "
+            "`session`"           " INT, "
+            "`source`"            " INT DEFAULT 0 NOT NULL, "
+            "`triggeringPlaceId`" " INT"
+        ),
+        CREATE_INDEX("historyvisits", "placedateindex",
+                "`place_id`, `visit_date`"),
+        CREATE_INDEX("historyvisits", "fromindex", "`from_visit`"),
+        CREATE_INDEX("historyvisits", "dateindex", "`visit_date`"),
+        // moz_historyvisits_extra
+        CREATE_TABLE("historyvisits_extra",
+            "`visit_id`"  " INTEGER PRIMARY KEY NOT NULL, "
+            "`sync_json`" " TEXT, "
+            "FOREIGN KEY (`visit_id`) REFERENCES `moz_historyvisits`(`id`)"
+                                    " ON DELETE CASCADE"
+        ),
+        // moz_inputhistory
+        CREATE_TABLE("inputhistory",
+            "`place_id`"  " INT NOT NULL, "
+            "`input`"     " TEXT NOT NULL, "
+            "`use_count`" " INT, "
+            "PRIMARY KEY (`place_id`, `input`)"
+        ),
+        // moz_items_annos
+        CREATE_TABLE("items_annos",
+            "`id` "               " INTEGER PRIMARY KEY, "
+            "`item_id`"           " INT NOT NULL, "
+            "`anno_attribute_id`" " INT, "
+            "`content`"           " TEXT, "
+            "`flags`"             " INT DEFAULT 0, "
+            "`expiration`"        " INT DEFAULT 0, "
+            "`type`"              " INT DEFAULT 0, "
+            "`dateAdded`"         " INT DEFAULT 0, "
+            "`lastModified`"      " INT DEFAULT 0"
+        ),
+        CREATE_UINDEX("items_annos", "itemattributeindex",
+                "`item_id`, `anno_attribute_id`"),
+        // moz_meta
+        CREATE_TABLE_EX("meta",
+            "`key`"   " TEXT PRIMARY KEY, "
+            "`value`" " NOT NULL",
+            "WITHOUT ROWID"
+        ),
+        // moz_places_extra
+        CREATE_TABLE("places_extra",
+            "`place_id`"  " INTEGER PRIMARY KEY NOT NULL, "
+            "`sync_json`" " TEXT, "
+            "FOREIGN KEY (`place_id`) REFERENCES `moz_places`(`id`)"
+                                    " ON DELETE CASCADE"
+        ),
+        // moz_places_metadata
+        CREATE_TABLE("places_metadata",
+            "`id`"                 " INTEGER PRIMARY KEY, "
+            "`place_id`"           " INT NOT NULL, "
+            "`referrer_place_id`"  " INT, "
+            "`created_at`"         " INT NOT NULL DEFAULT 0, "
+            "`updated_at`"         " INT NOT NULL DEFAULT 0, "
+            "`total_view_time`"    " INT NOT NULL DEFAULT 0, "
+            "`typing_time`"        " INT NOT NULL DEFAULT 0, "
+            "`key_presses`"        " INT NOT NULL DEFAULT 0, "
+            "`scrolling_time`"     " INT NOT NULL DEFAULT 0, "
+            "`scrolling_distance`" " INT NOT NULL DEFAULT 0, "
+            "`document_type`"      " INT NOT NULL DEFAULT 0, "
+            "`search_query_id`"    " INT, "
+            "FOREIGN KEY (`place_id`) REFERENCES `moz_places`(`id`)"
+                                    " ON DELETE CASCADE, "
+            "FOREIGN KEY (`referrer_place_id`) REFERENCES `moz_places`(`id`)"
+                                             " ON DELETE CASCADE, "
+            "FOREIGN KEY (`search_query_id`)"
+                   " REFERENCES `moz_places_metadata_search_queries`(`id`)"
+                   " ON DELETE CASCADE"
+                   " CHECK(`place_id` != `referrer_place_id`)"
+        ),
+        CREATE_UINDEX("places_metadata", "placecreated_uniqueindex",
+                "`place_id`, `created_at`"),
+        CREATE_INDEX("places_metadata", "referrerindex",
+                "`referrer_place_id`"),
+        // moz_places_metadata_search_queries
+        CREATE_TABLE("places_metadata_search_queries",
+            "`id`"    " INTEGER PRIMARY KEY, "
+            "`terms`" " TEXT NOT NULL UNIQUE"
+        ),
+        // moz_previews_tombstones
+        CREATE_TABLE_EX("previews_tombstones",
+            "`hash`" " TEXT PRIMARY KEY",
+            "WITHOUT ROWID"
+        ),
     };
     for (size_t i = 0; i < sizeof(tables) / sizeof(struct sql_withlen); ++i) {
         struct sql_withlen const *sql = tables + i;
@@ -3158,6 +3285,13 @@ backend_mkfs (
         SQL_PRAGMA_ITEM("locking_mode", "exclusive"),
         SQL_PRAGMA_ITEM("journal_mode", "memory"),
         SQL_PRAGMA_ITEM("synchronous",  "0"),
+        // Schema version 77 is used by Firefox 125 and later.
+        // This version number (and the DDL in store_new()) should be
+        // up-to-date with the oldest supported Firefox ESR.
+        //
+        // See the `mozilla::places::Database::InitSchema()` method
+        // in the mozilla-central codebase.
+        SQL_PRAGMA_ITEM("user_version", "77"),
     };
     if (0 != db_pragma(db, pragmas, DB_PRAGMA_ITEMS_CNT(pragmas))) {
         goto end;
