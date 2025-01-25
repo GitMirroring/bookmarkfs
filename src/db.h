@@ -155,8 +155,8 @@ db_query_i64_cb (
  * SQLite converts the result to REAL upon integer overflow.
  * See: <https://www.sqlite.org/datatype3.html#operators>.
  *
- * The `safeincr()` function fails if given a non-integer
- * argument, or if the argument value equals to INT64_MAX.
+ * The `safeincr()` function returns 0 if given a non-integer
+ * argument, and fails if the argument value equals to INT64_MAX.
  */
 int
 db_register_safeincr (

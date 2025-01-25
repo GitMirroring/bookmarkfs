@@ -98,16 +98,16 @@ safeincr (
     debug_assert(argc == 1);
     sqlite3_value *val = argv[0];
 
-    if (unlikely(SQLITE_INTEGER != sqlite3_value_type(val))) {
-        sqlite3_result_error(dbctx, "value is not an integer", -1);
-        return;
+    int64_t ival = 0;
+    if (SQLITE_INTEGER == sqlite3_value_type(val)) {
+        ival = sqlite3_value_int64(val);
+        if (unlikely(ival == INT64_MAX)) {
+            sqlite3_result_error(dbctx, "integer overflow", -1);
+            return;
+        }
+        ++ival;
     }
-    int64_t ival = sqlite3_value_int64(val);
-    if (unlikely(ival == INT64_MAX)) {
-        sqlite3_result_error(dbctx, "integer overflow", -1);
-        return;
-    }
-    sqlite3_result_int64(dbctx, ival + 1);
+    sqlite3_result_int64(dbctx, ival);
 }
 
 int
