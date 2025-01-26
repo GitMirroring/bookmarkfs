@@ -2663,7 +2663,7 @@ bookmark_set (
         break;
 
       case ATTR_KEY_TITLE:
-        if (0 != validate_filename(val, val_len, NULL)) {
+        if (NULL != memchr(val, '\0', val_len)) {
             return -EINVAL;
         }
         nocheck = false;

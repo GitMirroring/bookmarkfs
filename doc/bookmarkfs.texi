@@ -1210,8 +1210,8 @@ Extended attributes:
 The bookmark title.
 Only available with @option{filename=guid}.
 
-This value is allowed be set to any string that is valid UTF-8,
-and does not have to be valid as a filename.
+This value is allowed be set to any string that does not contain a
+NUL character, and does not have to be valid as a filename.
 
 @item guid
 The bookmark GUID.
@@ -1343,8 +1343,8 @@ Extended attributes:
 The bookmark title.
 Only available with @option{filename=guid}.
 
-This value is allowed be set to any string that is valid UTF-8,
-and does not have to be valid as a filename.
+This value is allowed be set to any UTF-8 string that does not contain a
+NUL character, and does not have to be valid as a filename.
 
 @item guid
 The bookmark GUID.
