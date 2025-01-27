@@ -291,6 +291,8 @@ a trailing newline is automatically removed (if one exists).
 Max file size limit.
 Defaults to @t{32768}.
 
+This limit also applies to extended attribute values.
+
 @item -o no_sandbox
 Do not enable sandboxing features (@pxref{Sandboxing}).
 

@@ -2350,7 +2350,11 @@ fs_op_setxattr (
     size_t      val_len,
     int         UNUSED_VAR(flags)
 ) {
-    int status = -ENOATTR;
+    int status = -ERANGE;
+    if (val_len > ctx.file_max) {
+        goto end;
+    }
+    status = -ENOATTR;
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
@@ -2358,6 +2362,7 @@ fs_op_setxattr (
         break;
     }
 
+  end:
     send_reply(err, req, -status);
 }
 
