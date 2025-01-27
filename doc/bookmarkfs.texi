@@ -1736,6 +1736,119 @@ The pointer referring to the backend context.
 @end table
 
 
+@node Lookup Bookmark
+@subsection Lookup Bookmark
+
+The @code{bookmark_lookup} function is called to obtain the attributes of
+a bookmark, or a bookmark-related object.
+It must not be @code{NULL}.
+
+@example c
+typedef int (bookmarkfs_bookmark_lookup_func) (
+    void                            *backend_ctx,
+    uint64_t                         id,
+    char const                      *name,
+    uint32_t                         flags,
+    struct bookmarkfs_bookmark_stat *stat_buf
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item id
+The subsystem object ID to be used for lookup.
+It could either be a bookmark ID or a tag ID,
+depending on the value of @code{flags}.
+
+@item name
+Name of the subsystem object to lookup.
+It could be a bookmark name, tag name or keyword name,
+depending on the value of @code{flags}.
+
+When not @code{NULL}, @code{name} is guaranteed to be a valid filename,
+which should be used to lookup an object under the directory referred to
+by @code{id}.
+Otherwise, the function should operate on the object referred to
+by @code{id} itself.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Indicates that the function should operate on the ``bookmarks'' subsystem.
+@xref{Bookmarks}.
+
+@code{id} and @code{name} refers to bookmark ID and bookmark name.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Indicates that the function should operate on the ``tags'' subsystem.
+@xref{Tags}.
+
+@code{id} and @code{name} refers to tag ID and tag name.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Indicates that the function should operate on the ``keywords'' subsystem.
+@xref{Keywords}.
+
+@code{name} refers to keyword name (must not be @code{NULL}).
+The value of @code{id} is unspecified.
+@end table
+@end table
+
+@item stat_buf
+Attributes of the object to lookup.
+
+The initial content of this argument is unspecified.
+When the object is successfully found, the backend should populate
+this argument with appropriate values.
+
+The @code{bookmarkfs_bookmark_stat} structure is defined as:
+
+@example c
+struct bookmarkfs_bookmark_stat @{
+    uint64_t id;
+    ssize_t  value_len;
+
+    struct timespec atime;
+    struct timespec mtime;
+@};
+@end example
+
+@table @code
+@item id
+ID of the object.
+
+@item value_len
+Length of the object value in bytes.
+@t{-1} if the object refers to a directory.
+
+@item atime
+@item mtime
+Last access and modification time of the object.
+Must not be earlier than the Unix epoch.
+@end table
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating
+the error encountered.
+
+Generally, the error code should follow filesystem conventions,
+but the backend may return other error codes which it sees fit.
+Also @pxref{Error Codes}.
+
+
 @node Filesystem-Check Handlers
 @chapter Filesystem-Check Handlers
 
