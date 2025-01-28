@@ -31,7 +31,7 @@
  * Returns a pseudo-random 64-bit unsigned integer.
  * The PRNG should be seeded before calling this function.
  *
- * This function is MT-Safe.
+ * This function is MT-Unsafe.
  */
 uint64_t
 prng_rand (void);
@@ -39,9 +39,6 @@ prng_rand (void);
 /**
  * Seed the PRNG with the given values.
  * If `s` is NULL, the values will be read from /dev/urandom.
- *
- * When used in a multi-threaded environment,
- * each thread should seed the PRNG separately.
  *
  * Returns 0 on success, -1 on failure.
  * If `s` is not NULL, this function never fails.

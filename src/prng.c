@@ -39,10 +39,7 @@
 static uint64_t rotl64 (uint64_t, unsigned);
 // Forward declaration end
 
-#ifndef BOOKMARKFS_TLS
-#  error "compiler does not support thread-local storage"
-#endif
-static BOOKMARKFS_TLS uint64_t state[4];
+static uint64_t state[4];
 
 static uint64_t
 rotl64 (

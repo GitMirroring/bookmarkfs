@@ -23,8 +23,7 @@
 #ifndef BOOKMARKFS_DEFS_H_
 #define BOOKMARKFS_DEFS_H_
 
-#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)  \
-     || (__STDC_HOSTED__ != 1)
+#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
 #  error "unsupported compiler"
 #elif __STDC_VERSION__ >= 202311L
 #  define HAVE_STDC_23  1

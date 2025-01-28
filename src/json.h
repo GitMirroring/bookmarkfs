@@ -25,6 +25,13 @@
 
 #include <string.h>
 
+// No need for atomic json_incref()/json_decref(),
+// since we're only using Jansson in a single thread.
+#include <jansson_config.h>
+#undef  JSON_HAVE_ATOMIC_BUILTINS
+#define JSON_HAVE_ATOMIC_BUILTINS  0
+#undef  JSON_HAVE_SYNC_BUILTINS
+#define JSON_HAVE_SYNC_BUILTINS  0
 #include <jansson.h>
 
 // The following helper macros are useful with literal keys,
