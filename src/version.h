@@ -46,6 +46,12 @@
 #define BOOKMARKFS_FEAT_SANDBOX           ( 1u << 26 )
 #define BOOKMARKFS_FEAT_SANDBOX_LANDLOCK  ( 1u << 27 )
 
+/**
+ * Obtain version and feature information of the utility library.
+ *
+ * Returns a combination of the version number
+ * and BOOKMARKFS_FEAT_xxx flags.
+ */
 uint32_t
 bookmarkfs_lib_version (void);
 

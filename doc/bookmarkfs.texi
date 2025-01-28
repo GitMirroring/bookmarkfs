@@ -171,6 +171,58 @@ On Linux, sandboxing is achieved using @linuxmanpage{seccomp, 2} and
 On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
 
 
+@node The Utility Library
+@section The Utility Library
+
+The BookmarkFS Utility Library implements various common utility functions.
+It is used internally by most of BookmarkFS's components, including
+the backends (@pxref{Backends}) and the @command{mount.bookmarkfs} program.
+
+Typically, the library is built into a shared object, and installed as:
+
+@example
+@var{$@{libdir@}}/bookmarkfs_util@var{$@{shlib_suffix@}}
+@end example
+
+@table @var
+@item $@{libdir@}
+Presumably @file{@var{$@{prefix@}}/lib}.
+@xref{Uniform,, The Uniform Naming Scheme, automake, GNU Automake}.
+
+@item $@{shlib_suffix@}
+The common filename extension for shared library files on the current platform
+(e.g., @file{.so} on GNU/Linux and FreeBSD).
+@end table
+
+Public headers are installed under @file{@var{$@{pkgincludedir@}}}
+(presumably @file{@var{$@{prefix@}}/include/bookmarkfs}).
+To use the library functions, include the following headers as needed:
+
+@table @file
+@item hash.h
+Non-cryptographic hash function.
+
+@item hashmap.h
+A simple hashtable implementation.
+
+@item prng.h
+Non-cryptographic pseudo-random number generator.
+
+@item sandbox.h
+A simple sandbox implementation. @xref{Sandboxing}.
+
+@item version.h
+Get version and feature information of the library.
+
+@item watcher.h
+Single-file filesystem watcher.
+@end table
+
+Usage of the library functions is rather simple and straightforward,
+thus there's currently no dedicated manual sections.
+Refer to the comments in the corresponding header files for details.
+
+
 @node Programs
 @chapter Programs
 
@@ -1101,7 +1153,7 @@ application bookmarks.
 Typically, backends are built into shared libraries, and are installed as:
 
 @example
-@var{$@{pkglibdir@}}/backend-@var{$@{name@}}@var{$@{shlib_suffix@}}
+@var{$@{pkglibdir@}}/backend_@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
 @table @var
@@ -1450,6 +1502,7 @@ A bit array of the following flags:
 @table @code
 @item BOOKMARKFS_BACKEND_LIB_READY
 Indicates that the utility library is already initialized.
+@xref{The Utility Library}.
 
 Some frontend programs use the utility library.
 If they do, they always initialize it before initializing the backend.
@@ -1862,7 +1915,7 @@ Like backends, filesystem-check handlers are typically built into
 shared libraries, and are installed as:
 
 @example
-@var{$@{pkglibdir@}}/fsck-handler-@var{$@{name@}}@var{$@{shlib_suffix@}}
+@var{$@{pkglibdir@}}/fsck_handler_@var{$@{name@}}@var{$@{shlib_suffix@}}
 @end example
 
 @table @var

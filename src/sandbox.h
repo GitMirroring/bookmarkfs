@@ -25,10 +25,30 @@
 
 #include <stdint.h>
 
+/**
+ * Only perform read operations on dirfd (and the files beneath).
+ */
 #define SANDBOX_READONLY     ( 1u << 0 )
+/**
+ * Do not use landlock for sandoxing.
+ * Ignored on non-Linux platforms.
+ */
 #define SANDBOX_NO_LANDLOCK  ( 1u << 1 )
+/**
+ * sandbox_enter() does nothing and returns successfully.
+ */
 #define SANDBOX_NOOP         ( 1u << 2 )
 
+/**
+ * Instruct the current process (or thread, depending on
+ * the implementation) to enter sandbox.
+ * In sandbox, the process has limited access to system calls.
+ *
+ * If dirfd is non-negative, it should refer to a directory
+ * which the process needs to access.
+ *
+ * Returns 0 on success, -1 on failure.
+ */
 int
 sandbox_enter (
     int      dirfd,
