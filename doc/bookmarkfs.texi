@@ -1627,6 +1627,10 @@ Indicates that the @option{-o ctime} option is given to
 Indicates that the @option{-o no_sandbox} option is given to
 @code{mount.bookmarkfs}.
 
+If the backend does not support sandboxing, @code{backend_create} should fail.
+Otherwise, function @code{backend_sandbox} should be implemented.
+@xref{Enter Sandbox}.
+
 @item BOOKMARKFS_BACKEND_NO_LANDLOCK
 Indicates that the @option{-o no_landlock} option is given to
 @code{mount.bookmarkfs}.
@@ -1689,6 +1693,7 @@ The initial content of this argument is unspecified.
 When the backend context is successfully created, the backend should
 populate this argument with appropriate values.
 
+@anchor{Backend-Create Response}
 The @code{bookmarkfs_backend_create_resp} structure is defined as:
 
 @example c
@@ -1789,6 +1794,68 @@ Function arguments:
 @item backend_ctx
 The pointer referring to the backend context.
 @end table
+
+
+@node Enter Sandbox
+@subsection Enter Sandbox
+
+The @code{backend_sandbox} function is called to instruct the backend to
+enter a sandboxed state where it has limited access to system resources,
+thereby improving security.
+@xref{Sandboxing}.
+
+This function is only called if the @code{BOOKMARKFS_BACKEND_NO_SANDBOX} flag
+is @emph{not} given to @code{backend_create} when creating the current context.
+It can be @code{NULL} if the backend context does not support sandboxing.
+
+Considering how sandboxing is usually implemented,
+it may be complicated or even impractical for multiple backend contexts
+to enter sandbox separately without affecting other ones.
+Thus it is guaranteed that, when launched from a frontend program like
+@command{mount.bookmarkfs}, only one backend context will be created
+throughout the lifetime of the process if sandboxing is ever needed.
+
+Currently, the backends shipped with BookmarkFS use the sandbox implementation
+in the utility library (@pxref{The Utility Library}).
+It may require some tweaking to be used for other backends.
+
+@example c
+typedef int (bookmarkfs_backend_sandbox_func) (
+    void                                  *backend_ctx,
+    struct bookmarkfs_backend_create_resp *resp
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item resp
+@xref{Backend-Create Response} for the definition of the
+@code{bookmarkfs_backend_create_resp} structure.
+
+Fields in this argument should be left as-is, except for:
+
+@table @code
+@item bookmarks_root_id
+This field must be set to the ID of the bookmarks root directory,
+if not already done so in @code{backend_create}.
+
+@item tags_root_id
+This field should be set to the ID of the tags root directory,
+if not already done so in @code{backend_create}.
+
+If the backend does not support tags for this context, this field should be
+left as-is or set to @code{UINT64_MAX}.
+@end table
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
+
+Once this function fails, no further function calls will be performed
+on the backend except for @code{backend_destroy}.
 
 
 @node Lookup Bookmark
