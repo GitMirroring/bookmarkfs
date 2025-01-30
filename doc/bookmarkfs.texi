@@ -1600,6 +1600,7 @@ Function arguments:
 @item conf
 Backend configuration items.
 
+@anchor{Backend Configuration}
 The @code{bookmarkfs_backend_conf} structure is defined as:
 
 @example c
@@ -1982,6 +1983,54 @@ the error encountered.
 Generally, the error code should follow filesystem conventions,
 but the backend may return other error codes which it sees fit.
 Also @pxref{Error Codes}.
+
+
+@node Create Bookmark Storage
+@subsection Create Bookmark Storage
+
+The @code{backend_mkfs} function is called by the @command{mkfs.bookmarkfs}
+program to create a new bookmark storage.
+It can be @code{NULL}.
+
+The new bookmark storage should be able to be opened directly, by both
+@code{backend_create} and the application that owns the bookmark storage.
+
+Type of the @code{backend_mkfs} function is defined as:
+
+@example c
+typedef int (bookmarkfs_backend_mkfs_func) (
+    struct bookmarkfs_backend_conf const *conf
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item conf
+@xref{Backend Configuration} for the definition of the
+@code{bookmarkfs_backend_conf} structure.
+
+Some fields should be handled differently from @code{backend_create}:
+@table @code
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BACKEND_MKFS_FORCE
+Indicates that the @option{-o force} option is given to
+@command{mkfs.bookmarkfs}.
+@end table
+
+@item store_path
+Path to the bookmark storage to be created, equivalent to the
+@code{store_path} passed to @code{backend_create}.
+
+The backend should not overwrite existing bookmark storage, unless
+the @code{BOOKMARKFS_BACKEND_MKFS_FORCE} flag is given.
+@end table
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
 
 
 @node Filesystem-Check Handlers
