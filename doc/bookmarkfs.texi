@@ -1249,7 +1249,7 @@ Backend-specific options (@command{mkfs.bookmarkfs} only):
 
 @table @option
 @item date_added=@var{timestamp}
-File creation time for the bookmark root directories.
+File creation time for the predefined bookmark directories.
 Defaults to the current time.
 
 Format of @var{timestamp} is equivalent to the @samp{date_added}
@@ -1382,7 +1382,7 @@ Backend-specific options (@command{mkfs.bookmarkfs} only):
 
 @table @option
 @item date_added=@var{timestamp}
-File creation time for the bookmark root directories.
+File creation time for the predefined bookmark directories.
 Defaults to the current time.
 
 Format of @var{timestamp} is equivalent to the @samp{date_added}
@@ -1487,6 +1487,8 @@ before calling any other functions (except for @code{backend_info}).
 If not @code{NULL}, it is guaranteed to be called exactly once
 throughout the lifetime of the process.
 
+Type of the @code{backend_init} function is defined as:
+
 @example c
 typedef int (bookmarkfs_backend_init_func) (
     uint32_t flags
@@ -1528,6 +1530,8 @@ instructs the frontend program to print information about the backend.
 
 When this function is called, the backend should write a human-readable
 message of the corresponding information to standard output.
+
+Type of the @code{backend_info} function is defined as:
 
 @example c
 typedef void (bookmarkfs_backend_info_func) (
@@ -1580,6 +1584,8 @@ the corresponding backend functions on the context.
 
 To create a backend context, the @code{backend_create} function is called.
 It must not be @code{NULL}.
+
+Type of the @code{backend_create} function is defined as:
 
 @example c
 typedef int (bookmarkfs_backend_create_func) (
@@ -1721,7 +1727,7 @@ An opaque pointer referring to the backend context.
 The pointer will be passed to further function calls on this context.
 
 @item bookmarks_root_id
-ID of the bookmark root directory
+ID of the bookmarks root directory
 (i.e., @file{@var{$@{mountpoint@}}/bookmarks}).
 Must not be greater than @code{BOOKMARKFS_MAX_ID}.
 
@@ -1778,9 +1784,12 @@ When a backend context is no longer used, the @code{backend_destroy} function
 is called.
 It must not be @code{NULL}.
 
-The backend should release all system resources associated with this context.
+Upon destruction, the backend should release all system resources
+associated with this context.
 If changes have been made to the bookmark storage, the backend should
 try to persist them.
+
+Type of the @code{backend_destroy} function is defined as:
 
 @example c
 typedef void (bookmarkfs_backend_destroy_func) (
@@ -1818,6 +1827,8 @@ throughout the lifetime of the process if sandboxing is ever needed.
 Currently, the backends shipped with BookmarkFS use the sandbox implementation
 in the utility library (@pxref{The Utility Library}).
 It may require some tweaking to be used for other backends.
+
+Type of the @code{backend_sandbox} function is defined as:
 
 @example c
 typedef int (bookmarkfs_backend_sandbox_func) (
@@ -1864,6 +1875,8 @@ on the backend except for @code{backend_destroy}.
 The @code{bookmark_lookup} function is called to obtain the attributes of
 a bookmark, or a bookmark-related object.
 It must not be @code{NULL}.
+
+Type of the @code{bookmark_lookup} function is defined as:
 
 @example c
 typedef int (bookmarkfs_bookmark_lookup_func) (
@@ -2163,7 +2176,6 @@ the second element of the list is a string of user input.
 
 Otherwise, this value indicates that the previous operation is
 successfully performed on the entry.
-
 @end table
 
 The command should return a list indicating the operation to perform
@@ -2279,6 +2291,8 @@ instructs @command{fsck.bookmarkfs} to print information about the handler.
 When this function is called, the handler should write a human-readable
 message of the corresponding information to standard output.
 
+Type of the @code{info} function is defined as:
+
 @example c
 typedef void (bookmarkfs_fsck_handler_info_func) (
     uint32_t flags
@@ -2311,6 +2325,8 @@ handling fsck entries.
 
 To create a handler context, the @code{create} function is called.
 It must not be @code{NULL}.
+
+Type of the @code{create} function is defined as:
 
 @example c
 typedef int (bookmarkfs_fsck_handler_create_func) (
@@ -2360,7 +2376,10 @@ When a handler context is no longer used, the @code{destroy} function
 is called.
 It must not be @code{NULL}.
 
-The handler should release all system resources associated with this context.
+Upon destruction, The handler should release all system resources
+associated with this context.
+
+Type of the @code{destroy} function is defined as:
 
 @example c
 typedef void (bookmarkfs_fsck_handler_destroy_func) (
@@ -2382,6 +2401,8 @@ The pointer referring to the handler context.
 Each time @command{fsck.bookmarkfs} finds and entry, or completes a
 handler-initiated operation, the @code{run} function is called.
 It must not be @code{NULL}.
+
+Type of the @code{run} function is defined as:
 
 @example c
 typedef int (bookmarkfs_fsck_handler_run_func) (
