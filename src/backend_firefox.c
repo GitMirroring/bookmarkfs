@@ -3056,12 +3056,6 @@ bookmark_fsck (
         status = fsck_apply(ctx, id, fsck_data, &qctx);
 #endif
     }
-    if (status < 0) {
-        if (dentry_map == NULL) {
-            free_dentmap(qctx.dentry_map);
-        }
-        return status;
-    }
     dentry_map = qctx.dentry_map;
     idx        = qctx.next;
 
@@ -3165,12 +3159,6 @@ bookmark_list (
     qctx.callback.list = callback;
     qctx.user_data     = user_data;
     status = bookmark_do_list(ctx, id, off, flags, &qctx);
-    if (status < 0) {
-        if (dentry_map == NULL) {
-            free_dentmap(qctx.dentry_map);
-        }
-        return status;
-    }
     dentry_map = qctx.dentry_map;
 
   end:

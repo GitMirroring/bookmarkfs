@@ -1906,9 +1906,6 @@ bookmark_fsck (
         status = fsck_apply(ctx, id, fsck_data, callback, user_data);
 #endif
     }
-    if (status < 0) {
-        return status;
-    }
 
   end:
     if (cookie_ptr != NULL) {
@@ -2053,10 +2050,7 @@ bookmark_list (
             continue;
         }
         status = callback(user_data, &buf);
-        if (status < 0) {
-            return status;
-        }
-        if (status > 0) {
+        if (status != 0) {
             break;
         }
     }
