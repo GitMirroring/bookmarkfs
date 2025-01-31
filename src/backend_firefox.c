@@ -2413,7 +2413,7 @@ bookmark_list_cb (
     if (unlikely(position < 0)) {
         goto fail;
     }
-    entry.next = position + 1;
+    entry.off = position + 1;
 
     ssize_t len = -1;
     if (SQLITE_INTEGER == sqlite3_column_type(stmt, 3)) {

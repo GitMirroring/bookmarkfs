@@ -278,7 +278,7 @@ struct bookmarkfs_bookmark_stat {
 
 struct bookmarkfs_bookmark_entry {
     char const *name;
-    off_t       next;
+    off_t       off;
 
     struct bookmarkfs_bookmark_stat stat;
 };

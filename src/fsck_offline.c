@@ -130,7 +130,7 @@ do_list (
     uint64_t              *subdir_id_ptr
 ) {
     struct bookmarkfs_bookmark_entry entry = {
-        .next    = dir->off,
+        .off     = dir->off,
         .stat.id = UINT64_MAX,
     };
     int status = BACKEND_CALL(ctx, bookmark_list, dir->id, dir->off, 0,
@@ -138,7 +138,7 @@ do_list (
     if (status < 0) {
         return status;
     }
-    dir->off = entry.next;
+    dir->off = entry.off;
     *subdir_id_ptr = entry.stat.id;
     return 0;
 }
@@ -153,7 +153,7 @@ do_list_cb (
     if (entry->stat.value_len >= 0) {
         return 0;
     }
-    result->next    = entry->next;
+    result->off     = entry->off;
     result->stat.id = entry->stat.id;
     return 1;
 }

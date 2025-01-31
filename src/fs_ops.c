@@ -966,10 +966,10 @@ bm_readdir_cb (
     size_t entry_size;
     if (is_readdirplus) {
         entry_size = fuse_add_direntry_plus(rctx->req, buf, buf_len,
-                entry->name, &ep, entry->next);
+                entry->name, &ep, entry->off);
     } else {
         entry_size = fuse_add_direntry(rctx->req, buf, buf_len, entry->name,
-                &ep.attr, entry->next);
+                &ep.attr, entry->off);
     }
     if (entry_size > buf_len) {
         return 1;

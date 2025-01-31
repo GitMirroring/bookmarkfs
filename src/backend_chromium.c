@@ -1376,7 +1376,7 @@ static int
 parse_entry (
     struct backend_ctx const         *ctx,
     json_t const                     *node,
-    off_t                             next,
+    off_t                             off,
     bool                              with_stat,
     struct bookmarkfs_bookmark_entry *buf
 ) {
@@ -1389,7 +1389,7 @@ parse_entry (
     }
 
     buf->name    = entry->name;
-    buf->next    = next;
+    buf->off     = off;
     buf->stat.id = id;
     if (ctx->flags & BACKEND_FILENAME_GUID) {
         json_t const *guid_node = json_object_sget(entry->node, "guid");
