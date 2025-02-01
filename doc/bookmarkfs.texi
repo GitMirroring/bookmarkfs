@@ -886,6 +886,8 @@ for the sake of simplicity.
 Additionally, bookmarks with such names are hidden from the filesystem
 until fixed with fsck (@pxref{Filesystem Check}).
 
+@anchor{Directory Entry Ordering}
+@cindex Directory Entry Ordering
 @item Ordering of directory entries
 POSIX does not specify the ordering of the directory entries retrieved from
 the directory stream using @posixfuncmanpage{readdir}.
@@ -1482,8 +1484,8 @@ does not support the corresponding features.
 @node Initialize Backend
 @subsection Initialize Backend
 
-The @code{backend_init} function is called by the frontend program
-before calling any other functions (except for @code{backend_info}).
+The @code{backend_init} function is called before any other functions
+(except for @code{backend_info}).
 If not @code{NULL}, it is guaranteed to be called exactly once
 throughout the lifetime of the process.
 
@@ -1525,8 +1527,9 @@ The function should return @t{0} on success, and @t{-1} on error.
 @node Get Backend Information
 @subsection Get Backend Information
 
-If not @code{NULL}, the @code{backend_info} function is called when the user
-instructs the frontend program to print information about the backend.
+The @code{backend_info} function is called to print information
+about the backend.
+It can be @code{NULL}.
 
 When this function is called, the backend should write a human-readable
 message of the corresponding information to standard output.
@@ -1616,7 +1619,7 @@ struct bookmarkfs_backend_conf @{
 @table @code
 @item version
 Version number of the frontend program, equivalent to the
-@code{BOOKMARKFS_VERNUM} macro in @file{bookmarkfs/version.h}.
+@code{BOOKMARKFS_VERNUM} macro in @file{@var{$@{pkgincludedir@}}/version.h}.
 
 @item flags
 A bit array of the following flags:
@@ -1922,19 +1925,19 @@ Equals to one of the following values (after shifting):
 
 @table @code
 @item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
-Indicates that the function should operate on the ``bookmarks'' subsystem.
+Lookup a bookmark or bookmark folder.
 @xref{Bookmarks}.
 
 @code{id} and @code{name} refers to bookmark ID and bookmark name.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
-Indicates that the function should operate on the ``tags'' subsystem.
+Lookup a tag, or a bookmark under a tag.
 @xref{Tags}.
 
 @code{id} and @code{name} refers to tag ID and tag name.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
-Indicates that the function should operate on the ``keywords'' subsystem.
+Lookup a keyword.
 @xref{Keywords}.
 
 @code{name} refers to keyword name (must not be @code{NULL}).
@@ -1949,6 +1952,7 @@ The initial content of this argument is unspecified.
 When the object is successfully found, the backend should populate
 this argument with appropriate values.
 
+@anchor{Bookmark Attributes}
 The @code{bookmarkfs_bookmark_stat} structure is defined as:
 
 @example c
@@ -1985,6 +1989,192 @@ but the backend may return other error codes which it sees fit.
 Also @pxref{Error Codes}.
 
 
+@node List Bookmarks
+@subsection List Bookmarks
+
+The @code{bookmark_list} function is called to list the bookmarks or
+bookmark-related objects under a directory.
+It must not be @code{NULL}.
+
+Type of the @code{bookmark_list} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_list_func) (
+    void                         *backend_ctx,
+    uint64_t                      id,
+    off_t                         off,
+    uint32_t                      flags,
+    bookmarkfs_bookmark_list_cb  *callback,
+    void                         *user_data,
+    void                        **cookie_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item id
+The subsystem object ID of the directory.
+It could either be a bookmark ID or a tag ID,
+depending on the value of @code{flags}.
+
+@item off
+Position of the current @code{bookmark_list} operation, equivalent to
+the second argument for @posixfuncmanpage{seekdir}.
+
+Initially, the value is always @t{0}.
+Subsequent calls (with the same cookie) use the values obtained from
+@code{entry->off} of @code{callback} function calls.
+If not, the position is unspecified.
+
+A subsequent call with a @t{0} value indicates @code{rewinddir()}.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_LIST_WITHSTAT
+Indicates that the caller requires the attributes of the objects in the list.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+List bookmarks (and bookmark folders) under a bookmark folder.
+@xref{Bookmarks}.
+
+Value of @code{id} refers to the ID of a bookmark folder.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+List tags, or bookmarks under a tag.
+@xref{Tags}.
+
+Value of @code{id} refers to the ID of a tag folder.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+List keywords.
+@xref{Keywords}.
+
+Value of @code{id} is unspecified.
+@end table
+@end table
+
+@item callback
+Function to be called for each object found under the directory.
+
+Ordering of the objects should follow the ordering of which they appear
+in the browser.
+@xref{Directory Entry Ordering}.
+
+Type of the @code{callback} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_list_cb) (
+    void                                   *user_data,
+    struct bookmarkfs_bookmark_entry const *entry
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item user_data
+Must be equal to the @code{user_data} argument value for the current
+@code{bookmark_list} call.
+
+@item entry
+Information of this object.
+
+The @code{bookmarkfs_bookmark_entry} structure is defined as:
+
+@example c
+struct bookmarkfs_bookmark_entry @{
+    char const *name;
+    off_t       off;
+
+    struct bookmarkfs_bookmark_stat stat;
+@};
+@end example
+
+@table @code
+@item name
+Name of the object entry.
+Must be a valid filename.
+
+Objects with invalid name should be exempted from the list.
+@xref{Filesystem Check}.
+
+@item off
+Position of the current entry, to be used for subsequent calls to
+@code{bookmark_list}.
+
+@item stat
+Attributes of the object entry.
+
+@xref{Bookmark Attributes} for the definition of the
+@code{bookmarkfs_bookmark_stat} structure.
+
+If the @code{BOOKMARKFS_BOOKMARK_LIST_WITHSTAT} flag is @emph{not} given,
+the caller ignores @code{atime} and @code{mtime}, and only use @code{value_len}
+to determine whether the entry refers to a directory.
+@end table
+
+Values of @code{entry} and @code{name} only need to be valid
+until the @code{callback} function returns.
+@end table
+
+Return value:
+
+@table @asis
+@item @t{0}
+Continue to the next entry, if one exists.
+
+@item Non-zero value
+Stop listing entries, and use this value as the return value for
+the current @code{bookmark_list} call.
+@end table
+
+@item user_data
+An opaque pointer which should be passed as-is to the @code{callback} function.
+
+@item cookie_ptr
+Pointer to the ``cookie'' for the current @code{bookmark_list} operation.
+@code{NULL} if not used by the caller.
+
+The ``cookie'' is an opaque pointer which stores internal states
+to be used for subsequent operations on the same directory.
+
+If the value pointed to by @code{cookie_ptr} is @code{NULL}, it indicates
+that this is an initial operation.
+The backend should set the value to a pointer which is not @code{NULL}.
+
+The backend must not change the cookie value.
+@end table
+
+Return value:
+
+@table @asis
+@item @t{0}
+All entries in the directory have been listed.
+
+@item Negated @code{errno}
+An error occurred.
+
+@item Arbitrary non-zero value
+The function is terminated by a call to @code{callback} that
+returns a non-zero value.
+@end table
+
+If returning a negative value, the position of the current
+@code{bookmark_list} operation is unspecified.
+
+
 @node Create Bookmark Storage
 @subsection Create Bookmark Storage
 
@@ -1993,7 +2183,8 @@ program to create a new bookmark storage.
 It can be @code{NULL}.
 
 The new bookmark storage should be able to be opened directly, by both
-@code{backend_create} and the application that owns the bookmark storage.
+@code{backend_create} and the application that owns the bookmark storage
+(typically a web browser).
 
 Type of the @code{backend_mkfs} function is defined as:
 
