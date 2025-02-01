@@ -198,17 +198,11 @@ AC_COMPILE_IFELSE([
     AC_LANG_SOURCE([[char const *name = __FILE_NAME__;]])
 ], [
     AC_MSG_RESULT([yes])
+    AS_VAR_SET([no_file_name], [no])
 ], [
     AC_MSG_RESULT([no])
-    AX_CHECK_COMPILE_FLAG([-fmacro-prefix-map==], [
-        AS_VAR_SET([macro_prefix_map], [yes])
-    ], [
-        AC_MSG_WARN(m4_normalize([
-            The `-fmacro-prefix-map' preprocessor flag is not supported.
-        ]))
-    ])
 ])
-AM_CONDITIONAL([MACRO_PREFIX_MAP], [test x${macro_prefix_map} != xno])
+AM_CONDITIONAL([NO_FILE_NAME], [test x${no_file_name} != xno])
 
 AC_SYS_LARGEFILE
 AS_VAR_IF([ac_have_largefile], [no], [

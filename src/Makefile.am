@@ -14,9 +14,9 @@ lib_LTLIBRARIES    =
 pkglib_LTLIBRARIES =
 
 BASE_CPPFLAGS_ = -DBUILDING_BOOKMARKFS
-if MACRO_PREFIX_MAP
-  BASE_CPPFLAGS_ += -fmacro-prefix-map=$(srcdir)/=
-endif  # MACRO_PREFIX_MAP
+if NO_FILE_NAME
+  BASE_CPPFLAGS_ += -DBOOKMARKFS_SRCDIR=\"$(srcdir)\"
+endif  # NO_FILE_NAME
 
 MODULE_CFLAGS_ =
 if HIDE_MODULE_SYMBOLS
@@ -55,7 +55,8 @@ endif  # BOOKMARKFS_UTIL
 if BOOKMARKCTL
   bin_PROGRAMS += bookmarkctl
 
-  bookmarkctl_SOURCES = bookmarkctl.c fsck_util.c
+  bookmarkctl_CPPFLAGS = $(BASE_CPPFLAGS_)
+  bookmarkctl_SOURCES  = bookmarkctl.c fsck_util.c
 endif  # BOOKMARKCTL
 
 if BOOKMARKFS_FSCK

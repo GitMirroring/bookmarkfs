@@ -114,9 +114,7 @@
 #ifdef __FILE_NAME__
 #  define FILE_NAME_  __FILE_NAME__
 #else
-// NOTE: Using __FILE__ may produce ugly logs and break reproducible build.
-//       Workaround with `-fmacro-prefix-map=${srcdir}/=` CPPFLAGS.
-#  define FILE_NAME_  __FILE__
+#  define FILE_NAME_  ( __FILE__ + sizeof(BOOKMARKFS_SRCDIR) )
 #endif
 
 #define BOOKMARKFS_HOMEPAGE_URL  "https://nongnu.org/bookmarkfs"
