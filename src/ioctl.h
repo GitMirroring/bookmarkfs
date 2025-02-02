@@ -23,10 +23,13 @@
 #ifndef BOOKMARKFS_IOCTL_H_
 #define BOOKMARKFS_IOCTL_H_
 
-#include <limits.h>
-#include <stdint.h>
-
 #include <sys/ioctl.h>
+
+#ifdef BUILDING_BOOKMARKFS
+#  include "common.h"
+#else
+#  include <bookmarkfs/common.h>
+#endif
 
 #define BOOKMARKFS_IOC_MAGIC_     0xbf
 #define BOOKMARKFS_IOC_(rw, ...)  _IO##rw(BOOKMARKFS_IOC_MAGIC_, __VA_ARGS__)
@@ -37,40 +40,5 @@
 #define BOOKMARKFS_IOC_FSCK_NEXT    BOOKMARKFS_IOC_RW_(R,  1, fsck)
 #define BOOKMARKFS_IOC_FSCK_APPLY   BOOKMARKFS_IOC_RW_(WR, 2, fsck)
 #define BOOKMARKFS_IOC_PERMD        BOOKMARKFS_IOC_RW_(W,  3, permd)
-
-enum bookmarkfs_fsck_result {
-    BOOKMARKFS_FSCK_RESULT_END = 0,  // must be 0
-    BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE,
-    BOOKMARKFS_FSCK_RESULT_NAME_BADCHAR,
-    BOOKMARKFS_FSCK_RESULT_NAME_BADLEN,
-    BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT,
-    BOOKMARKFS_FSCK_RESULT_NAME_INVALID,
-};
-
-/**
- * Predefined reason codes for BOOKMARKFS_FSCK_RESULT_NAME_INVALID.
- */
-enum {
-    BOOKMARKFS_NAME_INVALID_REASON_NOTUTF8 = 256,
-};
-
-enum bookmarkfs_permd_op {
-    BOOKMARKFS_PERMD_OP_SWAP,
-    BOOKMARKFS_PERMD_OP_MOVE_BEFORE,
-    BOOKMARKFS_PERMD_OP_MOVE_AFTER,
-};
-
-struct bookmarkfs_fsck_data {
-    uint64_t id;
-    uint64_t extra;
-    char     name[NAME_MAX + 1];
-};
-
-struct bookmarkfs_permd_data {
-    enum bookmarkfs_permd_op op;
-
-    char name1[NAME_MAX + 1];
-    char name2[NAME_MAX + 1];
-};
 
 #endif  /* !defined(BOOKMARKFS_IOCTL_H_) */

@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 
-#include "ioctl.h"
+#include "common.h"
 
 int
 explain_fsck_result (

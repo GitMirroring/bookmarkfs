@@ -27,10 +27,8 @@
 
 #ifdef BUILDING_BOOKMARKFS
 #  include "common.h"
-#  include "ioctl.h"
 #else
 #  include <bookmarkfs/common.h>
-#  include <bookmarkfs/ioctl.h>
 #endif
 
 // init() flags

@@ -26,6 +26,7 @@
 #  include "config.h"
 #endif
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +41,6 @@
 #include "frontend_util.h"
 #include "fsck_handler.h"
 #include "fsck_ops.h"
-#include "ioctl.h"
 #include "lib.h"
 #include "xstd.h"
 

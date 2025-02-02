@@ -49,7 +49,6 @@
 #include "backend_util.h"
 #include "hash.h"
 #include "hashmap.h"
-#include "ioctl.h"
 #include "json.h"
 #include "lib.h"
 #include "macros.h"

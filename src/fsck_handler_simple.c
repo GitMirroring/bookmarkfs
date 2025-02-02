@@ -31,7 +31,6 @@
 #include "backend_util.h"
 #include "fsck_handler.h"
 #include "fsck_util.h"
-#include "ioctl.h"
 #include "xstd.h"
 
 #define FSCK_HANDLER_EXPECT_INPUT  ( 1u << 16 )

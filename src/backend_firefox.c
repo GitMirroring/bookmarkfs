@@ -48,7 +48,6 @@
 #include "db.h"
 #include "hash.h"
 #include "hashmap.h"
-#include "ioctl.h"
 #include "lib.h"
 #include "macros.h"
 #include "prng.h"

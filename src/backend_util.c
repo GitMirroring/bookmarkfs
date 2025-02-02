@@ -32,7 +32,7 @@
 
 #include <fcntl.h>
 
-#include "ioctl.h"
+#include "common.h"
 #include "xstd.h"
 
 int

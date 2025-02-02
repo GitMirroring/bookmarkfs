@@ -29,7 +29,6 @@
 #include <string.h>
 
 #include "fsck_ops.h"
-#include "ioctl.h"
 #include "version.h"
 #include "xstd.h"
 
