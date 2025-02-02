@@ -13,7 +13,7 @@ noinst_HEADERS     = backend_util.h db.h defs.h frontend_util.h fs_ops.h  \
 lib_LTLIBRARIES    =
 pkglib_LTLIBRARIES =
 
-BASE_CPPFLAGS_ = -DBUILDING_BOOKMARKFS
+BASE_CPPFLAGS_ =
 if NO_FILE_NAME
   BASE_CPPFLAGS_ += -DBOOKMARKFS_SRCDIR=\"$(srcdir)\"
 endif  # NO_FILE_NAME

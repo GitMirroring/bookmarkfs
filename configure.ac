@@ -231,6 +231,7 @@ AX_COMPILE_CHECK_SIZEOF([uintptr_t], [#include <stdint.h>])
 # -- Output --
 
 PKG_INSTALLDIR()
+AC_DEFINE([BUILDING_BOOKMARKFS], [1], [Define to 1 if building BookmarkFS.])
 AC_CONFIG_FILES([
     Makefile
     doc/Makefile
