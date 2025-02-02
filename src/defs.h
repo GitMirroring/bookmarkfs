@@ -114,7 +114,12 @@
 #ifdef __FILE_NAME__
 #  define FILE_NAME_  __FILE_NAME__
 #else
-#  define FILE_NAME_  ( __FILE__ + sizeof(BOOKMARKFS_SRCDIR) )
+#  ifdef BOOKMARKFS_SRCDIR
+#    define FILE_NAME_OFFSET_  sizeof(BOOKMARKFS_SRCDIR)
+#  else
+#    define FILE_NAME_OFFSET_  0
+#  endif
+#  define FILE_NAME_  ( __FILE__ + FILE_NAME_OFFSET_ )
 #endif
 
 #define BOOKMARKFS_HOMEPAGE_URL  "https://nongnu.org/bookmarkfs"
