@@ -33,10 +33,6 @@
 
 #include "xstd.h"
 
-struct db_check_ctx {
-    int status;
-};
-
 struct db_pragma_ctx {
     char const *val;
     size_t      val_len;
@@ -55,16 +51,14 @@ db_check_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
-    struct db_check_ctx *ctx = user_data;
+    int *status_ptr = user_data;
 
-    size_t               nbytes = sqlite3_column_bytes(stmt, 0);
-    unsigned char const *result = sqlite3_column_text(stmt, 0);
+    char const *result = (char const *)sqlite3_column_text(stmt, 0);
     xassert(result != NULL);
 
-    ctx->status = 0;
-    if (nbytes != strlen("ok") || 0 != memcmp("ok", result, nbytes)) {
+    if (0 != strcmp("ok", result)) {
         log_printf("%s: expected 'ok', got '%s'", sqlite3_sql(stmt), result);
-        ctx->status = -EIO;
+        *status_ptr = -EIO;
     }
     return 0;
 }
@@ -119,13 +113,13 @@ db_check (
         return -1;
     }
 
-    struct db_check_ctx qctx;
-    ssize_t nrows = db_query(stmt, NULL, 0, false, db_check_cb, &qctx);
+    int status = 0;
+    ssize_t nrows = db_query(stmt, NULL, 0, false, db_check_cb, &status);
     if (nrows < 0) {
         return nrows;
     }
     xassert(nrows == 1);
-    return qctx.status;
+    return status;
 }
 
 int
