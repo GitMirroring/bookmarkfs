@@ -2067,6 +2067,8 @@ Value of @code{id} is unspecified.
 
 @item callback
 Function to be called for each object found under the directory.
+If @code{NULL}, @code{bookmark_list} should return immediately
+without changing current position.
 
 Ordering of the objects should follow the ordering of which they appear
 in the browser.
@@ -2173,6 +2175,125 @@ returns a non-zero value.
 
 If returning a negative value, the position of the current
 @code{bookmark_list} operation is unspecified.
+
+
+@node Get Bookmark Content
+@subsection Get Bookmark Content
+
+The @code{bookmark_get} function is called to get the content or
+extended attribute value of a bookmark.
+
+The ``content'' of a bookmark is equivalent to the content of a regular file
+on a BookmarkFS filesystem that refers to a bookmark.
+@xref{Bookmarks}.
+
+Type of the @code{bookmark_get} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_get_func) (
+    void                        *backend_ctx,
+    uint64_t                     id,
+    char const                  *attr_key,
+    bookmarkfs_bookmark_get_cb  *callback,
+    void                        *user_data,
+    void                       **cookie_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item id
+ID of the bookmark (could be a bookmark folder if @code{attr_key}
+is not @code{NULL}).
+
+@item attr_key
+Name of an extended attribute.
+
+If not @code{NULL}, @code{attr_key} is guaranteed to be a NUL-terminated
+string, and the function should get the corresponding extended attribute value
+instead of the bookmark content.
+
+@item callback
+Function to be called for the required bookmark data.
+It is guaranteed not to be @code{NULL}.
+
+Type of the @code{callback} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_get_cb) (
+    void       *user_data,
+    void const *value,
+    size_t      value_len
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item user_data
+Must be equal to the @code{user_data} argument value of the current
+@code{bookmark_get} call.
+
+@item value
+Bookmark content (or extended attribute) data.
+Must not be @code{NULL}.
+
+It may contain arbitrary bytes, and only need to be valid until the
+@code{callback} function returns.
+
+@item value_len
+Length of @code{value} in bytes.
+@end table
+
+The function returns @t{0} on success.
+Otherwise, the function returns a nagated @code{errno} which should be
+used as the return value for the current @code{bookmark_get} call.
+
+@item user_data
+An opaque pointer which should be passed as-is to the @code{callback} function.
+
+@item cookie_ptr
+Pointer to the ``cookie'' for the current @code{bookmark_get} operation.
+@code{NULL} if not used by the caller.
+
+The “cookie” is an opaque pointer which stores internal states
+for subsequent operations on the same bookmark (and @code{attr_key})
+to determine whether the corresponding data has changed.
+
+If the value pointered to by @code{cookie_ptr} is @code{NULL},
+it indicates that this is an initial operation.
+If the backend supports watching for changes of bookmark content,
+it may set the value to a pointer which is not @code{NULL}.
+
+The backend must not change the cookie value.
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+Notable error codes:
+
+@table @code
+@item EAGAIN
+Bookmark data has not been changed @emph{externally} since
+the last call to @code{bookmark_get} with the same cookie.
+If this error code is returned, @code{callback} must not be called.
+
+``Externally'' means that the modification comes from another process
+which has access to the bookmark storage.
+In exclusive mode, this is not expected to happen, and @code{bookmark_list}
+is always called with a @code{cookie_ptr} of @code{NULL} value.
+
+If changes cannot be detected in an efficient way, false positives are
+acceptable.
+False negatives are also acceptable for a short time duration
+(preferably no more than a few seconds).
+@end table
 
 
 @node Create Bookmark Storage
