@@ -3192,22 +3192,22 @@ bookmark_lookup (
 }
 
 static void
-object_free (
+cookie_free (
     void                        *UNUSED_VAR(backend_ctx),
-    void                        *object,
-    enum bookmarkfs_object_type  object_type
+    void                        *cookie,
+    enum bookmarkfs_cookie_type  cookie_type
 ) {
-    if (object == NULL) {
+    if (cookie == NULL) {
         return;
     }
 
-    switch (object_type) {
-      case BOOKMARKFS_OBJECT_TYPE_BGCOOKIE:
-        free(object);
+    switch (cookie_type) {
+      case BOOKMARKFS_COOKIE_TYPE_WATCH:
+        free(cookie);
         break;
 
-      case BOOKMARKFS_OBJECT_TYPE_BLCOOKIE:
-        free_blcookie(object);
+      case BOOKMARKFS_COOKIE_TYPE_LIST:
+        free_blcookie(cookie);
         break;
 
       default:
@@ -3733,7 +3733,7 @@ struct bookmarkfs_backend const bookmarkfs_backend_firefox = {
     .bookmark_list   = bookmark_list,
     .bookmark_lookup = bookmark_lookup,
 
-    .object_free = object_free,
+    .cookie_free = cookie_free,
 
 #ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
     .backend_mkfs = backend_mkfs,

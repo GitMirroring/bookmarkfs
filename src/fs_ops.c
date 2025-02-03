@@ -500,7 +500,7 @@ bm_free (
         free(fh->buf);
     }
     if (fh->cookie != NULL) {
-        BACKEND_CALL(object_free, fh->cookie, BOOKMARKFS_OBJECT_TYPE_BGCOOKIE);
+        BACKEND_CALL(cookie_free, fh->cookie, BOOKMARKFS_COOKIE_TYPE_WATCH);
     }
     bm_fh_free(fh, -1);
     return status;
@@ -512,7 +512,7 @@ bm_freedir (
     fuse_ino_t  ino,
     void       *cookie
 ) {
-    BACKEND_CALL(object_free, cookie, BOOKMARKFS_OBJECT_TYPE_BLCOOKIE);
+    BACKEND_CALL(cookie_free, cookie, BOOKMARKFS_COOKIE_TYPE_LIST);
 
     unsigned long entry_id;
     struct fs_file_handle *fh = bm_fh_get(ino, NULL, &entry_id);

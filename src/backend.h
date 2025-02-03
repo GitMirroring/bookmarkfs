@@ -82,9 +82,9 @@ enum bookmarkfs_bookmark_type {
     BOOKMARKFS_BOOKMARK_TYPE_KEYWORD,
 };
 
-enum bookmarkfs_object_type {
-    BOOKMARKFS_OBJECT_TYPE_BGCOOKIE,
-    BOOKMARKFS_OBJECT_TYPE_BLCOOKIE,
+enum bookmarkfs_cookie_type {
+    BOOKMARKFS_COOKIE_TYPE_WATCH,
+    BOOKMARKFS_COOKIE_TYPE_LIST,
 };
 
 struct bookmarkfs_backend_conf;
@@ -220,10 +220,10 @@ typedef int (bookmarkfs_bookmark_sync_func) (
     void *backend_ctx
 );
 
-typedef void (bookmarkfs_object_free_func) (
+typedef void (bookmarkfs_cookie_free_func) (
     void                        *backend_ctx,
-    void                        *object,
-    enum bookmarkfs_object_type  object_type
+    void                        *cookie,
+    enum bookmarkfs_cookie_type  cookie_type
 );
 
 struct bookmarkfs_backend {
@@ -246,7 +246,7 @@ struct bookmarkfs_backend {
     bookmarkfs_bookmark_set_func     *bookmark_set;
     bookmarkfs_bookmark_sync_func    *bookmark_sync;
 
-    bookmarkfs_object_free_func *object_free;
+    bookmarkfs_cookie_free_func *cookie_free;
 };
 
 struct bookmarkfs_backend_conf {

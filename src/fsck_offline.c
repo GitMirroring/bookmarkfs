@@ -162,8 +162,7 @@ free_dir (
     struct fsck_ctx const *ctx,
     struct fsck_dir const *dir
 ) {
-    BACKEND_CALL(ctx, object_free,
-            dir->cookie, BOOKMARKFS_OBJECT_TYPE_BLCOOKIE);
+    BACKEND_CALL(ctx, cookie_free, dir->cookie, BOOKMARKFS_COOKIE_TYPE_LIST);
 }
 
 static int

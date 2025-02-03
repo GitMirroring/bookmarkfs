@@ -1472,7 +1472,7 @@ struct bookmarkfs_backend @{
     bookmarkfs_bookmark_set_func     *bookmark_set;
     bookmarkfs_bookmark_sync_func    *bookmark_sync;
 
-    bookmarkfs_object_free_func *object_free;
+    bookmarkfs_cookie_free_func *cookie_free;
 @};
 @end example
 
