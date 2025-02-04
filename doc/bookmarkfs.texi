@@ -2296,6 +2296,82 @@ False negatives are also acceptable for a short time duration
 @end table
 
 
+@node Free Cookie
+@subsection Free Cookie
+
+When a cookie obtained from @code{bookmark_list},
+@code{bookmark_get} or @code{bookmark_fsck} is no longer used,
+the @code{cookie_free} function is called.
+It must not be @code{NULL}.
+
+The backend should release all system resources associated with this cookie.
+
+Type of the @code{cookie_free} function is defined as:
+
+@example c
+typedef void (bookmarkfs_cookie_free_func) (
+    void                        *backend_ctx,
+    void                        *cookie,
+    enum bookmarkfs_cookie_type  cookie_type
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item cookie
+Cookie to be freed.
+
+@item cookie_type
+Type of the cookie.
+It must be one of the values defined in enum @code{bookmarkfs_cookie_type}:
+
+@table @code
+@item BOOKMARKFS_COOKIE_TYPE_WATCH
+Indicates that the cookie is obtained from @code{bookmark_get}.
+
+@item BOOKMARKFS_COOKIE_TYPE_LIST
+Indicates that the cookie is obtained from @code{bookmark_list} or
+@code{bookmark_fsck}.
+@end table
+@end table
+
+
+@node Sync Bookmarks
+@subsection Sync Bookmarks
+
+The @code{bookmark_sync} function is called to persist changes to the
+bookmark storage.
+It is never called when the filesystem is mounted read-only.
+
+If the bookmark storage is also changed from another process,
+function behavior is unspecified.
+However, the backend should try not to corrupt the bookmark storage,
+and prefer changes from the caller, if possible.
+
+Type of the @code{bookmark_sync} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_sync_func) (
+    void *backend_ctx
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+
 @node Create Bookmark Storage
 @subsection Create Bookmark Storage
 
