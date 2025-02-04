@@ -38,7 +38,7 @@ dnl
 dnl  BOOKMARKFS_DEP(pkg-name, version, pkg-desc, [action-if-found],
 dnl                 [required-by-features]...)
 dnl
-dnl  Checks if a package exists with `pkg-config', and provides option for
+dnl  Checks if a package exists with `pkg-config`, and provides option for
 dnl  the config script to specify the package's custom install location.
 dnl
 AC_DEFUN([BOOKMARKFS_DEP], [
@@ -58,7 +58,7 @@ AC_DEFUN([BOOKMARKFS_DEP], [
         m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
             AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
                 AC_MSG_ERROR(m4_normalize([
-                    Bad option `[--without-]feat_name_'. The $3 is mandatory
+                    Bad option '[--without-]feat_name_'. The $3 is mandatory
                     for AS_VAR_GET([desc_]m4_translit(feat_name_, [-], [_])).
                 ]))
             ])

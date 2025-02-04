@@ -82,6 +82,9 @@ Currently, the following browsers (and their derivatives) are supported:
 @item Chromium
 @end itemize
 
+To install BookmarkFS, refer to the @file{INSTALL.md} file under the
+root directory of the project codebase.
+
 BookmarkFS is free software, distributed under the terms of the GNU General
 Public License, either version 3, or any later version of the license.
 You should have received a copy of the GNU General Public License along with
@@ -116,6 +119,21 @@ it only covers the high-level API, and BookmarkFS uses the
 For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
 won't work if you're trying to port BookmarkFS to Microsoft Windows.
 
+Other notable portability issues:
+
+@table @asis
+@item Sandboxing
+Not all operating system kernels provide sandboxing mechanisms similar to
+Linux and FreeBSD.
+
+If not supported, operations that require sandboxing should fail.
+Users should not be provided with a false sense of security.
+If they wish, they could pass a @option{-o no_sandbox} option to
+explicitly disable sandboxing.
+
+Also @pxref{Sandboxing}.
+@end table
+
 
 @node Limitations on FreeBSD
 @section Limitations on FreeBSD
@@ -129,8 +147,8 @@ Thus, BookmarkFS features that depend on @code{ioctl()} do not work
 on FreeBSD, which includes:
 
 @itemize @bullet{}
-@item Permute directory entries (@pxref{Permute Directory Entries})
-@item Online filesystem check (@pxref{Online Filesystem Check})
+@item @ref{Permute Directory Entries}
+@item @ref{Online Filesystem Check}
 @end itemize
 
 Meanwhile, FreeBSD does not support @code{FUSE_READDIRPLUS} and directory
@@ -432,7 +450,8 @@ online or offline mode:
 @table @asis
 @item Online Mode
 In online mode, fsck is performed on a mounted BookmarkFS filesystem
-using @code{ioctl()} (@pxref{Online Filesystem Check}).
+using @code{ioctl()}.
+@xref{Online Filesystem Check}.
 
 The @var{pathname} argument refers to the directory to operate on.
 
@@ -452,7 +471,8 @@ Options:
 
 @table @option
 @item -o backend=@var{name}
-The backend used by the filesystem (@pxref{Backends}).
+The backend used by the filesystem.
+@xref{Backends}.
 
 Value of @var{name} could be specified in an alternative format.
 @xref{Alternative Backend Name}.
@@ -517,7 +537,8 @@ Perform fsck on subdirectories recursively.
 This option is ignored when performing fsck on tags or keywords.
 
 @item -o no_sandbox
-Do not enable sandboxing features (@pxref{Sandboxing}).
+Do not enable sandboxing features.
+@xref{Sandboxing}.
 
 @item -o no_landlock
 Do not use Landlock for sandboxing.
@@ -735,7 +756,8 @@ Last modification time of the bookmark.
 
 Additional information of a bookmark or bookmark folder can be accessed via
 the extended attributes of the corresponding file, for backends that
-supports it (@pxref{Extended Attributes}).
+supports it.
+@xref{Extended Attributes}.
 
 
 @node Tags
@@ -809,7 +831,7 @@ Attempting to perform an unsupported operation.
 For example:
 
 @itemize @bullet{}
-@item @code{chmod()}, @code{chown()}, and other operations that makes no sense
+@item @code{chmod()}, @code{chown()}, and other operations that make no sense
 for web browser bookmarks.
 @item Moving a file across subsystems.
 @item Creating a bookmark file with a name that is not valid UTF-8
@@ -1749,7 +1771,8 @@ if one of the following conditions is met:
 @itemize @bullet{}
 @item Sandboxing is requested, and the ID cannot be determined in a safe way
 before entering sandbox.
-@item The backend does not support tags for this context (@pxref{Tags}).
+@item The backend does not support tags for this context.
+@xref{Tags}.
 @end itemize
 
 @item bookmark_attrs
@@ -1772,8 +1795,8 @@ the frontend, and the frontend program may perform optimizations based on
 this assumption.
 
 @item BOOKMARKFS_BACKEND_HAS_KEYWORD
-Indicates that the backend supports keywords for this context
-(@pxref{Keywords}).
+Indicates that the backend supports keywords for this context.
+@xref{Keywords}.
 @end table
 @end table
 @end table
@@ -1976,7 +1999,8 @@ Length of the object value in bytes.
 @item atime
 @item mtime
 Last access and modification time of the object.
-Must not be earlier than the Unix epoch.
+
+Values should be the time elapsed since the Unix epoch.
 @end table
 @end table
 
@@ -2399,6 +2423,7 @@ Function arguments:
 @code{bookmarkfs_backend_conf} structure.
 
 Some fields should be handled differently from @code{backend_create}:
+
 @table @code
 @item flags
 A bit array of the following flags:

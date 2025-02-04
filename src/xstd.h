@@ -34,7 +34,7 @@
 #else
 #  define likely(e)    (e)
 #  define unlikely(e)  (e)
-#endif  /* defined(HAVE__BUILTIN_EXPECT) */
+#endif  /* defined(HAVE___BUILTIN_EXPECT) */
 
 #ifdef BOOKMARKFS_DEBUG
 #  define xassert(e)  if (unlikely(!(e))) xabort_(#e, FILE_NAME_, __LINE__)
@@ -49,9 +49,9 @@
 #  define debug_assert(e)  if (!(e)) { unreachable(); }
 #  ifdef HAVE___BUILTIN_UNREACHABLE
 #    define unreachable()  __builtin_unreachable()
-#  else  /* !defined(HAVE__BUILTIN_UNREACHABLE) */
+#  else
 #    define unreachable()
-#  endif  /* defined(HAVE_BUILTIN_UNREACHABLE) */
+#  endif
 #endif  /* defined(BOOKMARKFS_DEBUG) */
 
 #define log_printf(f, ...)  \
