@@ -24,7 +24,7 @@ Getting Started
   See 'INSTALL.md' for instructions on how to build and install BookmarkFS.
   See the files under 'doc/' for the user manual.
 
-  Project homepage: <https://nongnu.org/bookmarkfs>.
+  Project homepage: <https://www.nongnu.org/bookmarkfs/>.
 
 
 Copying

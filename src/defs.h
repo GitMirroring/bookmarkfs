@@ -122,6 +122,6 @@
 #  define FILE_NAME_  ( __FILE__ + FILE_NAME_OFFSET_ )
 #endif
 
-#define BOOKMARKFS_HOMEPAGE_URL  "https://nongnu.org/bookmarkfs"
+#define BOOKMARKFS_HOMEPAGE_URL  "https://www.nongnu.org/bookmarkfs/"
 
 #endif  /* !defined(BOOKMARKFS_DEFS_H_) */

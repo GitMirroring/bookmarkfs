@@ -17,6 +17,6 @@ libdir=@libdir@
 Name: ${package}
 Description: BookmarkFS
 Version: ${version}
-URL: https://nongnu.org/bookmarkfs
+URL: https://www.nongnu.org/bookmarkfs/
 Cflags: -I${includedir}
 Libs: -L${libdir} -lbookmarkfs_util
