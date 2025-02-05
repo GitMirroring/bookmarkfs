@@ -43,7 +43,7 @@ xabort_ (
     int         line
 ) {
 #ifdef BOOKMARKFS_DEBUG
-    fprintf(stderr, "%s:%d: assertion failed: %s\n", name, line, assertion);
+    fprintf(stderr, "%s:%d: assertion (%s) failed\n", name, line, assertion);
 #else
     fprintf(stderr, "%s:%d: assertion failed\n", name, line);
 #endif
