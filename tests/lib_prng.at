@@ -1,0 +1,37 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([util lib: prng])
+AT_KEYWORDS([lib prng])
+
+AT_CHECK([
+    gen_prng() {
+        check-bookmarkfs-util prng -s$1 -n$2
+    }
+
+    seed=$(rand_u64_hex)$(rand_u64_hex)$(rand_u64_hex)$(rand_u64_hex)
+    count=32
+
+    prng_1=$(gen_prng $seed $count)
+    prng_2=$(gen_prng $seed $count)
+    prng_3=$(gen_prng $seed $count)
+
+    # Given the same seed, the results should be consistent.
+    if test "$prng_1" != "$prng_2" -o "$prng_2" != "$prng_3"; then
+        exit 99
+    fi
+
+    # Bad PRNG if we're getting duplicates too soon.
+    uniq_count=$(echo "$prng_1" | sort | uniq | wc -l)
+    if test $uniq_count -ne $count; then
+        exit 99
+    fi
+], , [ignore])
+
+AT_CLEANUP

@@ -35,6 +35,8 @@
 /m4/libtool.m4
 /m4/lt*.m4
 /missing
+/tests/package.m4
+/tests/testsuite
 Makefile.in
 
 # The build tree

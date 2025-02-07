@@ -12,8 +12,10 @@ AC_INIT([bookmarkfs], [0.1.0], [bug-bookmarkfs@nongnu.org])
 AC_CONFIG_SRCDIR([bookmarkfs.pc.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_TESTDIR([tests])
 AM_INIT_AUTOMAKE([1.14 foreign no-installinfo no-installman])
 AM_EXTRA_RECURSIVE_TARGETS([install-man])
+AM_MISSING_PROG([AUTOM4TE], [autom4te])
 PKG_PROG_PKG_CONFIG([0.27])
 LT_PREREQ([2.4.3])
 LT_INIT([disable-static dlopen])
@@ -236,7 +238,7 @@ AC_CONFIG_FILES([
     Makefile
     doc/Makefile
     src/Makefile
-    tests/Makefile
+    tests/Makefile tests/atlocal
     bookmarkfs.pc
 ])
 AC_OUTPUT

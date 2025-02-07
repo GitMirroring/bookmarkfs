@@ -1,0 +1,31 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([util lib: hash function])
+AT_KEYWORDS([lib hash])
+
+AT_CHECK([
+    calc_digest() {
+        echo "$2" | check-bookmarkfs-util hash -s$1
+    }
+
+    seed=$(rand_u64_hex)
+    input=$(rand_base64 300)
+
+    hash_1=$(calc_digest $seed $input)
+    hash_2=$(calc_digest $seed $input)
+    hash_3=$(calc_digest $seed $input)
+
+    # Given the same seed and input, the digest should be consistent.
+    if test "$hash_1" != "$hash_2" -o "$hash_2" != "$hash_3"; then
+        exit 99
+    fi
+], , [ignore])
+
+AT_CLEANUP

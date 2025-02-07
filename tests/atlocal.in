@@ -1,0 +1,17 @@
+#
+# Copyright (C) 2025  CismonX <admin@cismon.net>
+#
+# Copying and distribution of this file, with or without modification, are
+# permitted in any medium without royalty, provided the copyright notice and
+# this notice are preserved.  This file is offered as-is, without any warranty.
+#
+
+rand_u64_hex() {
+    echo $(od -vAn -N8 -tx8 /dev/urandom | tr -d ' ')
+}
+
+rand_base64() {
+    # The `base64` utility is not specified by POSIX,
+    # but present in GNU Coreutils, BusyBox and FreeBSD base system.
+    echo $(head -c$1 /dev/urandom | base64 -w0)
+}

@@ -1,0 +1,14 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_INIT
+
+AT_BANNER([The Utility Library])
+m4_include([lib_hash.at])
+m4_include([lib_prng.at])

@@ -51,7 +51,6 @@ Requirements
   Optionally:
 
   - GNU Texinfo, for building the user manual
-  - DejaGNU, for running tests
 
 
 Installation
