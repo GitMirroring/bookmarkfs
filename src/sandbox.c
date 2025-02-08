@@ -333,7 +333,7 @@ sandbox_enter (
     close(lrfd);
 
 #else
-    log_printf("landlock is not supported on this build");
+    log_puts("landlock is not supported on this build");
 #endif  /* defined(BOOKMARKFS_SANDBOX_LANDLOCK) */
 
     if (status < 0) {
@@ -401,7 +401,6 @@ sandbox_enter (
 
 int
 sandbox_enter (
-    int      UNUSED_VAR(fusefd),
     int      UNUSED_VAR(dirfd),
     uint32_t flags
 ) {

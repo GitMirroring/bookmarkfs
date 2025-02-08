@@ -1693,7 +1693,7 @@ backend_create (
     struct bookmarkfs_backend_create_resp *resp
 ) {
 #ifndef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
-    if (!(conf->flags & BOOKMARKFS_READONLY)) {
+    if (!(conf->flags & BOOKMARKFS_BACKEND_READONLY)) {
         log_puts("write support is not enabled on this build");
         return -1;
     }

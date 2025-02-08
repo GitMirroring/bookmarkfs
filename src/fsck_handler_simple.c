@@ -57,6 +57,7 @@ static int  expect_input (struct handler_ctx *, char **);
 static int  expect_next  (struct handler_ctx *, int, char **);
 static int  handle_input (struct handler_ctx *,
                           union bookmarkfs_fsck_handler_data *);
+static void print_entry  (struct bookmarkfs_fsck_data const *);
 static void print_usage  (void);
 #endif  /* defined(BOOKMARKFS_INTERACTIVE_FSCK) */
 
@@ -67,7 +68,6 @@ static int  handle_entry (struct handler_ctx *, enum bookmarkfs_fsck_result,
                           union bookmarkfs_fsck_handler_data *);
 static int  parse_opts   (struct bookmarkfs_conf_opt const *,
                           struct parsed_opts *);
-static void print_entry  (struct bookmarkfs_fsck_data const *);
 // Forward declaration end
 
 #ifdef BOOKMARKFS_INTERACTIVE_FSCK
@@ -183,6 +183,16 @@ handle_input (
 
     free(input);
     return control;
+}
+
+static void
+print_entry (
+    struct bookmarkfs_fsck_data const *data
+) {
+    char name_buf[sizeof(data->name)];
+    escape_control_chars(name_buf, sizeof(name_buf), data->name, '?');
+
+    printf("id:   %" PRIu64 "\nname: %s\n", data->id, name_buf);
 }
 
 static void
@@ -317,16 +327,6 @@ parse_opts (
     out->prompt   = prompt;
     out->translit = translit;
     return 0;
-}
-
-static void
-print_entry (
-    struct bookmarkfs_fsck_data const *data
-) {
-    char name_buf[sizeof(data->name)];
-    escape_control_chars(name_buf, sizeof(name_buf), data->name, '?');
-
-    printf("id:   %" PRIu64 "\nname: %s\n", data->id, name_buf);
 }
 
 static int
