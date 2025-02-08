@@ -23,7 +23,6 @@
 #ifndef BOOKMARKFS_XSTD_H_
 #define BOOKMARKFS_XSTD_H_
 
-#include <stddef.h>
 #include <stdio.h>
 
 #include "defs.h"

@@ -24,9 +24,6 @@
 #  include "config.h"
 #endif
 
-#include <errno.h>
-#include <limits.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,7 +34,6 @@
 #include "fs_ops.h"
 #include "lib.h"
 #include "macros.h"
-#include "prng.h"
 #include "version.h"
 #include "xstd.h"
 

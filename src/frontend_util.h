@@ -23,7 +23,6 @@
 #ifndef BOOKMARKFS_FRONTEND_UTIL_H_
 #define BOOKMARKFS_FRONTEND_UTIL_H_
 
-#include <stdint.h>
 #include <stdlib.h>
 
 #include "backend.h"
