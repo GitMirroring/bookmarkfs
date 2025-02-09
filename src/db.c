@@ -114,10 +114,9 @@ db_check (
 
     int status = 0;
     ssize_t nrows = db_query(stmt, NULL, 0, false, db_check_cb, &status);
-    if (nrows < 0) {
-        return nrows;
+    if (nrows != 1) {
+        return -1;
     }
-    xassert(nrows == 1);
     return status;
 }
 

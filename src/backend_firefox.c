@@ -2728,6 +2728,22 @@ store_init (
 ) {
     int status = -EIO;
 
+    int64_t user_version;
+    if (1 != db_exec(db, SQL_PRAGMA("user_version"), NULL, &user_version)) {
+        return status;
+    }
+    // The oldest schema version supported by modern Firefox is 52,
+    // which was used in Firefox 62-68.  Fortunately, it has not changed
+    // in a way that makes it incompatible with this backend.
+    //
+    // Schema version 78 is the latest version, used since Firefox 132.
+    // Bump this version whenever a new schema version is available
+    // (after ensuring that no incompatible changes are made).
+    if (user_version < 52 || user_version > 78) {
+        log_printf("unsupported schema version %" PRIi64, user_version);
+        return status;
+    }
+
     char const *sql = "SELECT `id` FROM `moz_bookmarks` WHERE `guid` = ?";
     sqlite3_stmt *stmt = db_prepare(db, sql, strlen(sql), false);
     if (unlikely(stmt == NULL)) {
