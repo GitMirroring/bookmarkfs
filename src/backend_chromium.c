@@ -37,6 +37,7 @@
 
 #include <fcntl.h>
 #include <iconv.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE

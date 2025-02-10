@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
