@@ -1725,13 +1725,6 @@ store_new (
                 "`place_id`, `visit_date`"),
         CREATE_INDEX("historyvisits", "fromindex", "`from_visit`"),
         CREATE_INDEX("historyvisits", "dateindex", "`visit_date`"),
-        // moz_historyvisits_extra
-        CREATE_TABLE("historyvisits_extra",
-            "`visit_id`"  " INTEGER PRIMARY KEY NOT NULL, "
-            "`sync_json`" " TEXT, "
-            "FOREIGN KEY (`visit_id`) REFERENCES `moz_historyvisits`(`id`)"
-                                    " ON DELETE CASCADE"
-        ),
         // moz_inputhistory
         CREATE_TABLE("inputhistory",
             "`place_id`"  " INT NOT NULL, "
@@ -1758,13 +1751,6 @@ store_new (
             "`key`"   " TEXT PRIMARY KEY, "
             "`value`" " NOT NULL",
             "WITHOUT ROWID"
-        ),
-        // moz_places_extra
-        CREATE_TABLE("places_extra",
-            "`place_id`"  " INTEGER PRIMARY KEY NOT NULL, "
-            "`sync_json`" " TEXT, "
-            "FOREIGN KEY (`place_id`) REFERENCES `moz_places`(`id`)"
-                                    " ON DELETE CASCADE"
         ),
         // moz_places_metadata
         CREATE_TABLE("places_metadata",
@@ -3287,13 +3273,11 @@ backend_mkfs (
         SQL_PRAGMA_ITEM("locking_mode", "exclusive"),
         SQL_PRAGMA_ITEM("journal_mode", "memory"),
         SQL_PRAGMA_ITEM("synchronous",  "0"),
-        // Schema version 77 is used by Firefox 125 and later.
-        // This version number (and the DDL in store_new()) should be
-        // up-to-date with the oldest supported Firefox ESR.
+        // Schema version 74 was used in Firefox 115-117.
         //
         // See the `mozilla::places::Database::InitSchema()` method
         // in the mozilla-central codebase.
-        SQL_PRAGMA_ITEM("user_version", "77"),
+        SQL_PRAGMA_ITEM("user_version", "74"),
     };
     if (0 != db_pragma(db, pragmas, DB_PRAGMA_ITEMS_CNT(pragmas))) {
         goto end;
