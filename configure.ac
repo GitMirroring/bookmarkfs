@@ -77,9 +77,13 @@ BOOKMARKFS_FEAT([sandbox], [yes], [sandboxing], [
             [Define to 1 if sandboxing is enabled.])
 ])
 
-BOOKMARKFS_FEAT([landlock], [yes], [Linux Landlock features for sandboxing], [
-    AC_DEFINE([BOOKMARKFS_SANDBOX_LANDLOCK], [1],
-            [Define to 1 if Linux Landlock is enabled.])
+AS_VAR_IF([host_os_is_linux], [yes], [
+    BOOKMARKFS_FEAT([sandbox-landlock], [yes],
+            [Linux Landlock features for sandboxing],
+    [
+        AC_DEFINE([BOOKMARKFS_SANDBOX_LANDLOCK], [1],
+                [Define to 1 if Landlock is enabled for sandboxing.])
+    ])
 ])
 
 BOOKMARKFS_FEAT([xxhash-inline], [no],

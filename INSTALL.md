@@ -32,7 +32,7 @@ Requirements
   | GNU Readline | 6.0             |
   | [Tcl]        | 8.6             |
   | [uriparser]  | 0.9             |
-  | xxHash       | 8.8             |
+  | xxHash       | 0.8             |
 
   Some of them can be optional, depending on which components of BookmarkFS
   are to be built, and which features are enabled.
@@ -44,13 +44,16 @@ Requirements
     * Automake
     * Libtool
     * Autoconf Archive
-  - pkg-config
-  - POSIX-compatible make
-  - C99-capable C compiler (GCC or Clang is recommended)
+  - `pkg-config`
+  - POSIX-compatible `make`
+    * One with `VPATH` support is recommended
+  - C99-capable C compiler
+    * GCC or Clang is recommended
 
   Optionally:
 
-  - GNU Texinfo, for building the user manual
+  - GNU Texinfo
+    * For building the user manual
 
 
 Installation
@@ -96,7 +99,7 @@ Installation
   - `--disable-sandbox`
     * Build the utility library without sandboxing features
     * No longer requires: libseccomp
-  - `--disable-landlock` (Linux-only)
+  - `--disable-sandbox-landlock` (Linux-only)
     * Disable the [Landlock] feature in the sandbox implementation
   - `--enable-xxhash-inline`
     * Use xxHash as a header-only library

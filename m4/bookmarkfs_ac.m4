@@ -64,13 +64,13 @@ AC_DEFUN([BOOKMARKFS_DEP], [
             ])
         ])
     ], [
-        AS_VAR_SET([SAVED_PKG_CONFIG_PATH_], ["${PKG_CONFIG_PATH}"])
+        AS_VAR_SET([old_pkg_config_path_], ["${PKG_CONFIG_PATH}"])
         AS_VAR_IF([with_var_], [yes], , [
-            AS_VAR_SET([PKG_CONFIG_PATH], ["${with_$1}:${PKG_CONFIG_PATH}"])
+            AS_VAR_SET([PKG_CONFIG_PATH], ["${with_var_}:${PKG_CONFIG_PATH}"])
+            export PKG_CONFIG_PATH
         ])
-        export PKG_CONFIG_PATH
         PKG_CHECK_MODULES(m4_toupper([$1]), [$1 $2], [$4])
-        AS_VAR_SET([PKG_CONFIG_PATH], ["${SAVED_PKG_CONFIG_PATH_}"])
+        AS_VAR_SET([PKG_CONFIG_PATH], ["${old_pkg_config_path_}"])
     ])
     m4_popdef([with_var_])
 ])
