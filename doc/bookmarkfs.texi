@@ -1252,8 +1252,8 @@ until the filesystem is dismounted.
 
 The Firefox browser holds an exclusive lock on the database by default.
 If you wish to mount the bookmarks while keeping the browser session open,
-set the @code{storage.sqlite.exclusiveLock.enabled} browser preference
-to @code{false}.
+set the @samp{storage.sqlite.exclusiveLock.enabled} browser preference
+to @samp{false}.
 
 @item assume_title_distinct
 If this options is provided, the backend assumes that bookmark names are
@@ -1307,6 +1307,14 @@ The bookmark creation time.
 Value is a decimal integer representing number of microseconds since
 the Unix epoch.
 @end table
+
+Notable limitations:
+
+@itemize @bullet{}
+@item Due to the way bookmarks are associated with the URLs,
+if multiple bookmarks share the same URL, changing the last access time
+of a bookmark may affect that of other bookmarks.
+@end itemize
 
 
 @node Chromium Backend
