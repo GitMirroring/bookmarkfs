@@ -387,7 +387,7 @@ bm_do_write (
         fh->mtime,
     };
     uint32_t set_flags = BOOKMARK_FLAG(SET_TIME);
-    status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 2);
+    status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
     if (status < 0) {
         return status;
     }
@@ -1110,7 +1110,7 @@ bm_setattr (
         if (is_tag) {
             set_flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         }
-        int status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 2);
+        int status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
         if (status < 0) {
             return status;
         }

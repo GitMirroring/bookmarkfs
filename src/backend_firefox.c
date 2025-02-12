@@ -3615,8 +3615,6 @@ bookmark_set (
 
     int attr_type = ATTR_IN_MOZBM_START;
     if (flags & BOOKMARK_FLAG(SET_TIME)) {
-        debug_assert(val_len == 2);
-
         struct timespec const *times = val;
         place_cols.last_visit_date = timespec_to_msecs(&times[0]);
         bm_cols.last_modified      = timespec_to_msecs(&times[1]);

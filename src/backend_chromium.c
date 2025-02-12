@@ -2614,7 +2614,6 @@ bookmark_set (
     }
 
     if (flags & BOOKMARK_FLAG(SET_TIME)) {
-        debug_assert(val_len == 2);
         // Without UTIME_NOW, it is safe to cast away the const qualifier.
         struct timespec *times = (struct timespec *)val;
         if (unlikely(0 != update_node_ts(entry->node, times))) {
