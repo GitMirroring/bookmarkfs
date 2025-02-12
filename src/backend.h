@@ -118,6 +118,24 @@ typedef int (bookmarkfs_backend_sandbox_func) (
     struct bookmarkfs_backend_create_resp *resp
 );
 
+typedef int (bookmarkfs_bookmark_check_cb) (
+    void       *user_data,
+    int         result,
+    uint64_t    id,
+    uint64_t    extra,
+    char const *name
+);
+
+typedef int (bookmarkfs_bookmark_check_func) (
+    void                               *backend_ctx,
+    uint64_t                            id,
+    struct bookmarkfs_fsck_data const  *fsck_data,
+    uint32_t                            flags,
+    bookmarkfs_bookmark_check_cb       *callback,
+    void                               *user_data,
+    void                              **cookie_ptr
+);
+
 typedef int (bookmarkfs_bookmark_create_func) (
     void                            *backend_ctx,
     uint64_t                         parent_id,
@@ -131,24 +149,6 @@ typedef int (bookmarkfs_bookmark_delete_func) (
     uint64_t    parent_id,
     char const *name,
     uint32_t    flags
-);
-
-typedef int (bookmarkfs_bookmark_fsck_cb) (
-    void       *user_data,
-    int         result,
-    uint64_t    id,
-    uint64_t    extra,
-    char const *name
-);
-
-typedef int (bookmarkfs_bookmark_fsck_func) (
-    void                               *backend_ctx,
-    uint64_t                            id,
-    struct bookmarkfs_fsck_data const  *fsck_data,
-    uint32_t                            flags,
-    bookmarkfs_bookmark_fsck_cb        *callback,
-    void                               *user_data,
-    void                              **cookie_ptr
 );
 
 typedef int (bookmarkfs_bookmark_get_cb) (
@@ -234,13 +234,13 @@ struct bookmarkfs_backend {
     bookmarkfs_backend_mkfs_func    *backend_mkfs;
     bookmarkfs_backend_sandbox_func *backend_sandbox;
 
+    bookmarkfs_bookmark_check_func  *bookmark_check;
     bookmarkfs_bookmark_get_func    *bookmark_get;
     bookmarkfs_bookmark_list_func   *bookmark_list;
     bookmarkfs_bookmark_lookup_func *bookmark_lookup;
 
     bookmarkfs_bookmark_create_func  *bookmark_create;
     bookmarkfs_bookmark_delete_func  *bookmark_delete;
-    bookmarkfs_bookmark_fsck_func    *bookmark_fsck;
     bookmarkfs_bookmark_permute_func *bookmark_permute;
     bookmarkfs_bookmark_rename_func  *bookmark_rename;
     bookmarkfs_bookmark_set_func     *bookmark_set;

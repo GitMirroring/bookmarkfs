@@ -186,8 +186,8 @@ struct bookmark_list_ctx {
     struct hashmap    *dentry_map;
     db_query_row_func *row_func;
     union {
-        bookmarkfs_bookmark_fsck_cb *fsck;
-        bookmarkfs_bookmark_list_cb *list;
+        bookmarkfs_bookmark_check_cb *check;
+        bookmarkfs_bookmark_list_cb  *list;
     } callback;
     void *user_data;
     bool  check_name;
@@ -203,7 +203,7 @@ struct bookmark_lookup_ctx {
     int status;
 };
 
-struct mozbm_fsck_get_ctx {
+struct mozbm_check_ctx {
     int64_t         id;
     struct hashmap *dentry_map;
 
@@ -277,8 +277,8 @@ static char *  gen_random_guid    (char *);
 static bool    is_valid_guid      (char const *, size_t);
 static int     keyword_create     (struct backend_ctx *, char const *, size_t,
                                    struct bookmarkfs_bookmark_stat *);
+static int     mozbm_check_cb     (void *, sqlite3_stmt *);
 static int     mozbm_delete       (struct backend_ctx *, int64_t, bool);
-static int     mozbm_fsck_get_cb  (void *, sqlite3_stmt *);
 static int     mozbm_get_title    (struct backend_ctx *, int64_t, int64_t,
                                    db_query_row_func *, void *);
 static int     mozbm_insert       (struct backend_ctx *, struct mozbm *);
@@ -337,7 +337,7 @@ static int     bookmark_do_list   (struct backend_ctx *, uint64_t, off_t,
 static int     bookmark_do_lookup (struct backend_ctx *, uint64_t,
                                    char const *, size_t, uint32_t,
                                    struct bookmarkfs_bookmark_stat *);
-static int     bookmark_fsck_cb   (void *, sqlite3_stmt *);
+static int     bookmark_check_cb  (void *, sqlite3_stmt *);
 static int     bookmark_get_cb    (void *, sqlite3_stmt *);
 static int     bookmark_list_cb   (void *, sqlite3_stmt *);
 static int     bookmark_lookup_cb (void *, sqlite3_stmt *);
@@ -471,11 +471,11 @@ fsck_apply (
 
     struct hashmap *map = fctx->dentry_map;
     uint64_t        id  = fsck_data->id;
-    struct mozbm_fsck_get_ctx qctx = {
+    struct mozbm_check_ctx qctx = {
         .id         = id,
         .dentry_map = map,
     };
-    status = mozbm_get_title(ctx, id, parent_id, mozbm_fsck_get_cb, &qctx);
+    status = mozbm_get_title(ctx, id, parent_id, mozbm_check_cb, &qctx);
     if (status < 0) {
         goto fail;
     }
@@ -537,7 +537,7 @@ fsck_apply (
     goto end;
 
   callback:
-    status = fctx->callback.fsck(fctx->user_data, result, id, extra, name);
+    status = fctx->callback.check(fctx->user_data, result, id, extra, name);
     if (status < 0) {
         goto fail;
     }
@@ -624,6 +624,42 @@ keyword_create (
 }
 
 static int
+mozbm_check_cb (
+    void         *user_data,
+    sqlite3_stmt *stmt
+) {
+    struct mozbm_check_ctx *ctx = user_data;
+
+    size_t      name_len = sqlite3_column_bytes(stmt, 0);
+    char const *name     = (char const *)sqlite3_column_text(stmt, 0);
+    if (unlikely(name == NULL)) {
+        name = "";
+    }
+    if (0 != validate_filename(name, name_len, NULL)) {
+        return 1;
+    }
+
+    struct hashmap *map = ctx->dentry_map;
+    if (map == NULL) {
+        ctx->status = 1;
+        return 1;
+    }
+    union hashmap_key key = {
+        .ptr = &(struct bookmark_name_key) {
+            .val = name,
+            .len = name_len,
+        },
+    };
+    unsigned long hashcode = hash_digest(name, name_len);
+    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
+    if (dentry == NULL || dentry->id == (uint64_t)ctx->id) {
+        // fsck_apply() was given an ID not previously returned by fsck_next().
+        ctx->status = -ENOENT;
+    }
+    return 1;
+}
+
+static int
 mozbm_delete (
     struct backend_ctx *ctx,
     int64_t             id,
@@ -663,42 +699,6 @@ mozbm_delete (
         xassert(nrows > 0);
         return mozplace_delref(ctx, place_id);
     }
-}
-
-static int
-mozbm_fsck_get_cb (
-    void         *user_data,
-    sqlite3_stmt *stmt
-) {
-    struct mozbm_fsck_get_ctx *ctx = user_data;
-
-    size_t      name_len = sqlite3_column_bytes(stmt, 0);
-    char const *name     = (char const *)sqlite3_column_text(stmt, 0);
-    if (unlikely(name == NULL)) {
-        name = "";
-    }
-    if (0 != validate_filename(name, name_len, NULL)) {
-        return 1;
-    }
-
-    struct hashmap *map = ctx->dentry_map;
-    if (map == NULL) {
-        ctx->status = 1;
-        return 1;
-    }
-    union hashmap_key key = {
-        .ptr = &(struct bookmark_name_key) {
-            .val = name,
-            .len = name_len,
-        },
-    };
-    unsigned long hashcode = hash_digest(name, name_len);
-    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
-    if (dentry == NULL || dentry->id == (uint64_t)ctx->id) {
-        // fsck_apply() was given an ID not previously returned by fsck_next().
-        ctx->status = -ENOENT;
-    }
-    return 1;
 }
 
 static int
@@ -2287,7 +2287,7 @@ bookmark_do_lookup (
 }
 
 static int
-bookmark_fsck_cb (
+bookmark_check_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
@@ -2353,7 +2353,7 @@ bookmark_fsck_cb (
     result = BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE;
 
   found:
-    ctx->status = ctx->callback.fsck(ctx->user_data, result, id, extra, name);
+    ctx->status = ctx->callback.check(ctx->user_data, result, id, extra, name);
     return ctx->status;
 
   fail:
@@ -2997,12 +2997,12 @@ backend_sandbox (
 }
 
 static int
-bookmark_fsck (
+bookmark_check (
     void                               *backend_ctx,
     uint64_t                            id,
     struct bookmarkfs_fsck_data const  *fsck_data,
     uint32_t                            flags,
-    bookmarkfs_bookmark_fsck_cb        *callback,
+    bookmarkfs_bookmark_check_cb       *callback,
     void                               *user_data,
     void                              **cookie_ptr
 ) {
@@ -3043,11 +3043,11 @@ bookmark_fsck (
     }
 
     struct bookmark_list_ctx qctx;
-    qctx.dentry_map    = dentry_map;
-    qctx.next          = idx;
-    qctx.row_func      = bookmark_fsck_cb;
-    qctx.callback.fsck = callback;
-    qctx.user_data     = user_data;
+    qctx.dentry_map     = dentry_map;
+    qctx.next           = idx;
+    qctx.row_func       = bookmark_check_cb;
+    qctx.callback.check = callback;
+    qctx.user_data      = user_data;
     if (fsck_data == NULL) {
         qctx.status = 0;
         status = bookmark_do_list(ctx, id, idx, flags, &qctx);
@@ -3726,7 +3726,7 @@ struct bookmarkfs_backend const bookmarkfs_backend_firefox = {
     .backend_init    = backend_init,
     .backend_sandbox = backend_sandbox,
 
-    .bookmark_fsck   = bookmark_fsck,
+    .bookmark_check  = bookmark_check,
     .bookmark_get    = bookmark_get,
     .bookmark_list   = bookmark_list,
     .bookmark_lookup = bookmark_lookup,

@@ -147,7 +147,7 @@ struct fs_ctx {
     struct fuse_session *session;
 };
 
-struct bm_fsck_ctx {
+struct bm_check_ctx {
     struct bookmarkfs_fsck_data out;
 
     int result;
@@ -179,6 +179,9 @@ static int  inval_dir     (fuse_ino_t, struct fs_file_handle *);
 static int  inval_inode   (fuse_ino_t);
 #endif  /* !defined(__FreeBSD__) */
 
+static int  bm_check       (uint64_t, struct bookmarkfs_fsck_data const *,
+                            uint32_t, struct bm_check_ctx *, void *);
+static int  bm_check_cb    (void *, int, uint64_t, uint64_t, char const *);
 static int  bm_create      (uint64_t, char const *, int, struct stat *);
 static int  bm_delete      (uint64_t, char const *, uint32_t);
 static int  bm_do_write    (uint64_t, struct fs_file_handle *);
@@ -191,9 +194,6 @@ static void bm_fillstat    (struct bookmarkfs_bookmark_stat const *, int, bool,
                             struct stat *);
 static int  bm_free        (uint64_t, struct fuse_file_info const *);
 static int  bm_freedir     (uint64_t, fuse_ino_t, void *);
-static int  bm_fsck        (uint64_t, struct bookmarkfs_fsck_data const *,
-                            uint32_t, struct bm_fsck_ctx *, void *);
-static int  bm_fsck_cb     (void *, int, uint64_t, uint64_t, char const *);
 static int  bm_getxattr    (fuse_req_t, uint64_t, char const *, size_t);
 static int  bm_getxattr_cb (void *, void const *, size_t);
 static int  bm_ioctl       (fuse_req_t, uint64_t, fuse_ino_t, unsigned,
@@ -335,6 +335,52 @@ inval_inode (
 }
 
 #endif  /* !defined(__FreeBSD__) */
+
+static int
+bm_check (
+    uint64_t                           parent_id,
+    struct bookmarkfs_fsck_data const *data,
+    uint32_t                           flags,
+    struct bm_check_ctx               *ckctx,
+    void                              *cookie
+) {
+    if (ctx.backend_impl->bookmark_check == NULL) {
+        return -ENOTTY;
+    }
+    bookmarkfs_bookmark_check_cb *callback = NULL;
+    if (ckctx != NULL) {
+        callback = bm_check_cb;
+        ckctx->result = BOOKMARKFS_FSCK_RESULT_END;
+    }
+    int status = BACKEND_CALL(bookmark_check, parent_id, data, flags, callback,
+            ckctx, &cookie);
+    if (status < 0) {
+        return status;
+    }
+    if (ckctx != NULL) {
+        return ckctx->result;
+    }
+    return 0;
+}
+
+static int
+bm_check_cb (
+    void       *user_data,
+    int         result,
+    uint64_t    id,
+    uint64_t    extra,
+    char const *name
+) {
+    struct bm_check_ctx *ckctx = user_data;
+
+    ckctx->out.id    = id;
+    ckctx->out.extra = extra;
+    if (name != ckctx->out.name) {
+        strncpy(ckctx->out.name, name, sizeof(ckctx->out.name));
+    }
+    ckctx->result = result;
+    return 1;
+}
 
 static int
 bm_create (
@@ -534,52 +580,6 @@ bm_freedir (
 }
 
 static int
-bm_fsck (
-    uint64_t                           parent_id,
-    struct bookmarkfs_fsck_data const *data,
-    uint32_t                           flags,
-    struct bm_fsck_ctx                *fctx,
-    void                              *cookie
-) {
-    if (ctx.backend_impl->bookmark_fsck == NULL) {
-        return -ENOTTY;
-    }
-    bookmarkfs_bookmark_fsck_cb *callback = NULL;
-    if (fctx != NULL) {
-        callback = bm_fsck_cb;
-        fctx->result = BOOKMARKFS_FSCK_RESULT_END;
-    }
-    int status = BACKEND_CALL(bookmark_fsck, parent_id, data, flags, callback,
-            fctx, &cookie);
-    if (status < 0) {
-        return status;
-    }
-    if (fctx != NULL) {
-        return fctx->result;
-    }
-    return 0;
-}
-
-static int
-bm_fsck_cb (
-    void       *user_data,
-    int         result,
-    uint64_t    id,
-    uint64_t    extra,
-    char const *name
-) {
-    struct bm_fsck_ctx *fctx = user_data;
-
-    fctx->out.id    = id;
-    fctx->out.extra = extra;
-    if (name != fctx->out.name) {
-        strncpy(fctx->out.name, name, sizeof(fctx->out.name));
-    }
-    fctx->result = result;
-    return 1;
-}
-
-static int
 bm_getxattr (
     fuse_req_t   req,
     uint64_t     id,
@@ -635,7 +635,7 @@ bm_ioctl (
 
     switch (cmd) {
       case BOOKMARKFS_IOC_FSCK_REWIND:
-        result = bm_fsck(id, NULL, flags, NULL, cookie);
+        result = bm_check(id, NULL, flags, NULL, cookie);
         if (result == 0) {
             fh->flags &= ~FH_FLAG_FSCK;
         }
@@ -649,7 +649,7 @@ bm_ioctl (
         if ((fh->flags & FH_FLAG_FSCK) && fh->cookie != cookie) {
             return -EBUSY;
         }
-        result = bm_fsck(id, NULL, flags, obuf, cookie);
+        result = bm_check(id, NULL, flags, obuf, cookie);
         if (result < 0) {
             break;
         }
@@ -671,7 +671,7 @@ bm_ioctl (
         if (!has_access(req, W_OK | X_OK)) {
             return -EACCES;
         }
-        result = bm_fsck(id, ibuf, flags, obuf, cookie);
+        result = bm_check(id, ibuf, flags, obuf, cookie);
         if (result == BOOKMARKFS_FSCK_RESULT_END) {
             fh->flags |= FH_FLAG_DIRTY;
             obuf_len = 0;
@@ -1929,7 +1929,7 @@ fs_op_init (
 
     ctx.buf_len = sysconf(_SC_PAGE_SIZE);
     xassert(ctx.buf_len >= sizeof(union {
-        struct bm_fsck_ctx           fsck_ctx;
+        struct bm_check_ctx          check_ctx;
         struct bookmarkfs_permd_data permd;
     }));
     // The requested buffer size for FUSE_READDIR and FUSE_READDIRPLUS

@@ -203,7 +203,7 @@ static int  chksum_root     (struct backend_ctx *, char *);
 static int  chksum_utf16    (struct chksum_iter_ctx *, char const *, size_t);
 static int  fsck_apply      (struct backend_ctx *, uint64_t,
                              struct bookmarkfs_fsck_data const *,
-                             bookmarkfs_bookmark_fsck_cb *, void *);
+                             bookmarkfs_bookmark_check_cb *, void *);
 static int  init_iconv      (iconv_t *);
 static int  node_mtime_now  (json_t *, json_t **);
 static int  parse_mkfsopts  (struct bookmarkfs_conf_opt const *,
@@ -227,7 +227,7 @@ static void free_entry_cb (void *, void *);
 static void free_maps     (struct hashmap *, struct hashmap *,
                            struct hashmap *);
 static int  fsck_next     (struct backend_ctx const *, uint64_t, json_t *,
-                           size_t *, bookmarkfs_bookmark_fsck_cb *, void *);
+                           size_t *, bookmarkfs_bookmark_check_cb *, void *);
 static int  get_attr_type (char const *, uint32_t);
 static int  get_attr_val  (json_t const *, char const *, uint32_t, json_t **);
 static int  guidmap_comp  (union hashmap_key, void const *);
@@ -479,7 +479,7 @@ fsck_apply (
     struct backend_ctx                *ctx,
     uint64_t                           parent_id,
     struct bookmarkfs_fsck_data const *fsck_data,
-    bookmarkfs_bookmark_fsck_cb       *callback,
+    bookmarkfs_bookmark_check_cb      *callback,
     void                              *user_data
 ) {
     uint64_t    id    = fsck_data->id;
@@ -901,12 +901,12 @@ free_maps (
 
 static int
 fsck_next (
-    struct backend_ctx const    *ctx,
-    uint64_t                     parent_id,
-    json_t                      *children,
-    size_t                      *idx_ptr,
-    bookmarkfs_bookmark_fsck_cb *callback,
-    void                        *user_data
+    struct backend_ctx const     *ctx,
+    uint64_t                      parent_id,
+    json_t                       *children,
+    size_t                       *idx_ptr,
+    bookmarkfs_bookmark_check_cb *callback,
+    void                         *user_data
 ) {
     int    status = 0;
     size_t idx    = *idx_ptr;
@@ -1855,12 +1855,12 @@ backend_sandbox (
 }
 
 static int
-bookmark_fsck (
+bookmark_check (
     void                               *backend_ctx,
     uint64_t                            id,
     struct bookmarkfs_fsck_data const  *fsck_data,
     uint32_t                            UNUSED_VAR(flags),
-    bookmarkfs_bookmark_fsck_cb        *callback,
+    bookmarkfs_bookmark_check_cb       *callback,
     void                               *user_data,
     void                              **cookie_ptr
 ) {
@@ -2700,7 +2700,7 @@ struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
     .backend_init    = backend_init,
     .backend_sandbox = backend_sandbox,
 
-    .bookmark_fsck   = bookmark_fsck,
+    .bookmark_check  = bookmark_check,
     .bookmark_get    = bookmark_get,
     .bookmark_list   = bookmark_list,
     .bookmark_lookup = bookmark_lookup,

@@ -83,7 +83,7 @@ do_fsck (
     struct bookmarkfs_fsck_handler_entry *entry_buf
 ) {
     struct fsck_data data;
-    bookmarkfs_bookmark_fsck_cb *callback = NULL;
+    bookmarkfs_bookmark_check_cb *callback = NULL;
     // `entry_buf == NULL` means rewind
     if (entry_buf != NULL) {
         entry_buf->parent_id = dir->id;
@@ -93,10 +93,10 @@ do_fsck (
     data.result = BOOKMARKFS_FSCK_RESULT_END;
 
     uint32_t flags = ctx->flags & BOOKMARKFS_BOOKMARK_TYPE_MASK;
-    int status = BACKEND_CALL(ctx, bookmark_fsck, dir->id, apply_data,
+    int status = BACKEND_CALL(ctx, bookmark_check, dir->id, apply_data,
             flags, callback, &data, &dir->cookie);
     if (status < 0) {
-        log_printf("bookmark_fsck(): %s", xstrerror(-status));
+        log_printf("bookmark_check(): %s", xstrerror(-status));
         return status;
     }
     return data.result;
