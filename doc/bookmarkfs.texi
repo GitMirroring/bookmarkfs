@@ -2372,6 +2372,103 @@ Indicates that the cookie is obtained from @code{bookmark_list} or
 @end table
 
 
+@node Set Bookmark Content
+@subsection Set Bookmark Content
+
+The @code{bookmark_set} function is called to update the data associated
+with a bookmark or bookmark-related object.
+It is never called when the filesystem is mounted read-only.
+
+Type of the @code{bookmark_set} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_set_func) (
+    void       *backend_ctx,
+    uint64_t    id,
+    char const *attr_key,
+    uint32_t    flags,
+    void const *val,
+    size_t      val_len
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item id
+ID of the object to update.
+
+@item attr_key
+Name of an extended attribute.
+
+If not @code{NULL}, @code{attr_key} is guaranteed to be a NUL-terminated
+string, and the function should update the corresponding extended attribute
+value instead of the bookmark content.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_SET_TIME
+Indicates that the function should update the timestamps associated with
+the object.
+
+The @code{val} argument points to an array of @code{struct timespec},
+the first element refers to the last access time, and the second element
+refers to the last modification time of the object.
+Values of @code{attr_key} and @code{val_len} are unspecified.
+
+The @code{tv_nsec} field of each timestamp may be @code{UTIME_OMIT},
+which indicates that the timestamp should be left as-is.
+It is guaranteed not to be @code{UTIME_NOW}.
+
+If this flag is not set, the function should update the bookmark content
+or extended attribute value instead.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Update the data associated with a bookmark or bookmark folder.
+@xref{Bookmarks}.
+
+Value of @code{id} refers to the ID of a bookmark or bookmark folder.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Update the data associated with a tag.
+@xref{Tags}.
+
+Value of @code{id} refers to the ID of a tag folder.
+@end table
+@end table
+
+@item val
+New value for the object data.
+
+@item val_len
+Length of the new value in bytes.
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+The backend does not need to update the last modification time of a bookmark
+upon bookmark content update, since the frontend program knows better
+when the bookmark content is actually modified, and always explicitly
+updates the mtime after a writeback.
+
+However, if the @code{BOOKMARKFS_BACKEND_CTIME} flag is set for this context,
+the backend should automatically update the bookmark mtime to
+the current time upon extended attribute update.
+
+
 @node Sync Bookmarks
 @subsection Sync Bookmarks
 
