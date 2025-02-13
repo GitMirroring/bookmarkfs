@@ -128,7 +128,7 @@ typedef int (bookmarkfs_bookmark_check_cb) (
 
 typedef int (bookmarkfs_bookmark_check_func) (
     void                               *backend_ctx,
-    uint64_t                            id,
+    uint64_t                            parent_id,
     struct bookmarkfs_fsck_data const  *fsck_data,
     uint32_t                            flags,
     bookmarkfs_bookmark_check_cb       *callback,

@@ -2999,7 +2999,7 @@ backend_sandbox (
 static int
 bookmark_check (
     void                               *backend_ctx,
-    uint64_t                            id,
+    uint64_t                            parent_id,
     struct bookmarkfs_fsck_data const  *fsck_data,
     uint32_t                            flags,
     bookmarkfs_bookmark_check_cb       *callback,
@@ -3013,7 +3013,7 @@ bookmark_check (
     }
     switch (flags & BOOKMARKFS_BOOKMARK_TYPE_MASK) {
       case BOOKMARKFS_BOOKMARK_TYPE(TAG):
-        if (id == ctx->tags_root_id) {
+        if (parent_id == ctx->tags_root_id) {
             break;
         }
         // fallthrough
@@ -3050,11 +3050,11 @@ bookmark_check (
     qctx.user_data      = user_data;
     if (fsck_data == NULL) {
         qctx.status = 0;
-        status = bookmark_do_list(ctx, id, idx, flags, &qctx);
+        status = bookmark_do_list(ctx, parent_id, idx, flags, &qctx);
     } else {
         debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
 #ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
-        status = fsck_apply(ctx, id, fsck_data, &qctx);
+        status = fsck_apply(ctx, parent_id, fsck_data, &qctx);
 #endif
     }
     dentry_map = qctx.dentry_map;

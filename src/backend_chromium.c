@@ -1857,7 +1857,7 @@ backend_sandbox (
 static int
 bookmark_check (
     void                               *backend_ctx,
-    uint64_t                            id,
+    uint64_t                            parent_id,
     struct bookmarkfs_fsck_data const  *fsck_data,
     uint32_t                            UNUSED_VAR(flags),
     bookmarkfs_bookmark_check_cb       *callback,
@@ -1883,7 +1883,8 @@ bookmark_check (
         }
     }
     // Unlike bookmark_list(), always fetch the latest entries during fsck.
-    struct node_entry const *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry const *entry
+        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -1898,11 +1899,12 @@ bookmark_check (
         goto end;
     }
     if (fsck_data == NULL) {
-        status = fsck_next(ctx, id, children, &idx, callback, user_data);
+        status = fsck_next(ctx, parent_id, children, &idx, callback,
+                user_data);
     } else {
         debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
-        status = fsck_apply(ctx, id, fsck_data, callback, user_data);
+        status = fsck_apply(ctx, parent_id, fsck_data, callback, user_data);
 #endif
     }
 
