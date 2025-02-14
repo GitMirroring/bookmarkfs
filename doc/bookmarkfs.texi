@@ -1656,8 +1656,8 @@ A bit array of the following flags:
 
 @table @code
 @item BOOKMARKFS_BACKEND_READONLY
-Indicates that the filesystem is mounted read-only, and the frontend program
-will not call functions that may write to the bookmark storage.
+Indicates that the filesystem is mounted read-only, and the functions that
+may write to the bookmark storage will not be called for this session.
 
 @item BOOKMARKFS_BACKEND_CTIME
 Indicates that the @option{-o ctime} option is given to
@@ -1799,7 +1799,7 @@ A bit array of the following flags:
 Indicates that the backend claims exclusive access to the bookmark storage.
 
 In exclusive mode, modifications to the bookmark storage only come from
-the frontend, and the frontend program may perform optimizations based on
+the frontend, and the caller may perform optimizations based on
 this assumption.
 
 @item BOOKMARKFS_BACKEND_HAS_KEYWORD
@@ -1930,12 +1930,12 @@ Function arguments:
 The pointer referring to the backend context.
 
 @item id
-The subsystem object ID to be used for lookup.
+ID of the object to be used for lookup.
 It could either be a bookmark ID or a tag ID,
 depending on the value of @code{flags}.
 
 @item name
-Name of the subsystem object to lookup.
+Name of the object to lookup.
 It could be a bookmark name, tag name or keyword name,
 depending on the value of @code{flags}.
 
@@ -2049,7 +2049,7 @@ Function arguments:
 The pointer referring to the backend context.
 
 @item id
-The subsystem object ID of the directory.
+Object ID of the directory.
 It could either be a bookmark ID or a tag ID,
 depending on the value of @code{flags}.
 
@@ -2282,7 +2282,7 @@ Length of @code{value} in bytes.
 @end table
 
 The function returns @t{0} on success.
-Otherwise, the function returns a nagated @code{errno} which should be
+Otherwise, the function returns a negated @code{errno} which should be
 used as the return value for the current @code{bookmark_get} call.
 
 @item user_data
@@ -2438,18 +2438,18 @@ Equals to one of the following values (after shifting):
 Update the data associated with a bookmark or bookmark folder.
 @xref{Bookmarks}.
 
-Value of @code{id} refers to the ID of a bookmark or bookmark folder.
+@code{id} refers to the ID of a bookmark or bookmark folder.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
 Update the data associated with a tag.
 @xref{Tags}.
 
-Value of @code{id} refers to the ID of a tag folder.
+@code{id} refers to the ID of a tag folder.
 @end table
 @end table
 
 @item val
-New value for the object data.
+Pointer to the new value of the object data.
 
 @item val_len
 Length of the new value in bytes.
@@ -2460,13 +2460,121 @@ Otherwise, it should return a negated @code{errno} indicating the error
 encountered.
 
 The backend does not need to update the last modification time of a bookmark
-upon bookmark content update, since the frontend program knows better
+upon bookmark content update, since the caller knows better
 when the bookmark content is actually modified, and always explicitly
 updates the mtime after a writeback.
 
 However, if the @code{BOOKMARKFS_BACKEND_CTIME} flag is set for this context,
 the backend should automatically update the bookmark mtime to
 the current time upon extended attribute update.
+
+
+@node Create Bookmark
+@subsection Create Bookmark
+
+The @code{bookmark_create} function is called to create a new bookmark
+or bookmark-related object.
+It is never called when the filesystem is mounted read-only.
+
+Type of the @code{bookmark_create} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_create_func) (
+    void                            *backend_ctx,
+    uint64_t                         parent_id,
+    char const                      *name,
+    uint32_t                         flags,
+    struct bookmarkfs_bookmark_stat *stat_buf
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item parent_id
+ID of the parent directory where the new object shall be created.
+
+@item name
+Name of the new object.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_CREATE_DIR
+Indicates that the new object to be created should be a directory.
+
+If this flag is not set, the new object should be a bookmark.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Create a bookmark or bookmark folder.
+@xref{Bookmarks}.
+
+@code{parent_id} refers to the ID of the parent bookmark folder.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Create a tag folder, or associate an existing bookmark with a tag.
+@xref{Tags}.
+
+@code{parent_id} refers to the ID of the parent tag folder.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Associate an existing bookmark with a new keyword.
+@xref{Keywords}.
+
+The value of @code{parent_id} is unspecified.
+@end table
+@end table
+
+@item stat_buf
+Attributes of the new object.
+
+@xref{Bookmark Attributes} for the definition of the
+@code{bookmarkfs_bookmark_stat} structure.
+
+Except for the @code{id} field, the initial content of this argument
+is unspecified.
+When the object is successfully found, the backend should populate
+this argument with appropriate values.
+
+When associating an existing bookmark with a tag or keyword, the initial
+value of the @code{id} field refers to the bookmark to be associated.
+Generally it should be left as-is, but the backend is allowed to
+re-assign it to the ID of another bookmark (see below for restrictions).
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+Restrictions for the new object:
+
+@table @asis
+@item new bookmark
+Bookmark content should be empty if possible.
+
+Other reasonable values (e.g., @samp{about:blank}) are also acceptable
+if the bookmark storage does not allow empty bookmark content.
+
+@item new directory
+Should not contain any entries.
+
+@item new association
+Should appear to be the same object as the associated bookmark,
+or at least contain the same content.
+@end table
+
+When a new object is successfully created, the backend should automatically
+update the last modification time of the parent directory to the current time.
 
 
 @node Sync Bookmarks
