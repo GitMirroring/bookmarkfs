@@ -794,9 +794,11 @@ bm_open (
         }
     }
 
+#ifdef O_DIRECT
     if (flags & O_DIRECT) {
         fi->direct_io = 1;
     }
+#endif
 #ifndef __FreeBSD__
     // Cannot reliably keep cache on FreeBSD, we're unable to explicitly
     // flush it.  See comments for inval_inode().

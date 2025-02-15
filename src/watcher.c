@@ -158,8 +158,11 @@ impl_rearm (
     }
 
 #elif defined(WATCHER_IMPL_KQUEUE)
-    int wfd = openat(w->dirfd, w->name,
-            O_RDONLY | O_CLOEXEC | O_PATH | O_RESOLVE_BENEATH);
+    int open_flags = O_RDONLY | O_CLOEXEC | O_RESOLVE_BENEATH;
+#ifdef O_PATH
+    open_flags |= O_PATH;
+#endif
+    int wfd = openat(w->dirfd, w->name, open_flags);
     if (wfd < 0) {
         log_printf("openat(): %s", xstrerror(errno));
         return -1;

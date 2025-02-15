@@ -97,9 +97,6 @@
 
 #if defined(__FreeBSD__) || (defined(__linux__) && defined(_GNU_SOURCE))
 #  define HAVE_PIPE2  1
-#else
-#  define O_DIRECT  0
-#  define O_PATH    0  // FreeBSD supports O_PATH since 13.1
 #endif
 
 #ifndef __FreeBSD__

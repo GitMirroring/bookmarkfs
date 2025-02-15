@@ -68,7 +68,7 @@ struct fsck_dir {
 
 // Forward declaration start
 #ifdef __linux__
-static ssize_t getdents (int, void *, size_t);
+static ssize_t getdents_ (int, void *, size_t);
 #endif
 
 static int  next_subdir   (struct fsck_ctx *, struct fsck_dir *,
@@ -81,8 +81,11 @@ static void print_version (void);
 
 #ifdef __linux__
 
+// Some libc (e.g., musl) may declare a getdents() function
+// in dirent.h with conflicting types.
+#define getdents getdents_
 static ssize_t
-getdents (
+getdents_ (
     int     dirfd,
     void   *buf,
     size_t  bufsize
