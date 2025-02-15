@@ -65,7 +65,7 @@
 
 #ifdef BOOKMARKFS_DEBUG
 #  define debug_printf(f, ...)  log_printf("[debug] " f, __VA_ARGS__)
-#  define debug_puts(s)         log_puts("[debug] " s)
+#  define debug_puts(s)         debug_printf("%s", s)
 #else
 #  define debug_printf(f, ...)
 #  define debug_puts(s)

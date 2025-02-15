@@ -103,7 +103,7 @@ init_handler (
     int result = Tcl_EvalEx(interp, buf, stat_buf.st_size, TCL_EVAL_GLOBAL);
     munmap(buf, stat_buf.st_size);
     if (result != TCL_OK) {
-        log_printf("%s", Tcl_GetStringResult(interp));
+        log_puts(Tcl_GetStringResult(interp));
         return -1;
     }
     close(ctx->script.fd);
@@ -121,7 +121,7 @@ init_interp (
     Tcl_Interp *interp = Tcl_CreateInterp();
     if (flags & FSCK_HANDLER_UNSAFE) {
         if (TCL_OK != Tcl_Init(interp)) {
-            log_printf("%s", Tcl_GetStringResult(interp));
+            log_puts(Tcl_GetStringResult(interp));
             goto fail;
         }
         Tcl_InitMemory(interp);
@@ -134,7 +134,7 @@ init_interp (
     if (NULL == Tcl_CreateNamespace(interp, WITH_NAMESPACE(name),  \
                 NULL, NULL)                                        \
     ) {                                                            \
-        log_printf("%s", Tcl_GetStringResult(interp));             \
+        log_puts(Tcl_GetStringResult(interp));                     \
         goto fail;                                                 \
     }
     DO_CREATE_NAMESPACE(interp, "handler");
@@ -142,7 +142,7 @@ init_interp (
 
 #define DO_SET_VAR(interp, name, val)                                        \
     if (0 != set_tcl_var(interp, STR_WITHLEN(WITH_NAMESPACE(name)), val)) {  \
-        log_printf("%s", Tcl_GetStringResult(interp));                       \
+        log_puts(Tcl_GetStringResult(interp));                               \
         goto fail;                                                           \
     }
     DO_SET_VAR(interp, "isInteractive",
@@ -337,7 +337,7 @@ fsck_handler_run (
     int result = Tcl_EvalObjv(interp, 2, args, TCL_EVAL_GLOBAL);
     Tcl_DecrRefCount(args_obj);
     if (result != TCL_OK) {
-        log_printf("%s", Tcl_GetStringResult(interp));
+        log_puts(Tcl_GetStringResult(interp));
         return -1;
     }
 

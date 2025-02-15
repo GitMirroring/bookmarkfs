@@ -337,7 +337,7 @@ db_query (
 #if 1 && defined(BOOKMARKFS_DEBUG)
     {
         char *sql = sqlite3_expanded_sql(stmt);
-        debug_printf("%s", sql);
+        debug_puts(sql);
         sqlite3_free(sql);
     }
 #endif
