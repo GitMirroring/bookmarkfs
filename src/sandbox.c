@@ -278,6 +278,12 @@ sandbox_enter (
         goto free_sfctx;
     }
 
+#ifndef LANDLOCK_ACCESS_FS_REFER  // Available since Linux 5.19
+#define LANDLOCK_ACCESS_FS_REFER  ( UINT64_C(1) << 13 )
+#endif
+#ifndef LANDLOCK_ACCESS_FS_TRUNCATE  // Available since Linux 6.2
+#define LANDLOCK_ACCESS_FS_TRUNCATE  ( UINT64_C(1) << 14 )
+#endif
 #define LANDLOCK_FS_RIGHT_NAME_(name)  LANDLOCK_ACCESS_FS_##name
 #define LANDLOCK_FS_RIGHT(...)  \
     BITWISE_OR(LANDLOCK_FS_RIGHT_NAME_, __VA_ARGS__)
