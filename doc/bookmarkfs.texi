@@ -177,11 +177,12 @@ and cannot help if the operating system has already been compromised.
 Examples of what ``untrusted input'' may include:
 
 @itemize @bullet{}
-@item Bookmark files that are @emph{not} created by the user using a trusted
-program (e.g., a file obtained from some random person on the internet).
+@item Bookmark storage @emph{not} created by the user with a trusted program
+(e.g., obtained from some random person on the internet).
+
 @item Filesystem calls from untrusted programs.
-The program itself may be isolated, but it has a chance to escape
-the isolated environment if it can exploit BookmarkFS.
+The program may be running in an isolated environment,
+but it has a chance to escape if BookmarkFS can be exploited.
 @end itemize
 
 On Linux, sandboxing is achieved using @linuxmanpage{seccomp, 2} and
@@ -319,11 +320,10 @@ Execution bits on regular files are masked off.
 Should be used in combination with @option{-o allow_other} for other users to
 access the files.
 
-@anchor{File Modification/Change Time}
-@cindex File Modification/Change Time
+@anchor{Last Modification/Change Time}
+@cindex Last Modification/Change Time
 @item -o ctime
-Maintain file change time, while modification time follows change time.
-If this option is not provided, maintain file modification time instead.
+Maintain last status change time instead of last modification time.
 
 Usually, a bookmark's ``modification time'' attribute behaves differently
 from both mtime and ctime.
@@ -336,10 +336,10 @@ Since a bookmark has only one ``modification time'' attribute instead of two,
 the user has to choose which one to maintain:
 
 @table @asis
-@item modification time
+@item Last modification time
 ctime only updates when mtime does.
 
-@item change time
+@item Last status change time
 ctime updates normally; mtime always updates when ctime does,
 even if the file content is not modified.
 
@@ -420,13 +420,25 @@ and appears as the @samp{SOURCE} column in @linuxmanpage{findmnt, 8} output.
 These options (and other atime-related ones) are ignored.
 
 BookmarkFS only supports @option{noatime} mounts,
-since the ``access time'' attribute of a bookmark necessarily means
+since the ``last access time'' attribute of a bookmark necessarily means
 ``the last time it was accessed from the browser''.
 As a bookmark management tool independent from the browser,
 BookmarkFS should never update that time automatically.
 
 Nonetheless, the user is still allowed to explicitly update atime
 (e.g., with @posixfuncmanpage{futimens}).
+
+@item -o auto_unmount
+Instruct libfuse to fork-exec a helper process, which automatically dismounts
+the filesystem when the filesystem daemon terminates without unmounting,
+so that the user don't have to manually dismount the inactive filesystem.
+See @linuxmanpage{mount.fuse3, 8} for details.
+
+This option is helpful when sandboxing is enabled, especially when
+the @option{-F} option is given, since a sandboxed process can neither
+@linuxmanpage{umount, 2} nor fork-exec.
+
+Currently, this option is not available on FreeBSD.
 @end table
 
 
@@ -751,7 +763,7 @@ Last access time of the bookmark.
 
 @item st_mtim
 Last modification time of the bookmark.
-@xref{File Modification/Change Time}.
+@xref{Last Modification/Change Time}.
 @end table
 
 Additional information of a bookmark or bookmark folder can be accessed via
@@ -2901,6 +2913,7 @@ The following variables are set before script evaluation:
 @item $::bookmarkfs::fsck::isInteractive
 Equals to @t{1} if the @option{-i} option is given to @code{fsck.bookmarkfs},
 @t{0} otherwise.
+
 @item $::bookmarkfs::fsck::isReadonly
 Equals to @t{0} if the @option{-o repair} option is given to
 @code{fsck.bookmarkfs}, @t{1} otherwise.
@@ -3063,7 +3076,7 @@ does not support the corresponding features.
 If not @code{NULL}, the @code{info} function is called when the user
 instructs @command{fsck.bookmarkfs} to print information about the handler.
 
-When this function is called, the handler should write a human-readable
+When this function is called, it should write a human-readable
 message of the corresponding information to standard output.
 
 Type of the @code{info} function is defined as:
@@ -3083,7 +3096,7 @@ A bit array of the following flags:
 @table @code
 @item BOOKMARKFS_FSCK_HANDLER_INFO_HELP
 @item BOOKMARKFS_FSCK_HANDLER_INFO_VERSION
-Indicates that the backend should print a help/version message.
+Indicates that the function should print a help/version message.
 
 These flags are analogous to the corresponding flags in the
 @code{backend_info} function of the backend API.
@@ -3269,14 +3282,14 @@ Continue to the next entry.
 Apply change for the current entry.
 Not available in read-only mode.
 
-The handler should copy the new name for the bookmark to
+The function should copy the new name for the bookmark to
 @code{data->entry.data.name}.
 
 @item BOOKMARKFS_FSCK_USER_INPUT
 Request for user input.
 Only available in interactive mode.
 
-The handler should set @code{data->str} to a prompt string for Readline.
+The function should set @code{data->str} to a prompt string for Readline.
 The string must be valid until the next function call on this handler context.
 
 @item BOOKMARKFS_FSCK_SAVE
