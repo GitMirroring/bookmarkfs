@@ -1561,7 +1561,7 @@ The @code{backend_info} function is called to print information
 about the backend.
 It can be @code{NULL}.
 
-When this function is called, the backend should write a human-readable
+When this function is called, it should write a human-readable
 message of the corresponding information to standard output.
 
 Type of the @code{backend_info} function is defined as:
@@ -1580,14 +1580,14 @@ A bit array of the following flags:
 
 @table @code
 @item BOOKMARKFS_BACKEND_INFO_HELP
-Indicates that the backend should print a help message.
+Indicates that the function should print a help message.
 Mutually exclusive with @code{BOOKMARKFS_BACKEND_INFO_VERSION}.
 
 The message should contain a brief description of this backend,
 as well as a list of backend-specific options.
 
 @item BOOKMARKFS_BACKEND_INFO_VERSION
-Indicates that the backend should print a version message.
+Indicates that the function should print a version message.
 Mutually exclusive with @code{BOOKMARKFS_BACKEND_INFO_HELP}.
 
 In addition to the version number, the version message may also contain
@@ -1730,7 +1730,7 @@ The backend must not re-assign the fields in @code{opt}.
 Information of the new backend context.
 
 The initial content of this argument is unspecified.
-When the backend context is successfully created, the backend should
+When the backend context is successfully created, the function should
 populate this argument with appropriate values.
 
 @anchor{Backend-Create Response}
@@ -1821,8 +1821,7 @@ It must not be @code{NULL}.
 
 Upon destruction, the backend should release all system resources
 associated with this context.
-If changes have been made to the bookmark storage, the backend should
-try to persist them.
+Changes made to the bookmark storage should be persisted.
 
 Type of the @code{backend_destroy} function is defined as:
 
@@ -1980,7 +1979,7 @@ The value of @code{id} is unspecified.
 Attributes of the object to lookup.
 
 The initial content of this argument is unspecified.
-When the object is successfully found, the backend should populate
+When the object is successfully found, the function should populate
 this argument with appropriate values.
 
 @anchor{Bookmark Attributes}
@@ -2186,7 +2185,7 @@ to be used for subsequent operations on the same directory.
 
 If the value pointed to by @code{cookie_ptr} is @code{NULL}, it indicates
 that this is an initial operation.
-The backend should set the value to a pointer which is not @code{NULL}.
+The function should set the value to a pointer which is not @code{NULL}.
 
 The backend must not change the cookie value.
 @end table
@@ -2336,7 +2335,7 @@ When a cookie obtained from @code{bookmark_list},
 the @code{cookie_free} function is called.
 It must not be @code{NULL}.
 
-The backend should release all system resources associated with this cookie.
+The function should release all system resources associated with this cookie.
 
 Type of the @code{cookie_free} function is defined as:
 
@@ -2465,7 +2464,7 @@ when the bookmark content is actually modified, and always explicitly
 updates the mtime after a writeback.
 
 However, if the @code{BOOKMARKFS_BACKEND_CTIME} flag is set for this context,
-the backend should automatically update the bookmark mtime to
+the function should automatically update the bookmark mtime to
 the current time upon extended attribute update.
 
 
@@ -2543,7 +2542,7 @@ Attributes of the new object.
 
 Except for the @code{id} field, the initial content of this argument
 is unspecified.
-When the object is successfully found, the backend should populate
+When the object is successfully found, the function should populate
 this argument with appropriate values.
 
 When associating an existing bookmark with a tag or keyword, the initial
@@ -2559,22 +2558,123 @@ encountered.
 Restrictions for the new object:
 
 @table @asis
-@item new bookmark
+@item New bookmark
 Bookmark content should be empty if possible.
 
 Other reasonable values (e.g., @samp{about:blank}) are also acceptable
 if the bookmark storage does not allow empty bookmark content.
 
-@item new directory
+@item New directory
 Should not contain any entries.
 
-@item new association
+@item New association
 Should appear to be the same object as the associated bookmark,
 or at least contain the same content.
 @end table
 
-When a new object is successfully created, the backend should automatically
+When a new object is successfully created, the function should automatically
 update the last modification time of the parent directory to the current time.
+
+
+@node Rename Bookmark
+@subsection Rename Bookmark
+
+The @code{bookmark_rename} function renames and/or reparents a bookmark
+or bookmark-related object.
+It is never called when the filesystem is mounted read-only.
+
+Type of the @code{bookmark_rename} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_rename_func) (
+    void       *backend_ctx,
+    uint64_t    old_parent_id,
+    char const *old_name,
+    uint64_t    new_parent_id,
+    char const *new_name,
+    uint32_t    flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item old_parent_id
+ID of the parent directory containing the object to be renamed.
+
+@item old_name
+Name of the object to be renamed.
+
+@item new_parent_id
+ID of the new parent directory for the object.
+
+@item new_name
+New name of the object.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE
+If the object referred to by @code{new_name} already exists
+under @code{new_parent_id}, the function should fail with @code{EEXIST}
+instead of replacing the existing object.
+
+This flag is analogous to the @code{RENAME_NOREPLACE} flag for
+@linuxmanpage{renameat2}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Rename a bookmark.
+@xref{Bookmarks}.
+
+@code{old_parent_id} and @code{new_parent_id} refer to the IDs of bookmark
+folders.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Rename a tag.
+@xref{Tags}.
+
+Both @code{old_parent_id} and @code{new_parent_id} should be the ID of
+the tags root directory.
+Otherwise the function should fail with @code{EPERM}, since renaming a tag
+association is not allowed.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Rename a keyword.
+@xref{Keywords}.
+
+Values of @code{old_parent_id} and @code{new_parent_id} are unspecified.
+@end table
+@end table
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+When replacing an existing object:
+
+@itemize @bullet{}
+@item The two objects should be of the same type
+(e.g., a bookmark cannot replace a bookmark folder).
+
+@item When replacing a directory, the destination object must be empty.
+
+@item If two objects are the same, the function should do nothing and return
+successfully.
+@end itemize
+
+Upon successful completion, the function should automatically update the
+last modification time of the two directories.
 
 
 @node Sync Bookmarks
@@ -2651,7 +2751,7 @@ Indicates that the @option{-o force} option is given to
 Path to the bookmark storage to be created, equivalent to the
 @code{store_path} passed to @code{backend_create}.
 
-The backend should not overwrite existing bookmark storage, unless
+The function should not overwrite existing bookmark storage, unless
 the @code{BOOKMARKFS_BACKEND_MKFS_FORCE} flag is given.
 @end table
 @end table
