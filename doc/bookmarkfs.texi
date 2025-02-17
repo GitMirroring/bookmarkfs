@@ -1919,7 +1919,7 @@ on the backend except for @code{backend_destroy}.
 @subsection Lookup Bookmark
 
 The @code{bookmark_lookup} function is called to obtain the attributes of
-a bookmark, or a bookmark-related object.
+a bookmark or a bookmark-related object.
 It must not be @code{NULL}.
 
 Type of the @code{bookmark_lookup} function is defined as:
@@ -1942,8 +1942,7 @@ The pointer referring to the backend context.
 
 @item id
 ID of the object to be used for lookup.
-It could either be a bookmark ID or a tag ID,
-depending on the value of @code{flags}.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item name
 Name of the object to lookup.
@@ -1970,19 +1969,14 @@ Equals to one of the following values (after shifting):
 Lookup a bookmark or bookmark folder.
 @xref{Bookmarks}.
 
-@code{id} and @code{name} refers to bookmark ID and bookmark name.
-
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
 Lookup a tag, or a bookmark under a tag.
 @xref{Tags}.
-
-@code{id} and @code{name} refers to tag ID and tag name.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
 Lookup a keyword.
 @xref{Keywords}.
 
-@code{name} refers to keyword name (must not be @code{NULL}).
 The value of @code{id} is unspecified.
 @end table
 @end table
@@ -2061,8 +2055,7 @@ The pointer referring to the backend context.
 
 @item id
 Object ID of the directory.
-It could either be a bookmark ID or a tag ID,
-depending on the value of @code{flags}.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item off
 Position of the current @code{bookmark_list} operation, equivalent to
@@ -2092,19 +2085,15 @@ Equals to one of the following values (after shifting):
 List bookmarks (and bookmark folders) under a bookmark folder.
 @xref{Bookmarks}.
 
-Value of @code{id} refers to the ID of a bookmark folder.
-
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
 List tags, or bookmarks under a tag.
 @xref{Tags}.
-
-Value of @code{id} refers to the ID of a tag folder.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
 List keywords.
 @xref{Keywords}.
 
-Value of @code{id} is unspecified.
+The value of @code{id} is unspecified.
 @end table
 @end table
 
@@ -2411,6 +2400,7 @@ The pointer referring to the backend context.
 
 @item id
 ID of the object to update.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item attr_key
 Name of an extended attribute.
@@ -2449,13 +2439,9 @@ Equals to one of the following values (after shifting):
 Update the data associated with a bookmark or bookmark folder.
 @xref{Bookmarks}.
 
-@code{id} refers to the ID of a bookmark or bookmark folder.
-
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
 Update the data associated with a tag.
 @xref{Tags}.
-
-@code{id} refers to the ID of a tag folder.
 @end table
 @end table
 
@@ -2507,9 +2493,12 @@ The pointer referring to the backend context.
 
 @item parent_id
 ID of the parent directory where the new object shall be created.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item name
 Name of the new object.
+It could be a bookmark name, tag name or keyword name,
+depending on the value of @code{flags}.
 
 @item flags
 A bit array of the following flags:
@@ -2530,13 +2519,9 @@ Equals to one of the following values (after shifting):
 Create a bookmark or bookmark folder.
 @xref{Bookmarks}.
 
-@code{parent_id} refers to the ID of the parent bookmark folder.
-
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
-Create a tag folder, or associate an existing bookmark with a tag.
+Create a tag, or associate an existing bookmark with a tag.
 @xref{Tags}.
-
-@code{parent_id} refers to the ID of the parent tag folder.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
 Associate an existing bookmark with a new keyword.
@@ -2591,8 +2576,8 @@ update the last modification time of the parent directory to the current time.
 @node Rename Bookmark
 @subsection Rename Bookmark
 
-The @code{bookmark_rename} function renames and/or reparents a bookmark
-or bookmark-related object.
+The @code{bookmark_rename} function is called to rename and/or reparent
+a bookmark or a bookmark-related object.
 It is never called when the filesystem is mounted read-only.
 
 Type of the @code{bookmark_rename} function is defined as:
@@ -2616,9 +2601,12 @@ The pointer referring to the backend context.
 
 @item old_parent_id
 ID of the parent directory containing the object to be renamed.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item old_name
 Name of the object to be renamed.
+It could be a bookmark name, tag name or keyword name,
+depending on the value of @code{flags}.
 
 @item new_parent_id
 ID of the new parent directory for the object.
@@ -2631,9 +2619,7 @@ A bit array of the following flags:
 
 @table @code
 @item BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE
-If the object referred to by @code{new_name} already exists
-under @code{new_parent_id}, the function should fail with @code{EEXIST}
-instead of replacing the existing object.
+Indicates that the function should not replace an existing object.
 
 This flag is analogous to the @code{RENAME_NOREPLACE} flag for
 @linuxmanpage{renameat2}.
@@ -2648,17 +2634,13 @@ Equals to one of the following values (after shifting):
 Rename a bookmark.
 @xref{Bookmarks}.
 
-@code{old_parent_id} and @code{new_parent_id} refer to the IDs of bookmark
-folders.
-
 @item BOOKMARKFS_BOOKMARK_TYPE_TAG
 Rename a tag.
 @xref{Tags}.
 
-Both @code{old_parent_id} and @code{new_parent_id} should be the ID of
-the tags root directory.
-Otherwise the function should fail with @code{EPERM}, since renaming a tag
-association is not allowed.
+The function should fail with @code{EPERM} if either @code{old_parent_id}
+or @code{new_parent_id} is not the ID of the tags root directory,
+since renaming a tag association makes no sense.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
 Rename a keyword.
@@ -2686,7 +2668,75 @@ successfully.
 @end itemize
 
 Upon successful completion, the function should automatically update the
-last modification time of the two directories.
+last modification time of the parent directories.
+
+
+@node Delete Bookmark
+@subsection Delete Bookmark
+
+The @code{bookmark_delete} function is called to remove a bookmark or
+a bookmark-related object.
+It is never called when the filesystem is mounted read-only.
+
+Type of the @code{bookmark_delete} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_delete_func) (
+    void       *backend_ctx,
+    uint64_t    parent_id,
+    char const *name,
+    uint32_t    flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item parent_id
+ID of the parent directory containing the object to be removed.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
+
+@item name
+Name of the object to be removed.
+It could be a bookmark name, tag name or keyword name,
+depending on the value of @code{flags}.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Remove a bookmark or an empty bookmark folder.
+@xref{Bookmarks}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Remove a tag, or dissociate a bookmark from a tag.
+@xref{Tags}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Remove a keyword.
+@xref{Keywords}.
+
+The value of @code{parent_id} is unspecified.
+@end table
+@end table
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
+
+Upon successful completion, the function should automatically update the
+last modification time of the parent directory.
 
 
 @node Sync Bookmarks
