@@ -334,8 +334,8 @@ db_query (
     }
 
   fetch_rows:
-#if 1 && defined(BOOKMARKFS_DEBUG)
-    {
+#ifdef BOOKMARKFS_DEBUG
+    if (0) {
         char *sql = sqlite3_expanded_sql(stmt);
         debug_puts(sql);
         sqlite3_free(sql);
