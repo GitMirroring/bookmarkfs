@@ -622,7 +622,7 @@ Sub-commands:
 
 @table @command
 @item permd
-Re-arranges the order of the directory entries obtained from @code{readdir()}.
+Rearranges the order of the directory entries obtained from @code{readdir()}.
 @xref{Permute Directory Entries}.
 
 @example
@@ -976,6 +976,7 @@ struct bookmarkfs_permd_data @{
 @};
 @end example
 
+@anchor{Rearrange Operations}
 The @code{op} field denotes the operation to perform on the directory:
 
 @table @code
@@ -2737,6 +2738,82 @@ encountered.
 
 Upon successful completion, the function should automatically update the
 last modification time of the parent directory.
+
+
+@node Permute Bookmarks
+@subsection Permute Bookmarks
+
+The @code{bookmark_permute} function is called to rearrange bookmarks
+or bookmark-related objects under a directory.
+It is never called when the filesystem is mounted read-only.
+
+This function should implement the @code{BOOKMARKFS_IOC_PERMD} I/O control.
+@xref{Permute Directory Entries}.
+
+Type of the @code{bookmark_permute} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_permute_func) (
+    void                     *backend_ctx,
+    uint64_t                  parent_id,
+    enum bookmarkfs_permd_op  op,
+    char const               *name1,
+    char const               *name2,
+    uint32_t                  flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item parent_id
+ID of the parent directory containing the objects to be rearranged.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
+
+@item op
+Operation to perform on objects represented by @code{name1} and @code{name2}.
+
+@xref{Rearrange Operations} for the meaning of each value.
+
+@item name1
+@item name2
+Names of the objects to be rearranged.
+They could be bookmark names, tag names or keyword names,
+depending on the value of @code{flags}.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Rearrange entries under a bookmark folder.
+@xref{Bookmarks}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Rearrange tags or tag associations.
+@xref{Tags}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Rearrange keywords.
+@xref{Keywords}.
+
+The value of @code{parent_id} is unspecified.
+@end table
+@end table
+@end table
+
+On success, the function should return @t{0}.
+Otherwise, it should return a negated @code{errno} indicating the error
+encountered.
 
 
 @node Sync Bookmarks
