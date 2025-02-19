@@ -212,7 +212,7 @@ init_backend (
     struct bookmarkfs_backend_create_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
         .tags_root_id      = UINT64_MAX,
-        .bookmark_attrs    = "",
+        .xattr_names       = "",
     };
     if (0 != impl->backend_create(&info->backend_conf, &resp)) {
         debug_puts("backend_create() failed");
@@ -227,7 +227,7 @@ init_backend (
 
     fs_init_backend(impl, resp.backend_ctx);
     fs_init_metadata(resp.bookmarks_root_id, resp.tags_root_id,
-            resp.bookmark_attrs);
+            resp.xattr_names);
     fs_init_opts(info->fs_flags, info->file_max);
     return 0;
 }

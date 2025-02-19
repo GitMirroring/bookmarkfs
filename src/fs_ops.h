@@ -52,7 +52,7 @@ void
 fs_init_metadata (
     uint64_t    bookmarks_root_id,
     uint64_t    tags_root_id,
-    char const *bookmark_attrs
+    char const *xattr_names
 );
 
 void

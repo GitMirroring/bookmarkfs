@@ -33,6 +33,9 @@
 
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifdef __linux__
+#  include <sys/xattr.h>
+#endif
 #include <time.h>
 #include <unistd.h>
 
@@ -66,8 +69,6 @@
 #define FH_FLAG_DIRTY  ( 1u << 0 )
 #define FH_FLAG_FSCK   ( 1u << 1 )
 
-#define XATTR_PREFIX  "user.bookmarkfs."
-
 #define SUBSYS_ID_BITS          ( 64 - BOOKMARKFS_BOOKMARK_TYPE_BITS )
 #define SUBSYS_ID_MASK          ( ((fuse_ino_t)1 << SUBSYS_ID_BITS) - 1 )
 #define INODE_SUBSYS_TYPE(ino)  ( (ino) >> SUBSYS_ID_BITS )
@@ -86,6 +87,16 @@
 
 #define BACKEND_CALL(name, ...)  \
     ctx.backend_impl->name(ctx.backend_ctx, __VA_ARGS__)
+
+#define BM_XATTR_FOREACH(name, name_len)                                \
+    for (char const *name = ctx.xattr_names, *next_; ; name = next_) {  \
+        size_t name_len = strlen(name);                                 \
+        if (name_len == 0) {                                            \
+            break;                                                      \
+        }                                                               \
+        next_ = name + name_len + 1;
+#define BM_XATTR_FOREACH_END  \
+    }
 
 #define backend_has_tags()      ( TAGS_ROOT_ID != UINT64_MAX )
 #define backend_has_keywords()  ( ctx.flags.has_keyword )
@@ -139,7 +150,7 @@ struct fs_ctx {
     uint64_t    bookmarks_root_id;
     uint64_t    tags_root_id;
     size_t      file_max;
-    char const *bookmark_attrs;
+    char const *xattr_names;
 
     char   *buf;
     size_t  buf_len;
@@ -219,7 +230,7 @@ static int  bm_set_keyword (uint64_t, char const *, struct stat *);
 static int  bm_set_tag     (uint64_t, uint64_t, char const *, struct stat *);
 static int  bm_setattr     (uint64_t, int, bool, struct fuse_file_info const *,
                             struct stat *);
-static int  bm_setxattr    (uint64_t, char const *, void const *, size_t);
+static int  bm_setxattr    (uint64_t, char const *, void const *, size_t, int);
 static int  bm_write       (fuse_req_t, int, char const *, size_t, off_t,
                             struct fs_file_handle *);
 static int  current_time   (struct timespec *);
@@ -243,10 +254,10 @@ static int  intfs_mkdir    (unsigned, char const *, struct stat *);
 static int  intfs_opendir  (unsigned, fuse_ino_t, struct fuse_file_info *);
 static int  intfs_readdir  (fuse_req_t, unsigned, size_t, off_t, uint32_t,
                             void *);
+static bool is_xattr_name  (char const *);
 static int  reply_errcheck (int, char const *, int);
 static int  subsys_type    (fuse_ino_t, uint64_t *);
 static int  timespec_cmp   (struct timespec const *, struct timespec const *);
-static int  xattr_name     (char const *, char const **);
 // Forward declaration end
 
 static struct fs_ctx ctx = {
@@ -586,10 +597,11 @@ bm_getxattr (
     char const  *name,
     size_t       buf_max
 ) {
-    if (0 != xattr_name(name, &name)) {
+    if (!is_xattr_name(name)) {
         return -ENOATTR;
     }
 
+    name += strlen(BOOKMARKFS_XATTR_PREFIX);
     struct bm_getxattr_ctx gctx = {
         .req     = req,
         .buf_max = buf_max,
@@ -603,7 +615,7 @@ bm_getxattr_cb (
     void const *xattr_val,
     size_t      xattr_len
 ) {
-    struct bm_getxattr_ctx *gctx = user_data;
+    struct bm_getxattr_ctx const *gctx = user_data;
 
     size_t buf_max = gctx->buf_max;
     if (buf_max == 0) {
@@ -729,15 +741,11 @@ bm_lsxattr (
     size_t    buf_max,
     size_t   *buf_len_ptr
 ) {
-    size_t buf_len = 0;
-    for (char const *xattrs = ctx.bookmark_attrs, *next; ; xattrs = next) {
-        size_t xattr_len = strlen(xattrs) + 1;
-        if (xattr_len == 1) {
-            break;
-        }
-        next = xattrs + xattr_len;
+    size_t buf_len    = 0;
+    size_t prefix_len = strlen(BOOKMARKFS_XATTR_PREFIX);
 
-        xattr_len += strlen(XATTR_PREFIX);
+    BM_XATTR_FOREACH(xattr, xattr_len)
+        xattr_len += prefix_len + 1;
         buf_len   += xattr_len;
         if (buf_max == 0) {
             continue;
@@ -746,10 +754,9 @@ bm_lsxattr (
             return -ERANGE;
         }
         char *dest = buf + buf_len - xattr_len;
-        memcpy(dest, XATTR_PREFIX, strlen(XATTR_PREFIX));
-        dest += strlen(XATTR_PREFIX);
-        memcpy(dest, xattrs, xattr_len - strlen(XATTR_PREFIX));
-    }
+        memcpy(dest, BOOKMARKFS_XATTR_PREFIX, prefix_len);
+        memcpy(dest + prefix_len, xattr, xattr_len - prefix_len);
+    BM_XATTR_FOREACH_END
 
     *buf_len_ptr = buf_len;
     return 0;
@@ -1005,7 +1012,7 @@ bm_rmxattr (
     uint64_t    UNUSED_VAR(id),
     char const *name
 ) {
-    if (0 != xattr_name(name, NULL)) {
+    if (!is_xattr_name(name)) {
         return -ENOATTR;
     }
     return -EPERM;
@@ -1132,12 +1139,21 @@ bm_setxattr (
     uint64_t    id,
     char const *name,
     void const *val,
-    size_t      val_len
+    size_t      val_len,
+    int         flags
 ) {
-    if (0 != xattr_name(name, &name)) {
+    if (!is_xattr_name(name)) {
         return -ENOATTR;
     }
+#ifdef __linux__
+    if (flags == XATTR_CREATE) {
+        return -EEXIST;
+    }
+#else
+    debug_assert(flags == 0);
+#endif
 
+    name += strlen(BOOKMARKFS_XATTR_PREFIX);
     return BACKEND_CALL(bookmark_set, id, name, 0, val, val_len);
 }
 
@@ -1621,6 +1637,29 @@ intfs_readdir (
     return send_reply(buf, req, reply_buf - reply_size, reply_size);
 }
 
+static bool
+is_xattr_name (
+    char const *name
+) {
+    size_t name_len   = strlen(name);
+    size_t prefix_len = strlen(BOOKMARKFS_XATTR_PREFIX);
+    if (name_len <= prefix_len) {
+        return false;
+    }
+    if (0 != memcmp(name, BOOKMARKFS_XATTR_PREFIX, prefix_len)) {
+        return false;
+    }
+    name     += prefix_len;
+    name_len -= prefix_len;
+
+    BM_XATTR_FOREACH(xattr, xattr_len)
+        if (name_len == xattr_len && 0 == memcmp(name, xattr, name_len)) {
+            return true;
+        }
+    BM_XATTR_FOREACH_END
+    return false;
+}
+
 static int
 reply_errcheck (
     int         err,
@@ -1679,43 +1718,6 @@ timespec_cmp (
     return 0;
 }
 
-static int
-xattr_name (
-    char const  *name,
-    char const **name_ptr
-) {
-    size_t name_len   = strlen(name);
-    size_t prefix_len = strlen(XATTR_PREFIX);
-    if (name_len <= prefix_len) {
-        return -1;
-    }
-    if (0 != memcmp(name, XATTR_PREFIX, prefix_len)) {
-        return -1;
-    }
-    name     += prefix_len;
-    name_len -= prefix_len;
-
-    for (char const *xattrs = ctx.bookmark_attrs, *next; ; xattrs = next) {
-        size_t xattr_len = strlen(xattrs);
-        if (xattr_len == 0) {
-            break;
-        }
-        next = xattrs + xattr_len + 1;
-
-        if (name_len != xattr_len) {
-            continue;
-        }
-        if (0 != memcmp(name, xattrs, name_len)) {
-            continue;
-        }
-        if (name_ptr != NULL) {
-            *name_ptr = name;
-        }
-        return 0;
-    }
-    return -1;
-}
-
 void
 fs_init_backend (
     struct bookmarkfs_backend const *backend_impl,
@@ -1736,7 +1738,7 @@ void
 fs_init_metadata (
     uint64_t    bookmarks_root_id,
     uint64_t    tags_root_id,
-    char const *bookmark_attrs
+    char const *xattr_names
 ) {
     if (bookmarks_root_id != UINT64_MAX) {
         ctx.bookmarks_root_id = bookmarks_root_id;
@@ -1744,8 +1746,8 @@ fs_init_metadata (
     if (tags_root_id != UINT64_MAX) {
         ctx.tags_root_id = tags_root_id;
     }
-    if (bookmark_attrs != NULL) {
-        ctx.bookmark_attrs = bookmark_attrs;
+    if (xattr_names != NULL) {
+        ctx.xattr_names = xattr_names;
     }
 }
 
@@ -2352,7 +2354,7 @@ fs_op_setxattr (
     char const *name,
     char const *val,
     size_t      val_len,
-    int         UNUSED_VAR(flags)
+    int         flags
 ) {
     int status = -ERANGE;
     if (val_len > ctx.file_max) {
@@ -2362,7 +2364,7 @@ fs_op_setxattr (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_setxattr(INODE_SUBSYS_ID(ino), name, val, val_len);
+        status = bm_setxattr(INODE_SUBSYS_ID(ino), name, val, val_len, flags);
         break;
     }
 

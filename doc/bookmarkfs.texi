@@ -1755,7 +1755,7 @@ struct bookmarkfs_backend_create_resp @{
     void       *backend_ctx;
     uint64_t    bookmarks_root_id;
     uint64_t    tags_root_id;
-    char const *bookmark_attrs;
+    char const *xattr_names;
     uint32_t    flags;
 @};
 @end example
@@ -1796,7 +1796,7 @@ before entering sandbox.
 @xref{Tags}.
 @end itemize
 
-@item bookmark_attrs
+@item xattr_names
 Names of extended attributes (@pxref{Extended Attributes}) supported
 for this backend context.
 

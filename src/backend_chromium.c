@@ -1745,16 +1745,16 @@ backend_create (
         resp_flags |= BOOKMARKFS_BACKEND_EXCLUSIVE;
     }
 
-    char const *bookmark_attrs = "guid\0date_added\0";
+    char const *xattr_names = "guid\0date_added\0";
     if (opts.other_flags & BACKEND_FILENAME_GUID) {
-        bookmark_attrs = "title\0date_added\0";
+        xattr_names = "title\0date_added\0";
     }
 
     resp->name              = "chromium";
     resp->backend_ctx       = ctx;
     resp->bookmarks_root_id = BOOKMARKS_ROOT_ID;
     resp->flags             = resp_flags;
-    resp->bookmark_attrs    = bookmark_attrs;
+    resp->xattr_names       = xattr_names;
     return 0;
 }
 

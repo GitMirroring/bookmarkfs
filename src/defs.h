@@ -120,5 +120,6 @@
 #endif
 
 #define BOOKMARKFS_HOMEPAGE_URL  "https://www.nongnu.org/bookmarkfs/"
+#define BOOKMARKFS_XATTR_PREFIX  "user.bookmarkfs."
 
 #endif  /* !defined(BOOKMARKFS_DEFS_H_) */

@@ -261,7 +261,7 @@ struct bookmarkfs_backend_create_resp {
     void       *backend_ctx;
     uint64_t    bookmarks_root_id;
     uint64_t    tags_root_id;
-    char const *bookmark_attrs;
+    char const *xattr_names;
     uint32_t    flags;
 };
 
