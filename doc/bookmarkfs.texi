@@ -297,7 +297,7 @@ Alternatively, @var{name} could be specified in
 @samp{@var{lib_path}:@var{sym_name}} format, where:
 
 @table @var
-@item lib_path@
+@item lib_path
 Presumably the pathname to the backend library.
 Its exact interpretation is equivalent to the first argument for
 @posixfuncmanpage{dlopen}.
@@ -504,7 +504,7 @@ Alternatively, @var{name} could be specified in
 @samp{@var{lib_path}:@var{sym_name}} format, where:
 
 @table @var
-@item lib_path@
+@item lib_path
 Presumably the pathname to the fsck handler library.
 Its exact interpretation is equivalent to the first argument for
 @posixfuncmanpage{dlopen}.
