@@ -6,12 +6,18 @@
 # this notice are preserved.  This file is offered as-is, without any warranty.
 #
 
-rand_u64_hex() {
-    echo $(od -vAn -N8 -tx8 /dev/urandom | tr -d ' ')
-}
-
-rand_base64() {
-    # The `base64` utility is not specified by POSIX,
-    # but present in GNU Coreutils, BusyBox and FreeBSD base system.
-    echo $(head -c$1 /dev/urandom | base64 -w0)
-}
+@BOOKMARKFS_UTIL_TRUE@        feat_bookmarkfs_util=y
+@BOOKMARKCTL_TRUE@            feat_bookmarkctl=y
+@BOOKMARKFS_FSCK_TRUE@        feat_bookmarkfs_fsck=y
+@BOOKMARKFS_MKFS_TRUE@        feat_bookmarkfs_mkfs=y
+@BOOKMARKFS_MOUNT_TRUE@       feat_bookmarkfs_mount=y
+@SANDBOX_TRUE@                feat_sandbox=y
+@SANDBOX_LANDLOCK_TRUE@       feat_sandbox_landlock=y
+@BOOKMARKFS_DEBUG_TRUE@       feat_bookmarkfs_debug=y
+@BACKEND_FIREFOX_TRUE@        feat_backend_firefox=y
+@BACKEND_FIREFOX_WRITE_TRUE@  feat_backend_firefox_write=y
+@BACKEND_CHROMIUM_TRUE@       feat_backend_chromium=y
+@BACKEND_CHROMIUM_WRITE_TRUE@ feat_backend_chromium_write=y
+@INTERACTIVE_FSCK_TRUE@       feat_interactive_fsck=y
+@NATIVE_WATCHER_TRUE@         feat_native_watcher=y
+@FSCK_HANDLER_TCL_TRUE@       feat_fsck_handler_tcl=y

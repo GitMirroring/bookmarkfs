@@ -9,6 +9,64 @@ dnl
 
 AT_INIT
 
+m4_define([ATX_FAIL], [exit 99])
+m4_define([ATX_SKIP], [exit 77])
+
+dnl
+dnl  ATX_FEAT_NAME(feature)
+dnl
+dnl  Name of the shell variable indicating whether the given feature
+dnl  is defined by BOOKMARKFS_FEAT() and enabled during `configure`.
+dnl
+dnl  A non-empty value indicates that the feature is enabled.
+dnl
+m4_define([ATX_FEAT_NAME], [[feat_]m4_translit($1, [-], [_])])
+
+dnl
+dnl  ATX_FEAT_IF(feature, [action-if-enabled], [action-if-disabled])
+dnl
+dnl  Conditionally run script depending on whether a feature is enabled.
+dnl
+m4_define([ATX_FEAT_IF], [
+    if test -n "$ATX_FEAT_NAME($1)"; then
+        $2
+    else
+        $3
+    fi
+])
+
+dnl
+dnl  ATX_FEAT_PREREQ(features...)
+dnl
+dnl  If any of the given features is not enabled, skip the current test.
+dnl
+m4_define([ATX_FEAT_PREREQ], [
+    if test -z "m4_join(, m4_foreach([s_], [$@], [$ATX_FEAT_NAME(s_)]))"; then
+        ATX_SKIP
+    fi
+])
+
+m4_define([ATX_CHECK_SIMPLE], [
+    AT_CHECK([$1], , [ignore], [ignore])
+])
+
+m4_define([ATX_CHECK_LIB], [
+    ATX_CHECK_SIMPLE([
+        ATX_FEAT_PREREQ([bookmarkfs-util])
+        $1
+    ])
+])
+
+AT_TEST_HELPER_FN([rand_u64_hex], , , [
+    echo $(od -vAn -N8 -tx8 /dev/urandom | tr -d ' ')
+])
+
+AT_TEST_HELPER_FN([rand_base64], , , [
+    # The `base64` utility is not specified by POSIX,
+    # but present in GNU Coreutils, BusyBox and the FreeBSD base system.
+    echo $(head -c$1 /dev/urandom | base64 -w0)
+])
+
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])
 m4_include([lib_prng.at])

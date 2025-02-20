@@ -10,22 +10,32 @@ dnl
 AT_SETUP([util lib: hash function])
 AT_KEYWORDS([lib hash])
 
-AT_CHECK([
+# This test only serves as a basic sanity check.
+#
+# For reliable testing of hash functions,
+# see <https://github.com/Cyan4973/xxHash/tree/dev/tests>.
+ATX_CHECK_LIB([
     calc_digest() {
         echo "$2" | check-bookmarkfs-util hash -s$1
     }
 
-    seed=$(rand_u64_hex)
-    input=$(rand_base64 300)
+    seed=$(ath_fn_rand_u64_hex)
+    input=$(ath_fn_rand_base64 300)
 
     hash_1=$(calc_digest $seed $input)
     hash_2=$(calc_digest $seed $input)
     hash_3=$(calc_digest $seed $input)
+    hash_x=$(calc_digest $seed $input+)
 
     # Given the same seed and input, the digest should be consistent.
     if test "$hash_1" != "$hash_2" -o "$hash_2" != "$hash_3"; then
-        exit 99
+        ATX_FAIL
     fi
-], , [ignore])
+
+    # Bad hash function if we're getting collisions.
+    if test "$hash_1" = "$hash_x"; then
+        ATX_FAIL
+    fi
+])
 
 AT_CLEANUP

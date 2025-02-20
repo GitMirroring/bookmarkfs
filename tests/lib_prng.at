@@ -10,28 +10,40 @@ dnl
 AT_SETUP([util lib: prng])
 AT_KEYWORDS([lib prng])
 
-AT_CHECK([
-    gen_prng() {
+# This test only serves as a basic sanity check.
+#
+# For reliable testing of PRNGs, see <https://prng.di.unimi.it/#quality>.
+ATX_CHECK_LIB([
+    gen_num() {
         check-bookmarkfs-util prng -s$1 -n$2
     }
 
-    seed=$(rand_u64_hex)$(rand_u64_hex)$(rand_u64_hex)$(rand_u64_hex)
+    gen_seed() {
+        seed_1=$(ath_fn_rand_u64_hex)
+        seed_2=$(ath_fn_rand_u64_hex)
+        seed_3=$(ath_fn_rand_u64_hex)
+        seed_4=$(ath_fn_rand_u64_hex)
+
+        echo $seed_1$seed_2$seed_3$seed_4
+    }
+
+    seed=$(gen_seed)
     count=32
 
-    prng_1=$(gen_prng $seed $count)
-    prng_2=$(gen_prng $seed $count)
-    prng_3=$(gen_prng $seed $count)
+    num_1=$(gen_num $seed $count)
+    num_2=$(gen_num $seed $count)
+    num_3=$(gen_num $seed $count)
 
     # Given the same seed, the results should be consistent.
-    if test "$prng_1" != "$prng_2" -o "$prng_2" != "$prng_3"; then
-        exit 99
+    if test "$num_1" != "$num_2" -o "$num_2" != "$num_3"; then
+        ATX_FAIL
     fi
 
     # Bad PRNG if we're getting duplicates too soon.
-    uniq_count=$(echo "$prng_1" | sort | uniq | wc -l)
+    uniq_count=$(echo "$num_1" | sort | uniq | wc -l)
     if test $uniq_count -ne $count; then
-        exit 99
+        ATX_FAIL
     fi
-], , [ignore])
+])
 
 AT_CLEANUP

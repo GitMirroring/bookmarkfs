@@ -6,17 +6,21 @@
 # this notice are preserved.  This file is offered as-is, without any warranty.
 #
 
-EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTSUITE_AT_)
+EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTS_)
 
-TESTSUITE_AT_ = lib_hash.at lib_prng.at
+TESTS_ = lib_hash.at lib_prng.at
 
 # Helper programs for testing
 
-check_PROGRAMS = check-bookmarkfs-util
+check_PROGRAMS =
 
-check_bookmarkfs_util_CPPFLAGS = -I$(top_srcdir)/src
-check_bookmarkfs_util_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
-check_bookmarkfs_util_SOURCES  = check_lib.c
+if BOOKMARKFS_UTIL
+  check_PROGRAMS += check-bookmarkfs-util
+
+  check_bookmarkfs_util_CPPFLAGS = -I$(top_srcdir)/src
+  check_bookmarkfs_util_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
+  check_bookmarkfs_util_SOURCES  = check_lib.c
+endif  # BOOKMARKFS_UTIL
 
 # Autotest setup
 
@@ -33,7 +37,7 @@ $(srcdir)/package.m4: $(top_srcdir)/configure.ac
 	    echo 'm4_define([AT_PACKAGE_BUGREPORT], [@PACKAGE_BUGREPORT@])';  \
 	} >'$(srcdir)/package.m4'
 
-$(TESTSUITE): $(srcdir)/testsuite.at $(srcdir)/package.m4 $(TESTSUITE_AT_)
+$(TESTSUITE): $(srcdir)/testsuite.at $(srcdir)/package.m4 $(TESTS_)
 	$(AUTOTEST) -I '$(srcdir)' -o $@.tmp $@.at
 	mv $@.tmp $@
 

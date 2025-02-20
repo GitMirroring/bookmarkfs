@@ -7,7 +7,7 @@ dnl  provided the copyright notice and this notice are preserved.
 dnl  This file is offered as-is, without any warranty.
 dnl
 
-AC_PREREQ([2.69])
+AC_PREREQ([2.70])
 AC_INIT([bookmarkfs], [0.1.0], [bug-bookmarkfs@nongnu.org])
 AC_CONFIG_SRCDIR([bookmarkfs.pc.in])
 AC_CONFIG_HEADERS([config.h])
@@ -179,6 +179,8 @@ BOOKMARKFS_AMCOND([bookmarkfs-util], [bookmarkctl], [bookmarkfs-fsck],
         [bookmarkfs-mkfs], [bookmarkfs-mount], [sandbox], [backend-firefox],
         [backend-firefox-write], [backend-chromium], [backend-chromium-write],
         [interactive-fsck], [fsck-handler-tcl])
+BOOKMARKFS_FEAT_EXPORT([bookmarkfs-debug], [sandbox-landlock],
+        [native-watcher])
 
 # -- Checks for compiler builtins and attributes --
 

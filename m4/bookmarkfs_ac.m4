@@ -78,11 +78,30 @@ AC_DEFUN([BOOKMARKFS_DEP], [
 dnl
 dnl  BOOKMARKFS_AMCOND([features]...)
 dnl
-dnl  Export feature flags to Automake makefiles.
+dnl  Export feature flags to Makefile templates.
 dnl
 AC_DEFUN([BOOKMARKFS_AMCOND], [
     m4_foreach([feat_name_], [$@], [
         AM_CONDITIONAL(m4_translit(feat_name_, [-a-z], [_A-Z]),
-                [test x$][{enable_]m4_translit(feat_name_, [-], [_])[} != xno])
+                [test x$enable_]m4_translit(feat_name_, [-], [_])[ != xno])
+    ])
+])
+
+dnl
+dnl  BOOKMARKFS_FEAT_OUT([features]...)
+dnl
+dnl  Export feature flags to Autoconf output variables,
+dnl  similar to the ones set by AM_CONTITIONAL() (`xxx_TRUE` only).
+dnl
+AC_DEFUN([BOOKMARKFS_FEAT_EXPORT], [
+    m4_foreach([feat_name_], [$@], [
+        m4_pushdef([out_var_], m4_translit(feat_name_, [-a-z], [_A-Z])[_TRUE])
+        AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
+            AC_SUBST(out_var_, [''])
+        ], [
+            AC_SUBST(out_var_, ['#'])
+        ])
+        AM_SUBST_NOTMAKE(out_var_)
+        m4_popdef([out_var_])
     ])
 ])
