@@ -1066,6 +1066,7 @@ int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_APPLY,
 int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
 @end example
 
+@anchor{Filesystem-Check Data}
 The @code{bookmarkfs_fsck_data} structure is defined as:
 
 @example c
@@ -1120,6 +1121,7 @@ Value of @code{extra} is unspecified.
 
 On failure, @code{ioctl()} returns @t{-1}, and sets @code{errno}.
 
+@anchor{Repair Bookmark}
 @item BOOKMARKFS_IOC_FSCK_APPLY
 ``Repair'' a bookmark by renaming it.
 
@@ -1861,8 +1863,7 @@ thereby improving security.
 @xref{Sandboxing}.
 
 This function is only called if the @code{BOOKMARKFS_BACKEND_NO_SANDBOX} flag
-is @emph{not} given to @code{backend_create} when creating the current context.
-It can be @code{NULL} if the backend context does not support sandboxing.
+is @emph{not} set for this context.
 
 Considering how sandboxing is usually implemented,
 it may be complicated or even impractical for multiple backend contexts
@@ -2182,6 +2183,8 @@ An opaque pointer which should be passed as-is to the @code{callback} function.
 Pointer to the ``cookie'' for the current @code{bookmark_list} operation.
 @code{NULL} if not used by the caller.
 
+@anchor{Bookmark-List Cookie}
+@cindex Bookmark-List Cookie
 The ``cookie'' is an opaque pointer which stores internal states
 to be used for subsequent operations on the same directory.
 
@@ -2189,7 +2192,11 @@ If the value pointed to by @code{cookie_ptr} is @code{NULL}, it indicates
 that this is an initial operation.
 The function should set the value to a pointer which is not @code{NULL}.
 
-The backend must not change the cookie value.
+The cookie obtained from @code{bookmark_list} may be used for
+@code{bookmark_check}, and vise versa.
+However, the position of each operation should be maintained separately.
+
+The function must not change the cookie value.
 @end table
 
 Return value:
@@ -2302,7 +2309,7 @@ it indicates that this is an initial operation.
 If the backend supports watching for changes of bookmark content,
 it may set the value to a pointer which is not @code{NULL}.
 
-The backend must not change the cookie value.
+The function must not change the cookie value.
 @end table
 
 On success, the function should return @t{0}.
@@ -2640,7 +2647,7 @@ Rename a tag.
 @xref{Tags}.
 
 The function should fail with @code{EPERM} if either @code{old_parent_id}
-or @code{new_parent_id} is not the ID of the tags root directory,
+or @code{new_parent_id} does not refer to the tags root directory,
 since renaming a tag association makes no sense.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
@@ -2816,6 +2823,183 @@ Otherwise, it should return a negated @code{errno} indicating the error
 encountered.
 
 
+@node Check Bookmarks
+@subsection Check Bookmarks
+
+The @code{bookmark_check} function is called when a ``filesystem check''
+operation is performed on a BookmarkFS directory.
+@xref{Filesystem Check}.
+
+Type of the @code{bookmark_check} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_check_func) (
+    void                               *backend_ctx,
+    uint64_t                            parent_id,
+    struct bookmarkfs_fsck_data const  *fsck_data,
+    uint32_t                            flags,
+    bookmarkfs_bookmark_check_cb       *callback,
+    void                               *user_data,
+    void                              **cookie_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item backend_ctx
+The pointer referring to the backend context.
+
+@item parent_id
+ID of the parent directory containing the objects to be checked.
+It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
+
+@item fsck_data
+Always @code{NULL} if the filesystem is mounted read-only.
+Otherwise, a non-@code{NULL} value indicates @code{BOOKMARKFS_IOC_FSCK_APPLY}.
+@xref{Repair Bookmark}.
+
+@xref{Filesystem-Check Data} for the definition of the
+@code{bookmarkfs_fsck_data} structure.
+
+Value of each field:
+
+@table @code
+@item id
+ID of the object to rename.
+
+The function should check whether the object is under the directory
+referred to by @code{parent_id}.
+If not, it should fail with @code{ENOENT}.
+
+If the object ID was not previously passed to the @code{callback} function
+during a @code{bookmark_check} call with the same cookie, the function may:
+
+@itemize @bullet{}
+@item Fail with an arbitrary error code.
+@item Perform the rename, even if the original name is a valid filename.
+@end itemize
+
+@item name
+New name for the object.
+The string may @emph{not} be NUL-terminated.
+
+@item extra
+Unspecified value.
+@end table
+
+If @code{fsck_data} is not @code{NULL}, the function should only check whether
+the new name is valid, instead of going through the rest of the directory.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_MASK
+The subsystem to operate on.
+
+Equals to one of the following values (after shifting):
+
+@table @code
+@item BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK
+Check bookmark and bookmark folder names.
+@xref{Bookmarks}.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_TAG
+Check tag names.
+@xref{Tags}.
+
+The function should fail with @code{EPERM} if @code{parent_id} does not
+refer to the tags root directory.
+
+@item BOOKMARKFS_BOOKMARK_TYPE_KEYWORD
+Check keyword names.
+@xref{Keywords}.
+
+The value of @code{parent_id} is unspecified.
+@end table
+@end table
+
+@item callback
+Function to be called for each object with invalid name.
+
+A @code{NULL} value indicates @code{BOOKMARKFS_IOC_FSCK_REWIND},
+in which case the function should reset the position of the current
+@code{bookmark_check} operation.
+
+Type of the @code{callback} function is defined as:
+
+@example c
+typedef int (bookmarkfs_bookmark_check_cb) (
+    void       *user_data,
+    int         result,
+    uint64_t    id,
+    uint64_t    extra,
+    char const *name
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item user_data
+Must be equal to the @code{user_data} argument for the current
+@code{bookmark_check} call.
+
+@item result
+Should be one of the values defined in enum @code{bookmarkfs_fsck_result}
+indicating why this name is invalid.
+@xref{Filesystem-Check Result Code}.
+
+@item id
+@item extra
+@item name
+Equivalent to the corresponding fields in structure
+@code{bookmarkfs_fsck_data}.
+@xref{Filesystem-Check Data}.
+@end table
+
+Return value:
+
+@table @asis
+@item @t{0}
+Continue to the next entry, if one exists.
+
+@item Non-zero value
+Stop listing entries, and use this value as the return value for the current
+@code{bookmark_check} call.
+@end table
+
+@item user_data
+An opaque pointer which should be passed as-is to the @code{callback} function.
+
+@item cookie_ptr
+Pointer to the ``cookie'' for the current @code{bookmark_check} operation.
+It is guaranteed not to be @code{NULL}.
+
+Except for the position of operation, this cookie shares the same semantics
+as the one for @code{bookmark_list}.
+@xref{Bookmark-List Cookie}.
+@end table
+
+Return value:
+
+@table @asis
+@item @t{0}
+The operation completes successfully.
+
+@item Negated @code{errno}
+An error occurred.
+
+@item Arbitrary non-zero value
+The function is terminated by a call to @code{callback} that returns a
+non-zero value.
+@end table
+
+If returning a negative value, the position of the current
+@code{bookmark_check} operation is unspecified.
+
+
 @node Sync Bookmarks
 @subsection Sync Bookmarks
 
@@ -2824,7 +3008,7 @@ bookmark storage.
 It is never called when the filesystem is mounted read-only.
 
 If the bookmark storage is also changed from another process,
-function behavior is unspecified.
+function behavior is undefined.
 However, the backend should try not to corrupt the bookmark storage,
 and prefer changes from the caller, if possible.
 
