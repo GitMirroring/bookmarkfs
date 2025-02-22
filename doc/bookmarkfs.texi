@@ -1526,6 +1526,80 @@ Some can be optional and set to @code{NULL}, if the backend
 does not support the corresponding features.
 
 
+@node General Information
+@subsection General Information
+
+@table @asis
+@item Multithreading
+Currently, all BookmarkFS programs are single-threaded,
+and backend functions are called sequentially.
+This is an intended design to keep BookmarkFS simple, both in interface and
+implementation.
+Multithreading may help with performance in some scenarios, but not much,
+and we choose not to bother with it.
+
+A downside of the this design is that backends should refrain from
+spending too much time in a function, especially waiting for I/O.
+Once a backend function blocks, the entire filesystem hangs.
+Future iterations of the Backend API may introduce event notification
+mechanisms to improve the situation.
+
+Sometimes a backend may wish to use multithreading internally for whatever
+reason.
+If it does, a few more precautions should be taken in mind:
+
+@itemize @bullet{}
+@item The @code{SIGINT}, @code{SIGTERM} and @code{SIGHUP} signals should
+be blocked with @posixfuncmanpage{pthread_sigmask} for the child threads.
+If a signal is delivered to a child thread, the program may not be terminated
+promptly, since libfuse relies on @code{EINTR} to break out of the event loop.
+@end itemize
+
+@cindex Backend Context
+@item Backend Contexts
+A backend context maintains internal states for manipulating a specific
+bookmark storage.
+
+Each BookmarkFS filesystem mounted by @command{mount.bookmarkfs} is
+backed by a backend context.
+The context is created before mount, and destroyed after dismount.
+Backend functions that operate on a single context accept an argument
+(usually named @code{backend_ctx}) which refers to the context.
+
+@item Callback Functions
+Some backend functions (e.g., @code{bookmark_get}) accept a function pointer
+argument, usually named @code{callback}, to be invoked by the backend.
+
+It is guaranteed that backend functions are never called from within
+a callback function.
+
+@item Error Codes
+Some backend functions return an error code on failure instead of
+just @code{-1}.
+
+For backend functions analogous to the corresponding filesystem calls,
+the error code should honor POSIX as well as platform-specific conventions.
+For example:
+
+@itemize @bullet{}
+@item When replacing a non-empty directory with @code{bookmark_rename},
+the function should fail with @code{EEXIST} or @code{ENOTEMPTY} as specified
+in @posixfuncmanpage{rename}.
+
+@item When trying to get/set the value of a non-existent extended attribute,
+the function should fail with @code{ENODATA} on Linux, and @code{ENOATTR}
+on FreeBSD.
+@xref{Extended Attributes}.
+@end itemize
+
+Also @pxref{Error Codes} for BookmarkFS-specific error codes.
+
+A backend function may also return other error codes which it sees fit,
+however, they should be chosen carefully.
+A bad error code may confuse filesystem users or even break applications.
+@end table
+
+
 @node Initialize Backend
 @subsection Initialize Backend
 
@@ -1621,16 +1695,7 @@ These flags are mutually exclusive.
 @node Create Backend Context
 @subsection Create Backend Context
 
-A backend context maintains internal states for manipulating a specific
-bookmark storage.
-
-Each BookmarkFS filesystem mounted by @command{mount.bookmarkfs} is
-backed by a backend context.
-The context is created before mount, and destroyed after dismount.
-Operations on the filesystem, if applicable, are fulfilled by invoking
-the corresponding backend functions on the context.
-
-To create a backend context, the @code{backend_create} function is called.
+The @code{backend_create} function is called to create a backend context.
 It must not be @code{NULL}.
 
 Type of the @code{backend_create} function is defined as:
@@ -2022,10 +2087,6 @@ Values should be the time elapsed since the Unix epoch.
 On success, the function should return @t{0}.
 Otherwise, it should return a negated @code{errno} indicating
 the error encountered.
-
-Generally, the error code should follow filesystem conventions,
-but the backend may return other error codes which it sees fit.
-Also @pxref{Error Codes}.
 
 
 @node List Bookmarks
