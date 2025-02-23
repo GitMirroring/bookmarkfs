@@ -3,6 +3,7 @@
 @setfilename bookmarkfs.info
 @include version.texi
 @settitle BookmarkFS User Manual
+@paragraphindent 0
 
 @macro manpage {name, section, url}
 @uref{\url\,, @code{\name\(\section\)}}
@@ -238,7 +239,7 @@ Single-file filesystem watcher.
 @end table
 
 Usage of the library functions is rather simple and straightforward,
-thus there's currently no dedicated manual sections.
+thus there are currently no dedicated manual sections.
 Refer to the comments in the corresponding header files for details.
 
 
@@ -402,7 +403,7 @@ By default, the filesystem is mounted read-only.
 This behavior won't change in the future, due to the hackish nature of
 most BookmarkFS backends.
 
-When mounted read/write, other process must not write to the
+When mounted read/write, other processes must not write to the
 underlying bookmark storage, otherwise data corruption may occur.
 
 @item -o debug
@@ -422,7 +423,6 @@ These options (and other atime-related ones) are ignored.
 BookmarkFS only supports @option{noatime} mounts,
 since the ``last access time'' attribute of a bookmark necessarily means
 ``the last time it was accessed from the browser''.
-As a bookmark management tool independent from the browser,
 BookmarkFS should never update that time automatically.
 
 Nonetheless, the user is still allowed to explicitly update atime
@@ -435,7 +435,7 @@ so that the user don't have to manually dismount the inactive filesystem.
 See @linuxmanpage{mount.fuse3, 8} for details.
 
 This option is helpful when sandboxing is enabled, especially when
-the @option{-F} option is given, since a sandboxed process can neither
+the @option{-F} option is given, since a sandboxed process itself can neither
 @linuxmanpage{umount, 2} nor fork-exec.
 
 Currently, this option is not available on FreeBSD.
@@ -825,7 +825,8 @@ Each keyword name appears as the filename for regular file
 @var{$@{keyword_name@}}, which is a hard link to the bookmark file.
 A bookmark directory cannot be associated with a keyword.
 
-To associate a bookmark with a keyword, use @code{link()} like we do with tags.
+To associate a bookmark with a keyword, use @posixfuncmanpage{link}
+like we do with tags.
 If the original file is already associated with another keyword,
 @code{link()} fails with @code{EEXIST}.
 
@@ -911,7 +912,7 @@ and all bookmark files share the same set of attributes.
 @section Directory Entries
 
 @table @asis
-@item The @samp{.} and @samp{..} entries
+@item The @samp{.} and @samp{..} Entries
 POSIX consider @samp{.} and @samp{..} as ``special'' filenames,
 which must refer to the current and parent directory, if they exist.
 
@@ -922,7 +923,7 @@ until fixed with fsck (@pxref{Filesystem Check}).
 
 @anchor{Directory Entry Ordering}
 @cindex Directory Entry Ordering
-@item Ordering of directory entries
+@item Directory Entry Ordering
 POSIX does not specify the ordering of the directory entries retrieved from
 the directory stream using @posixfuncmanpage{readdir}.
 It only guarantees that if an entry is not added or removed from the directory
@@ -944,12 +945,12 @@ do the sorting.
 
 However, the order of which a bookmark entry appears in the web browser
 sometimes does matter.
-In BookmarkFS, it is guaranteed to be equivalent to the
-directory traversal order.
+In BookmarkFS, the directory traversal order is guaranteed to be
+equivalent to that order.
 New entries are appended to the end; removed entries do not affect
 the order of other entries.
 
-To change the ordering of directory entries, @pxref{Permute Directory Entries}.
+To change the order of directory entries, @pxref{Permute Directory Entries}.
 @end table
 
 
@@ -1409,7 +1410,7 @@ it is incompatible with our sandboxing design.
 
 @item fallback
 Watch for file changes by checking @code{st_ino} and @code{st_mtim} attributes
-with @code{fstatat()} periodically.
+with @posixfuncmanpage{fstatat} periodically.
 
 Less efficient than ``native'' implementations, but should work on any
 POSIX-compatible system.
@@ -1533,8 +1534,7 @@ does not support the corresponding features.
 @item Multithreading
 Currently, all BookmarkFS programs are single-threaded,
 and backend functions are called sequentially.
-This is an intended design to keep BookmarkFS simple, both in interface and
-implementation.
+This is an intended design to keep BookmarkFS simple.
 Multithreading may help with performance in some scenarios, but not much,
 and we choose not to bother with it.
 
@@ -1769,7 +1769,7 @@ Path to the bookmark storage, equivalent to the @var{src} argument passed to
 
 The string is guaranteed to be NUL-terminated, and valid throughout
 the lifetime of the current backend.
-The backend is free to modify the string, however, it must not write past
+The function is free to modify the string, however, it must not write past
 the string boundary.
 
 @item opts
@@ -1796,7 +1796,7 @@ If the option does not have a value (no @samp{=} character present),
 
 When not @code{NULL}, the strings are guaranteed to be NUL-terminated,
 and valid throughout the lifetime of the current backend context.
-The backend is free to modify the strings, however, it must not write past
+The function is free to modify the strings, however, it must not write past
 the string boundary.
 
 @item next
@@ -2129,7 +2129,7 @@ Subsequent calls (with the same cookie) use the values obtained from
 @code{entry->off} of @code{callback} function calls.
 If not, the position is unspecified.
 
-A subsequent call with a @t{0} value indicates @code{rewinddir()}.
+A subsequent call with a @t{0} value indicates @posixfuncmanpage{rewinddir}.
 
 @item flags
 A bit array of the following flags:
@@ -3230,10 +3230,10 @@ The user may issue a command to indicate what to do with each entry:
 Print the ID and new name of current entry.
 
 @item a[-]
-Apply the proposed rename for the current entry.
+Apply the proposed new name for the current entry.
 
 @item e[-] @var{new_name}
-Change the proposed rename to @var{new_name} and then apply.
+Change the proposed new name to @var{new_name} and then apply.
 
 @item c
 Continue to the next entry.
@@ -3264,8 +3264,8 @@ to the next entry, after the command completes successfully.
 @node Tcl-Based Handler
 @section Tcl-Based Handler
 
-The Tcl-based filesystem-check handler allows fsck entries to be handled
-via Tcl scripting.
+The @uref{https://www.tcl-lang.org/,, Tcl}-based filesystem-check handler
+allows fsck entries to be handled via Tcl scripting.
 
 Handler name: @samp{tcl}.
 
