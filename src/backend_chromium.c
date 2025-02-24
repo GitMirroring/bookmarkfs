@@ -1710,6 +1710,11 @@ backend_create (
     if (dirfd < 0) {
         return -1;
     }
+    if (0 != faccessat(dirfd, name, R_OK, AT_EACCESS)) {
+        log_printf("faccessat(): %s: %s", name, xstrerror(errno));
+        close(dirfd);
+        return -1;
+    }
 
     uint32_t sandbox_flags = 0;
 #if defined(__linux__)
@@ -1837,20 +1842,24 @@ backend_sandbox (
     }
 #endif
 
-    // Watcher cannot be lazy-initialized in sandbox mode.
-    // Neither can it be initialized in backend_create(),
-    // since the calling process may fork per fuse_daemonize().
+#ifndef WATCHER_CAN_CREATE_IN_SANDBOX
+    // The watcher cannot be initialized in backend_create(),
+    // since the caller may fork() in fuse_daemonize() and terminate,
+    // and fork() does not inherit threads other than the calling one.
     if (unlikely(0 != init_watcher(ctx))) {
         return -1;
     }
+#endif
 
     uint32_t sandbox_flags = 0;
     if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
         sandbox_flags |= SANDBOX_READONLY;
     }
+#ifdef __Linux__
     if (ctx->flags & BOOKMARKFS_BACKEND_NO_LANDLOCK) {
         sandbox_flags |= SANDBOX_NO_LANDLOCK;
     }
+#endif
     return sandbox_enter(ctx->dirfd, sandbox_flags);
 }
 

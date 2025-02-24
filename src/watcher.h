@@ -25,6 +25,16 @@
 
 #include <stdint.h>
 
+// If we want this on Linux, we have to whitelist a bunch of syscalls
+// like clone(), fanotify_init(), etc., which are generally okay,
+// but not used anywhere else in the BookmarkFS codebase.
+//
+// The list should be kept short, since anything added there may
+// introduce extra syscall filtering overhead.
+#ifdef __FreeBSD__
+#  define WATCHER_CAN_CREATE_IN_SANDBOX
+#endif
+
 /**
  * A watcher_poll() call returning WATCHER_POLL_ERR
  * most likely means that the file being watched has gone.
