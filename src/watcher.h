@@ -31,7 +31,7 @@
 //
 // The list should be kept short, since anything added there may
 // introduce extra syscall filtering overhead.
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__)
 #  define WATCHER_CAN_CREATE_IN_SANDBOX
 #endif
 
@@ -93,6 +93,5 @@ int
 watcher_poll (
     struct watcher *w
 );
-
 
 #endif  /* !defined(BOOKMARKFS_WATCHER_H_) */

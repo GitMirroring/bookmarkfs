@@ -53,8 +53,8 @@
 // Chromium saves its bookmarks (`bookmarks::BookmarkStorage::kSaveDelay`).
 //
 // See Chromium source code: /components/bookmarks/browser/bookmark_storage.h
-#define FS_ENTRY_TIMEOUT_MAX   INT32_MAX
-#define FS_ENTRY_TIMEOUT_SECS  ( ctx.flags.exclusive ? INT32_MAX : 2.5 )
+#define FS_ENTRY_TIMEOUT_MAX  3600.
+#define FS_ENTRY_TIMEOUT  ( ctx.flags.exclusive ? FS_ENTRY_TIMEOUT_MAX : 2.5 )
 
 #define BOOKMARKS_ROOT_ID  ( ctx.bookmarks_root_id )
 #define TAGS_ROOT_ID       ( ctx.tags_root_id )
@@ -75,12 +75,12 @@
 #define INODE_SUBSYS_ID(ino)    ( (ino) & SUBSYS_ID_MASK )
 #define SUBSYS_NODEID(id, t)    ( ((fuse_ino_t)(t) << SUBSYS_ID_BITS) | (id) )
 
-#define STRUCT_FUSE_ENTRY_PARAM_INIT             \
-    {                                            \
-        .generation    = 1,                      \
-        .attr          = STRUCT_STAT_INIT,       \
-        .attr_timeout  = FS_ENTRY_TIMEOUT_SECS,  \
-        .entry_timeout = FS_ENTRY_TIMEOUT_SECS,  \
+#define STRUCT_FUSE_ENTRY_PARAM_INIT        \
+    {                                       \
+        .generation    = 1,                 \
+        .attr          = STRUCT_STAT_INIT,  \
+        .attr_timeout  = FS_ENTRY_TIMEOUT,  \
+        .entry_timeout = FS_ENTRY_TIMEOUT,  \
     }
 #define STRUCT_STAT_INIT  \
     { .st_nlink = 1, .st_uid = ctx.uid, .st_gid = ctx.gid }
@@ -1890,7 +1890,7 @@ fs_op_getattr (
         return;
     }
 
-    send_reply(attr, req, &stat_buf, FS_ENTRY_TIMEOUT_SECS);
+    send_reply(attr, req, &stat_buf, FS_ENTRY_TIMEOUT);
 }
 
 void
@@ -2344,7 +2344,7 @@ fs_op_setattr (
         send_reply(err, req, -status);
     }
 
-    send_reply(attr, req, stat_buf, FS_ENTRY_TIMEOUT_SECS);
+    send_reply(attr, req, stat_buf, FS_ENTRY_TIMEOUT);
 }
 
 void

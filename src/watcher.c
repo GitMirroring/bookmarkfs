@@ -288,7 +288,7 @@ impl_watch (
     }
 
   end:
-    debug_printf("file %s changed", w->name);
+    debug_printf("%s: file changed", w->name);
     return 0;
 }
 
@@ -339,6 +339,8 @@ watcher_create (
         .name      = name,
         .pipefd[1] = -1,
         .flags     = flags,
+        .mutex     = PTHREAD_MUTEX_INITIALIZER,
+        .cond      = PTHREAD_COND_INITIALIZER,
     };
     if (flags & WATCHER_NOOP) {
         return w;
@@ -353,8 +355,6 @@ watcher_create (
     if (unlikely(0 != impl_init(w))) {
         goto close_pipes;
     }
-    pthread_mutex_init(&w->mutex, NULL);
-    pthread_cond_init(&w->cond, NULL);
 
     int status = pthread_create(&w->worker, NULL, worker_loop, w);
     if (unlikely(status != 0)) {
