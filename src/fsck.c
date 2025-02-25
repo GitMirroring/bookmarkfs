@@ -101,10 +101,6 @@ init_readline (
     if (!info->flags.interactive) {
         return 0;
     }
-    if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
-        log_puts("standard input and/or output is not a terminal");
-        return -1;
-    }
 
     rl_readline_name = info->rl_app_name;
     rl_inhibit_completion = 1;
