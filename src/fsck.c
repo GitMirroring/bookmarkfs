@@ -1,7 +1,5 @@
 /**
  * bookmarkfs/src/fsck.c
- *
- * Chromium backend for BookmarkFS.
  * ----
  *
  * Copyright (C) 2024  CismonX <admin@cismon.net>
