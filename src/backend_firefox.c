@@ -55,12 +55,12 @@
 #include "version.h"
 #include "xstd.h"
 
-#define ATTR_KEY_NULL        0
-#define ATTR_KEY_DESC        1
-#define ATTR_KEY_TITLE       2
-#define ATTR_KEY_GUID        3
-#define ATTR_KEY_DATE_ADDED  4
-#define ATTR_IN_MOZBM_START  ATTR_KEY_TITLE
+#define BM_XATTR_NULL        0
+#define BM_XATTR_DESC        1
+#define BM_XATTR_TITLE       2
+#define BM_XATTR_GUID        3
+#define BM_XATTR_DATE_ADDED  4
+#define MOZBM_XATTR_START    BM_XATTR_TITLE
 
 #define BACKEND_EXCLUSIVE_LOCK         ( 1u << 16 )
 #define BACKEND_FILENAME_GUID          ( 1u << 17 )
@@ -2038,19 +2038,19 @@ bookmark_do_get (
 #define BOOKMARK_GET_(cols, join)  "SELECT CASE ? " cols "END "  \
     "FROM `moz_bookmarks` `b` " join "WHERE `b`.`id` = ?"
 #define BOOKMARK_GET(cols)  BOOKMARK_GET_(cols  \
-    "WHEN " STRINGIFY(ATTR_KEY_DATE_ADDED) " THEN `b`.`dateAdded` ", )
+    "WHEN " STRINGIFY(BM_XATTR_DATE_ADDED) " THEN `b`.`dateAdded` ", )
 #define BOOKMARK_GET_EX  BOOKMARK_GET_(  \
-        "WHEN " STRINGIFY(ATTR_KEY_NULL) " THEN `p`.`url` "          \
-        "WHEN " STRINGIFY(ATTR_KEY_DESC) " THEN `p`.`description` "  \
+        "WHEN " STRINGIFY(BM_XATTR_NULL) " THEN `p`.`url` "          \
+        "WHEN " STRINGIFY(BM_XATTR_DESC) " THEN `p`.`description` "  \
     , "LEFT JOIN `moz_places` `p` ON `b`.`fk` = `p`.`id` ")
 #define BOOKMARK_GET_WITH_GUID  \
-    BOOKMARK_GET("WHEN " STRINGIFY(ATTR_KEY_GUID) " THEN `b`.`guid` ")
+    BOOKMARK_GET("WHEN " STRINGIFY(BM_XATTR_GUID) " THEN `b`.`guid` ")
 #define BOOKMARK_GET_WITH_TITLE  \
-    BOOKMARK_GET("WHEN " STRINGIFY(ATTR_KEY_TITLE) " THEN `b`.`title` ")
+    BOOKMARK_GET("WHEN " STRINGIFY(BM_XATTR_TITLE) " THEN `b`.`title` ")
 
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET_EX];
     char const    *sql      = BOOKMARK_GET_EX;
-    if (attr_type >= ATTR_IN_MOZBM_START) {
+    if (attr_type >= MOZBM_XATTR_START) {
         stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET];
         sql      = BOOKMARK_GET_WITH_GUID;
         if (ctx->flags & BACKEND_FILENAME_GUID) {
@@ -2565,21 +2565,21 @@ get_attr_type (
     uint32_t    flags
 ) {
     if (key == NULL) {
-        return ATTR_KEY_NULL;
+        return BM_XATTR_NULL;
     }
     if (0 == strcmp("date_added", key)) {
-        return ATTR_KEY_DATE_ADDED;
+        return BM_XATTR_DATE_ADDED;
     }
     if (0 == strcmp("description", key)) {
-        return ATTR_KEY_DESC;
+        return BM_XATTR_DESC;
     }
     if (flags & BACKEND_FILENAME_GUID) {
         if (0 == strcmp("title", key)) {
-            return ATTR_KEY_TITLE;
+            return BM_XATTR_TITLE;
         }
     } else {
         if (0 == strcmp("guid", key)) {
-            return ATTR_KEY_GUID;
+            return BM_XATTR_GUID;
         }
     }
     return -1;
@@ -3613,7 +3613,7 @@ bookmark_set (
         .last_visit_date = -1,
     };
 
-    int attr_type = ATTR_IN_MOZBM_START;
+    int attr_type = MOZBM_XATTR_START;
     if (flags & BOOKMARK_FLAG(SET_TIME)) {
         struct timespec const *times = val;
         place_cols.last_visit_date = timespec_to_msecs(&times[0]);
@@ -3624,17 +3624,17 @@ bookmark_set (
     } else {
         attr_type = get_attr_type(attr_key, ctx->flags);
         switch (attr_type) {
-          case ATTR_KEY_NULL:
+          case BM_XATTR_NULL:
             place_cols.url     = val;
             place_cols.url_len = val_len;
             break;
 
-          case ATTR_KEY_DESC:
+          case BM_XATTR_DESC:
             place_cols.desc     = val;
             place_cols.desc_len = val_len;
             break;
 
-          case ATTR_KEY_TITLE:
+          case BM_XATTR_TITLE:
             if (NULL != memchr(val, '\0', val_len)) {
                 return -EINVAL;
             }
@@ -3642,14 +3642,14 @@ bookmark_set (
             bm_cols.title_len = val_len;
             break;
 
-          case ATTR_KEY_GUID:
+          case BM_XATTR_GUID:
             if (!is_valid_guid(val, val_len)) {
                 return -EINVAL;
             }
             bm_cols.guid = val;
             break;
 
-          case ATTR_KEY_DATE_ADDED:
+          case BM_XATTR_DATE_ADDED:
             if (0 != parse_msecs(val, val_len, &bm_cols.date_added)) {
                 return -EINVAL;
             }
@@ -3659,7 +3659,7 @@ bookmark_set (
             return -ENOATTR;
         }
 
-        if (attr_type != ATTR_KEY_NULL
+        if (attr_type != BM_XATTR_NULL
                 && ctx->flags & BOOKMARKFS_BACKEND_CTIME
         ) {
             struct timespec now;
@@ -3680,7 +3680,7 @@ bookmark_set (
         status = -EPERM;
         goto fail;
     }
-    if (attr_type >= ATTR_IN_MOZBM_START) {
+    if (attr_type >= MOZBM_XATTR_START) {
         goto end;
     }
 

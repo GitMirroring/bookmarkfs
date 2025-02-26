@@ -74,10 +74,10 @@
 #define BOOKMARKS_ROOT_ID  0
 
 enum {
-    ATTR_KEY_NULL,
-    ATTR_KEY_DATE_ADDED,
-    ATTR_KEY_GUID,
-    ATTR_KEY_TITLE,
+    BM_XATTR_NULL,
+    BM_XATTR_DATE_ADDED,
+    BM_XATTR_GUID,
+    BM_XATTR_TITLE,
 };
 
 enum dirty_level {
@@ -956,18 +956,18 @@ get_attr_type (
     uint32_t    flags
 ) {
     if (key == NULL) {
-        return ATTR_KEY_NULL;
+        return BM_XATTR_NULL;
     }
     if (0 == strcmp("date_added", key)) {
-        return ATTR_KEY_DATE_ADDED;
+        return BM_XATTR_DATE_ADDED;
     }
     if (flags & BACKEND_FILENAME_GUID) {
         if (0 == strcmp("title", key)) {
-            return ATTR_KEY_TITLE;
+            return BM_XATTR_TITLE;
         }
     } else {
         if (0 == strcmp("guid", key)) {
-            return ATTR_KEY_GUID;
+            return BM_XATTR_GUID;
         }
     }
     return -1;
@@ -984,19 +984,19 @@ get_attr_val (
 
     int key_type = get_attr_type(attr_key, flags);
     switch (key_type) {
-      case ATTR_KEY_NULL:
+      case BM_XATTR_NULL:
         value = json_object_sget(node, "url");
         break;
 
-      case ATTR_KEY_DATE_ADDED:
+      case BM_XATTR_DATE_ADDED:
         value = json_object_sget(node, "date_added");
         break;
 
-      case ATTR_KEY_GUID:
+      case BM_XATTR_GUID:
         value = json_object_sget(node, "guid");
         break;
 
-      case ATTR_KEY_TITLE:
+      case BM_XATTR_TITLE:
         value = json_object_sget(node, "name");
         break;
 
@@ -2644,13 +2644,13 @@ bookmark_set (
 
     bool nocheck = true;
     switch (key_type) {
-      case ATTR_KEY_DATE_ADDED:
+      case BM_XATTR_DATE_ADDED:
         if (0 != parse_ts(val, val_len, NULL)) {
             return -EINVAL;
         }
         break;
 
-      case ATTR_KEY_GUID:  ;
+      case BM_XATTR_GUID:  ;
         uint8_t guid[UUID_LEN];
         if (0 != parse_guid(val, val_len, guid)) {
             return -EINVAL;
@@ -2665,7 +2665,7 @@ bookmark_set (
         update_guid(entry, ctx->guid_map, entry_id, guid, hashcode);
         break;
 
-      case ATTR_KEY_TITLE:
+      case BM_XATTR_TITLE:
         if (NULL != memchr(val, '\0', val_len)) {
             return -EINVAL;
         }
@@ -2683,7 +2683,7 @@ bookmark_set (
     }
     ctx->dirty = DIRTY_LEVEL_DATA;
 
-    if (key_type != ATTR_KEY_NULL && ctx->flags & BOOKMARKFS_BACKEND_CTIME) {
+    if (key_type != BM_XATTR_NULL && ctx->flags & BOOKMARKFS_BACKEND_CTIME) {
         if (unlikely(0 != node_mtime_now(entry->node, NULL))) {
             return -EIO;
         }
