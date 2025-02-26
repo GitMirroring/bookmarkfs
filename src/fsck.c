@@ -43,6 +43,10 @@
 #include "lib.h"
 #include "xstd.h"
 
+#ifndef BOOKMARKFS_FSCK_RL_HISTORY_MAX
+#  define BOOKMARKFS_FSCK_RL_HISTORY_MAX  256
+#endif
+
 struct fsck_ctx {
     struct bookmarkfs_fsck_ops     const *ops;
     struct bookmarkfs_fsck_handler const *handler;
@@ -107,6 +111,7 @@ init_readline (
 
     rl_initialize();
     using_history();
+    stifle_history(BOOKMARKFS_FSCK_RL_HISTORY_MAX);
     return 0;
 }
 
