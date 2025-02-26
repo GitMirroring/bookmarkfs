@@ -3,6 +3,7 @@
 @setfilename bookmarkfs.info
 @include version.texi
 @settitle BookmarkFS User Manual
+@documentlanguage en_US
 @paragraphindent 0
 
 @macro manpage {name, section, url}
@@ -1332,7 +1333,7 @@ if multiple bookmarks share the same URL, changing the last access time
 of a bookmark may affect that of other bookmarks.
 
 @item The bookmark storage (SQLite database file) should be writable even if
-the @code{BOOKMARKFS_BACKEND_READONLY} flag is set, due to the limitations
+the BookmarkFS filesystem is mounted read-only, due to the limitations
 of WAL-mode.
 See @uref{https://www.sqlite.org/wal.html#readonly, Write-Ahead Logging}.
 @end itemize
@@ -1368,8 +1369,7 @@ Defaults to @samp{title}.
 
 A bookmark GUID is a hex-encoded 128-bit string uniquely associated
 with a bookmark or bookmark folder.
-The GUID string has a ``8-4-4-4-12'' format, while all alphabetic characters
-are in lowercase.
+It has a ``8-4-4-4-12'' format, with all alphabetic characters in lowercase.
 For example:
 
 @example
