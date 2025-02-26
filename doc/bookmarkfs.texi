@@ -1330,6 +1330,11 @@ Notable limitations:
 @item Due to the way bookmarks are associated with the URLs,
 if multiple bookmarks share the same URL, changing the last access time
 of a bookmark may affect that of other bookmarks.
+
+@item The bookmark storage (SQLite database file) should be writable even if
+the @code{BOOKMARKFS_BACKEND_READONLY} flag is set, due to the limitations
+of WAL-mode.
+See @uref{https://www.sqlite.org/wal.html#readonly, Write-Ahead Logging}.
 @end itemize
 
 
