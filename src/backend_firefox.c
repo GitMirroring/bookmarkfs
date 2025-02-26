@@ -2843,13 +2843,13 @@ backend_create (
     if (0 != db_pragma(db, pragmas, DB_PRAGMA_ITEMS_CNT(pragmas))) {
         goto close_db;
     }
-    if (0 != db_check(db)) {
-        goto close_db;
-    }
 
     uint64_t bookmarks_root_id = UINT64_MAX;
     uint64_t tags_root_id      = UINT64_MAX;
     if (conf->flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
+        if (0 != db_check(db)) {
+            goto close_db;
+        }
         // Defer initialization in sandbox mode, so that
         // user-provided data is only read after entering sandbox.
         if (0 != store_init(db, &bookmarks_root_id, &tags_root_id)) {
