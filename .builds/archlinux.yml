@@ -38,3 +38,6 @@ tasks:
   - test: |
       cd bookmarkfs/build
       make check
+
+# For history builds, see:
+# <https://builds.sr.ht/~cismonx/bookmarkfs/commits/master/archlinux.yml>
