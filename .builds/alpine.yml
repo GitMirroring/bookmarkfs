@@ -1,0 +1,46 @@
+#
+# Copyright (C) 2025  CismonX <admin@cismon.net>
+#
+# Copying and distribution of this file, with or without modification, are
+# permitted in any medium without royalty, provided the copyright notice and
+# this notice are preserved.  This file is offered as-is, without any warranty.
+#
+
+# Switch to alpine/latest once tcc leaves aports/testing
+image: alpine/edge
+packages: [
+  # build
+  autoconf, automake, libtool, autoconf-archive, pkgconf, pdpmake, tcc,
+  texinfo, musl-dev, tcc-dev, tcc-libs-static,
+  # lib
+  fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev, nettle-dev,
+  readline-dev, tcl-dev, uriparser-dev, xxhash-dev,
+  # for fusermount3(1)
+  fuse3,
+]
+sources:
+  - https://git.sr.ht/~cismonx/bookmarkfs
+environment:
+  BUILD_CFLAGS: -g -b -Wall -Wunsupported -Werror=unsupported
+  # While musl does support _GNU_SOURCE,
+  # here is a good place to see how well BookmarkFS works with a non-GNU libc.
+  BUILD_CPPFLAGS: -D_DEFAULT_SOURCE
+tasks:
+  # Use srcdir as builddir, since pdpmake does not support VPATH.
+  - setup: |
+      cd bookmarkfs
+      autoreconf -i
+      ./configure  \
+          --enable-bookmarkfs-debug --enable-xxhash-inline     \
+          --enable-bookmarkfs-util  --enable-bookmarkfs-mount  \
+          --enable-bookmarkfs-fsck  --enable-bookmarkfs-mkfs   \
+          --enable-bookmarkctl      --enable-fsck-handler-tcl  \
+          --enable-backend-firefox  --enable-backend-chromium  \
+          CC=tcc CFLAGS="$BUILD_CFLAGS" CPPFLAGS="$BUILD_CPPFLAGS"
+  - build: |
+      cd bookmarkfs
+      pdpmake
+      pdpmake info
+  - test: |
+      cd bookmarkfs
+      pdpmake check

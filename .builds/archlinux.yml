@@ -1,0 +1,40 @@
+#
+# Copyright (C) 2025  CismonX <admin@cismon.net>
+#
+# Copying and distribution of this file, with or without modification, are
+# permitted in any medium without royalty, provided the copyright notice and
+# this notice are preserved.  This file is offered as-is, without any warranty.
+#
+
+image: archlinux
+packages: [
+  # build
+  autoconf, automake, libtool, autoconf-archive, pkgconf, make, gcc, texinfo,
+  # lib
+  fuse3, libseccomp, sqlite, jansson, nettle, readline, tcl, uriparser, xxhash,
+]
+sources:
+  - https://git.sr.ht/~cismonx/bookmarkfs
+environment:
+  BUILD_CFLAGS: >-
+    -std=c99 -O0 -g -Wall -Wextra -Wpedantic -Wshadow
+    -fsanitize=address,undefined -fno-sanitize-recover
+  BUILD_CPPFLAGS: -D_GNU_SOURCE
+tasks:
+  - setup: |
+      mkdir bookmarkfs/build && cd bookmarkfs/build
+      autoreconf -i ..
+      ../configure  \
+          --enable-bookmarkfs-debug --enable-xxhash-inline     \
+          --enable-bookmarkfs-util  --enable-bookmarkfs-mount  \
+          --enable-bookmarkfs-fsck  --enable-bookmarkfs-mkfs   \
+          --enable-bookmarkctl      --enable-fsck-handler-tcl  \
+          --enable-backend-firefox  --enable-backend-chromium  \
+          CFLAGS="$BUILD_CFLAGS" CPPFLAGS="$BUILD_CPPFLAGS"
+  - build: |
+      cd bookmarkfs/build
+      make
+      make info
+  - test: |
+      cd bookmarkfs/build
+      make check
