@@ -2089,9 +2089,11 @@ bookmark_do_list (
 #define BOOKMARK_LIST_(col, join)  \
     "SELECT `b`.`id`, `b`.`position`, " col "FROM `moz_bookmarks` `b` " join  \
     "WHERE `b`.`parent` = ? AND `b`.`position` >= ? ORDER BY `b`.`position`"
-#define BOOKMARK_LIST_NOJOIN_(col)  BOOKMARK_LIST_(col ", `b`.`fk` ", )
+// Type: 1 -> bookmark; 2 -> folder; 3 -> separator.
+#define BOOKMARK_LIST_NOJOIN_(col)  BOOKMARK_LIST_(col ", 1 - `b`.`type` ", )
 #define BOOKMARK_LIST_EX_COLS_  \
-    "octet_length(`p`.`url`), `b`.`lastModified`, `p`.`last_visit_date`"
+    "ifnull(octet_length(`p`.`url`), -1), `b`.`lastModified`, "  \
+        "`p`.`last_visit_date`"
 #define BOOKMARK_LIST_EX_(col)  \
     BOOKMARK_LIST_(col ", " BOOKMARK_LIST_EX_COLS_ " ",  \
         "LEFT JOIN `moz_places` `p` ON `b`.`fk` = `p`.`id` ")
@@ -2309,6 +2311,11 @@ bookmark_check_cb (
     }
     ctx->next = position + 1;
 
+    if (-2 == sqlite3_column_int64(stmt, 3)) {
+        // skip separator
+        return 0;
+    }
+
     size_t      name_len = sqlite3_column_bytes(stmt, 2);
     char const *name     = (char const *)sqlite3_column_text(stmt, 2);
     if (unlikely(name == NULL)) {
@@ -2400,15 +2407,6 @@ bookmark_list_cb (
     }
     entry.off = position + 1;
 
-    ssize_t len = -1;
-    if (SQLITE_INTEGER == sqlite3_column_type(stmt, 3)) {
-        len = sqlite3_column_int64(stmt, 3);
-        if (unlikely(len < 0)) {
-            goto fail;
-        }
-    }
-    entry.stat.value_len = len;
-
     size_t      name_len = sqlite3_column_bytes(stmt, 2);
     char const *name     = (char const *)sqlite3_column_text(stmt, 2);
     if (unlikely(name == NULL)) {
@@ -2449,6 +2447,7 @@ bookmark_list_cb (
   set_name:
     entry.name = name;
 
+    entry.stat.value_len = sqlite3_column_int64(stmt, 3);
     if (ctx->with_stat) {
         msecs_to_timespec(&entry.stat.mtime, sqlite3_column_int64(stmt, 4));
         msecs_to_timespec(&entry.stat.atime, sqlite3_column_int64(stmt, 5));
