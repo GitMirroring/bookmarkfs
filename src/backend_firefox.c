@@ -2091,7 +2091,7 @@ bookmark_do_list (
     "WHERE `b`.`parent` = ? AND `b`.`position` >= ? ORDER BY `b`.`position`"
 #define BOOKMARK_LIST_NOJOIN_(col)  BOOKMARK_LIST_(col ", `b`.`fk` ", )
 #define BOOKMARK_LIST_EX_COLS_  \
-    "length(`p`.`url`), `b`.`lastModified`, `p`.`last_visit_date`"
+    "octet_length(`p`.`url`), `b`.`lastModified`, `p`.`last_visit_date`"
 #define BOOKMARK_LIST_EX_(col)  \
     BOOKMARK_LIST_(col ", " BOOKMARK_LIST_EX_COLS_ " ",  \
         "LEFT JOIN `moz_places` `p` ON `b`.`fk` = `p`.`id` ")
@@ -2181,7 +2181,7 @@ bookmark_do_lookup (
 ) {
 #define BOOKMARK_LOOKUP_(join, where)  \
     "SELECT `b`.`id`, `b`.`lastModified`, "  \
-        "`p`.`last_visit_date`, length(`p`.`url`) "  \
+        "`p`.`last_visit_date`, octet_length(`p`.`url`) "  \
     "FROM `moz_bookmarks` `b` "  \
     join "JOIN `moz_places` `p` ON `b`.`fk` = `p`.`id` WHERE " where
 #define BOOKMARK_LOOKUP_ASSOC_(col)  \
