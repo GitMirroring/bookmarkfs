@@ -310,12 +310,11 @@ static int     mozplace_delref    (struct backend_ctx *, int64_t);
 static int     mozplace_insert    (struct backend_ctx *, struct mozplace *);
 static int     mozplace_update    (struct backend_ctx *, struct mozplace *);
 static int64_t mozplace_url_hash  (char const *, size_t);
-static int64_t msecs_now          (struct timespec *);
 static int     parse_mkfsopts     (struct bookmarkfs_conf_opt const *,
                                    struct parsed_mkfsopts *);
 static int     parse_mozurl_host  (char const *, size_t, size_t *,
                                    char const **, size_t *);
-static int     parse_msecs        (char const *, size_t, int64_t *);
+static int     parse_usecs        (char const *, size_t, int64_t *);
 static int     store_new          (sqlite3 *, int64_t);
 static int     store_sync         (sqlite3 *);
 static int     tag_entry_add      (struct backend_ctx *, uint64_t,
@@ -324,10 +323,11 @@ static int     tag_entry_add      (struct backend_ctx *, uint64_t,
 static int     tag_entry_delete   (struct backend_ctx *, uint64_t,
                                    char const *, size_t);
 static int     tag_entry_lookup   (struct backend_ctx *, struct mozbm *);
-static int64_t timespec_to_msecs  (struct timespec const *);
+static int64_t timespec_to_usecs  (struct timespec const *);
 static int     txn_begin          (struct backend_ctx *);
 static int     txn_end            (struct backend_ctx *);
 static int     txn_rollback       (struct backend_ctx *, int);
+static int64_t usecs_now          (struct timespec *);
 #endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
 
 static int     bookmark_do_get    (struct backend_ctx *, uint64_t, int,
@@ -350,7 +350,7 @@ static void    free_dentmap_entry (void *, void *);
 static int     get_xattr_id       (char const *, uint32_t);
 static int64_t get_data_version   (struct backend_ctx *);
 static bool    is_valid_id        (int64_t);
-static void    msecs_to_timespec  (struct timespec *, int64_t);
+static void    usecs_to_timespec  (struct timespec *, int64_t);
 static int     parse_mntopts      (struct bookmarkfs_conf_opt const *,
                                    uint32_t, struct parsed_mntopts *);
 static void    print_help         (uint32_t);
@@ -395,7 +395,7 @@ bookmark_do_create (
         }
     }
 
-    int64_t date_added = msecs_now(&stat_buf->mtime);
+    int64_t date_added = usecs_now(&stat_buf->mtime);
     if (unlikely(date_added < 0)) {
         return -EIO;
     }
@@ -872,34 +872,34 @@ static int
 mozbm_mtime_update (
     struct backend_ctx *ctx,
     int64_t             id,
-    int64_t            *msecs_ptr
+    int64_t            *usecs_ptr
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_MTIME_UPDATE];
     char const *sql =
         "UPDATE `moz_bookmarks` SET `lastModified` = ? WHERE `id` = ?";
 
-    int64_t msecs = -1;
-    if (msecs_ptr != NULL) {
-        msecs = *msecs_ptr;
+    int64_t usecs = -1;
+    if (usecs_ptr != NULL) {
+        usecs = *usecs_ptr;
     }
-    if (msecs < 0) {
+    if (usecs < 0) {
         struct timespec now;
-        msecs = msecs_now(&now);
-        if (unlikely(msecs < 0)) {
+        usecs = usecs_now(&now);
+        if (unlikely(usecs < 0)) {
             return -EIO;
         }
     }
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
-        DB_QUERY_BIND_INT64(msecs),
+        DB_QUERY_BIND_INT64(usecs),
         DB_QUERY_BIND_INT64(id),
     );
     if (status < 0) {
         return status;
     }
-    if (msecs_ptr != NULL) {
-        *msecs_ptr = msecs;
+    if (usecs_ptr != NULL) {
+        *usecs_ptr = usecs;
     }
     return 0;
 }
@@ -1299,7 +1299,7 @@ mozplace_addref_cb (
 
     ctx->id = sqlite3_column_int64(stmt, 0);
     if (ctx->atime_buf != NULL) {
-        msecs_to_timespec(ctx->atime_buf, sqlite3_column_int64(stmt, 1));
+        usecs_to_timespec(ctx->atime_buf, sqlite3_column_int64(stmt, 1));
     }
     return 1;
 }
@@ -1476,17 +1476,6 @@ mozplace_url_hash (
     return (prefix_hash & 0xffff) << 32 | str_hash;
 }
 
-static int64_t
-msecs_now (
-    struct timespec *ts_buf
-) {
-    if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts_buf))) {
-        log_printf("clock_gettime(): %s", xstrerror(errno));
-        return -1;
-    }
-    return timespec_to_msecs(ts_buf);
-}
-
 static int
 parse_mkfsopts (
     struct bookmarkfs_conf_opt const *opts,
@@ -1573,10 +1562,10 @@ parse_mozurl_host (
 }
 
 static int
-parse_msecs (
+parse_usecs (
     char const *str,
     size_t      str_len,
-    int64_t    *msecs_ptr
+    int64_t    *usecs_ptr
 ) {
 #define MAX_TIME_STR_LEN  19
     if (str_len > MAX_TIME_STR_LEN) {
@@ -1588,12 +1577,12 @@ parse_msecs (
     buf[str_len] = '\0';
 
     char *end;
-    int64_t msecs = strtoll(buf, &end, 10);
-    if (*end == '\0' || msecs < 0 || msecs == LLONG_MAX) {
+    int64_t usecs = strtoll(buf, &end, 10);
+    if (*end == '\0' || usecs < 0 || usecs == LLONG_MAX) {
         return -1;
     }
 
-    *msecs_ptr = msecs;
+    *usecs_ptr = usecs;
     return 0;
 }
 
@@ -1888,7 +1877,7 @@ tag_entry_add (
         return status;
     }
 
-    int64_t date_added = msecs_now(&stat_buf->mtime);
+    int64_t date_added = usecs_now(&stat_buf->mtime);
     if (unlikely(date_added < 0)) {
         return -EIO;
     }
@@ -1985,7 +1974,7 @@ tag_entry_lookup (
 }
 
 static int64_t
-timespec_to_msecs (
+timespec_to_usecs (
     struct timespec const *ts
 ) {
     if (ts->tv_nsec == UTIME_OMIT) {
@@ -2024,6 +2013,17 @@ txn_rollback (
 ) {
     db_txn_rollback(ctx->db, &ctx->stmts[STMT_ROLLBACK]);
     return old_status;
+}
+
+static int64_t
+usecs_now (
+    struct timespec *ts_buf
+) {
+    if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts_buf))) {
+        log_printf("clock_gettime(): %s", xstrerror(errno));
+        return -1;
+    }
+    return timespec_to_usecs(ts_buf);
 }
 
 #endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
@@ -2446,8 +2446,8 @@ bookmark_list_cb (
 
     entry.stat.value_len = sqlite3_column_int64(stmt, 3);
     if (ctx->with_stat) {
-        msecs_to_timespec(&entry.stat.mtime, sqlite3_column_int64(stmt, 4));
-        msecs_to_timespec(&entry.stat.atime, sqlite3_column_int64(stmt, 5));
+        usecs_to_timespec(&entry.stat.mtime, sqlite3_column_int64(stmt, 4));
+        usecs_to_timespec(&entry.stat.atime, sqlite3_column_int64(stmt, 5));
     }
 
     ctx->status = ctx->callback.list(ctx->user_data, &entry);
@@ -2486,8 +2486,8 @@ bookmark_lookup_cb (
     }
     stat_buf->id = id;
 
-    msecs_to_timespec(&stat_buf->mtime, sqlite3_column_int64(stmt, 1));
-    msecs_to_timespec(&stat_buf->atime, sqlite3_column_int64(stmt, 2));
+    usecs_to_timespec(&stat_buf->mtime, sqlite3_column_int64(stmt, 1));
+    usecs_to_timespec(&stat_buf->atime, sqlite3_column_int64(stmt, 2));
 
     ssize_t len = -1;
     if (SQLITE_INTEGER == sqlite3_column_type(stmt, 3)) {
@@ -2612,7 +2612,7 @@ is_valid_id (
 }
 
 static void
-msecs_to_timespec (
+usecs_to_timespec (
     struct timespec *ts_buf,
     int64_t          microsecs
 ) {
@@ -3227,7 +3227,7 @@ backend_mkfs (
     }
     if (opts.date_added < 0) {
         struct timespec now;
-        opts.date_added = msecs_now(&now);
+        opts.date_added = usecs_now(&now);
         if (unlikely(opts.date_added < 0)) {
             return -1;
         }
@@ -3612,8 +3612,8 @@ bookmark_set (
     int xattr_id = MOZBM_XATTR_START;
     if (flags & BOOKMARK_FLAG(SET_TIME)) {
         struct timespec const *times = val;
-        place_cols.last_visit_date = timespec_to_msecs(&times[0]);
-        bm_cols.last_modified      = timespec_to_msecs(&times[1]);
+        place_cols.last_visit_date = timespec_to_usecs(&times[0]);
+        bm_cols.last_modified      = timespec_to_usecs(&times[1]);
         if (place_cols.last_visit_date >= 0) {
             --xattr_id;
         }
@@ -3646,7 +3646,7 @@ bookmark_set (
             break;
 
           case BM_XATTR_DATE_ADDED:
-            if (0 != parse_msecs(val, val_len, &bm_cols.date_added)) {
+            if (0 != parse_usecs(val, val_len, &bm_cols.date_added)) {
                 return -EINVAL;
             }
             break;
@@ -3659,7 +3659,7 @@ bookmark_set (
                 && ctx->flags & BOOKMARKFS_BACKEND_CTIME
         ) {
             struct timespec now;
-            bm_cols.last_modified = msecs_now(&now);
+            bm_cols.last_modified = usecs_now(&now);
         }
     }
 
