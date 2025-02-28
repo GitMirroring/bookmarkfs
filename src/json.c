@@ -93,8 +93,8 @@ write_iov (
     while (1) {
         ssize_t nbytes = writev(fd, bufv, bufcnt);
         if (unlikely(nbytes < 0)) {
-            int err = errno;
-            log_printf("writev(): %s", xstrerror(err));
+            int err;
+            log_printf("writev(): %s", xstrerror_save(&err));
 
             switch (err) {
               case EIO:

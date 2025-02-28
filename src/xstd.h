@@ -169,4 +169,15 @@ xstrerror (
     int errnum
 );
 
+/**
+ * Like xstrerror(), but takes `errno` as error number,
+ * and saves its value to `err_ptr`.
+ */
+BOOKMARKFS_INTERNAL
+FUNCATTR_RETURNS_NONNULL
+char const *
+xstrerror_save (
+    int *errnum_ptr
+);
+
 #endif  /* !defined(BOOKMARKFS_XSTD_H_) */

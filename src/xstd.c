@@ -66,8 +66,8 @@ xfsync (
     int fd
 ) {
     while (unlikely(0 != fsync(fd))) {
-        int err = errno;
-        log_printf("fsync(): %s", xstrerror(err));
+        int err;
+        log_printf("fsync(): %s", xstrerror_save(&err));
 
         switch (err) {
           case EIO:
@@ -169,4 +169,14 @@ xstrerror (
         freelocale(loc_copy);
     }
     return err_str;
+}
+
+char const *
+xstrerror_save (
+    int *errnum_ptr
+) {
+    int err = errno;
+
+    *errnum_ptr = err;
+    return xstrerror(err);
 }
