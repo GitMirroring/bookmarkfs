@@ -159,7 +159,7 @@ typedef int (bookmarkfs_bookmark_get_cb) (
 typedef int (bookmarkfs_bookmark_get_func) (
     void                        *backend_ctx,
     uint64_t                     id,
-    char const                  *attr_key,
+    char const                  *xattr_name,
     bookmarkfs_bookmark_get_cb  *callback,
     void                        *user_data,
     void                       **cookie_ptr
@@ -209,7 +209,7 @@ typedef int (bookmarkfs_bookmark_rename_func) (
 typedef int (bookmarkfs_bookmark_set_func) (
     void       *backend_ctx,
     uint64_t    id,
-    char const *attr_key,
+    char const *xattr_name,
     uint32_t    flags,
     void const *val,
     size_t      val_len

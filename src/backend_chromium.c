@@ -228,8 +228,8 @@ static void free_maps     (struct hashmap *, struct hashmap *,
                            struct hashmap *);
 static int  fsck_next     (struct backend_ctx const *, uint64_t, json_t *,
                            size_t *, bookmarkfs_bookmark_check_cb *, void *);
-static int  get_attr_type (char const *, uint32_t);
-static int  get_attr_val  (json_t const *, char const *, uint32_t, json_t **);
+static int  get_xattr_id  (char const *, uint32_t);
+static int  get_xattr_val (json_t const *, char const *, uint32_t, json_t **);
 static int  guidmap_comp  (union hashmap_key, void const *);
 static unsigned long
             guidmap_hash  (void const *);
@@ -951,22 +951,22 @@ fsck_next (
 }
 
 static int
-get_attr_type (
-    char const *key,
+get_xattr_id (
+    char const *name,
     uint32_t    flags
 ) {
-    if (key == NULL) {
+    if (name == NULL) {
         return BM_XATTR_NULL;
     }
-    if (0 == strcmp("date_added", key)) {
+    if (0 == strcmp("date_added", name)) {
         return BM_XATTR_DATE_ADDED;
     }
     if (flags & BACKEND_FILENAME_GUID) {
-        if (0 == strcmp("title", key)) {
+        if (0 == strcmp("title", name)) {
             return BM_XATTR_TITLE;
         }
     } else {
-        if (0 == strcmp("guid", key)) {
+        if (0 == strcmp("guid", name)) {
             return BM_XATTR_GUID;
         }
     }
@@ -974,16 +974,16 @@ get_attr_type (
 }
 
 static int
-get_attr_val (
+get_xattr_val (
     json_t const  *node,
-    char const    *attr_key,
+    char const    *xattr_name,
     uint32_t       flags,
     json_t       **value_ptr
 ) {
     json_t *value;
 
-    int key_type = get_attr_type(attr_key, flags);
-    switch (key_type) {
+    int xattr_id = get_xattr_id(xattr_name, flags);
+    switch (xattr_id) {
       case BM_XATTR_NULL:
         value = json_object_sget(node, "url");
         break;
@@ -1004,13 +1004,13 @@ get_attr_val (
         return -ENOATTR;
     }
     if (value == NULL) {
-        if (unlikely(attr_key == NULL)) {
+        if (unlikely(xattr_name == NULL)) {
             return -EIO;
         }
         return -EISDIR;
     }
     *value_ptr = value;
-    return key_type;
+    return xattr_id;
 }
 
 static int
@@ -1933,7 +1933,7 @@ static int
 bookmark_get (
     void                        *backend_ctx,
     uint64_t                     id,
-    char const                  *attr_key,
+    char const                  *xattr_name,
     bookmarkfs_bookmark_get_cb  *callback,
     void                        *user_data,
     void                       **cookie_ptr
@@ -1952,7 +1952,7 @@ bookmark_get (
         goto lookup;
     }
     if (cookie->store != ctx->store) {
-        if (attr_key != NULL) {
+        if (xattr_name != NULL) {
             goto lookup;
         }
         // Checksum only applies to directory structure and URL values.
@@ -1968,11 +1968,12 @@ bookmark_get (
         return -ESTALE;
     }
     if (entry->id == BOOKMARKS_ROOT_ID) {
-        return attr_key == NULL ? -EISDIR : -ENOATTR;
+        return xattr_name == NULL ? -EISDIR : -ENOATTR;
     }
 
     json_t *value_node;
-    int status = get_attr_val(entry->node, attr_key, ctx->flags, &value_node);
+    int status = get_xattr_val(entry->node, xattr_name, ctx->flags,
+            &value_node);
     if (status < 0) {
         return status;
     }
@@ -2600,7 +2601,7 @@ static int
 bookmark_set (
     void       *backend_ctx,
     uint64_t    id,
-    char const *attr_key,
+    char const *xattr_name,
     uint32_t    flags,
     void const *val,
     size_t      val_len
@@ -2637,7 +2638,8 @@ bookmark_set (
     }
 
     json_t *val_node;
-    int key_type = get_attr_val(entry->node, attr_key, ctx->flags, &val_node);
+    int key_type = get_xattr_val(entry->node, xattr_name, ctx->flags,
+            &val_node);
     if (key_type < 0) {
         return key_type;
     }

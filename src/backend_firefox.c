@@ -347,7 +347,7 @@ static unsigned long
 static void    free_blcookie      (struct bookmark_lcookie *);
 static void    free_dentmap       (struct hashmap *);
 static void    free_dentmap_entry (void *, void *);
-static int     get_attr_type      (char const *, uint32_t);
+static int     get_xattr_id       (char const *, uint32_t);
 static int64_t get_data_version   (struct backend_ctx *);
 static bool    is_valid_id        (int64_t);
 static void    msecs_to_timespec  (struct timespec *, int64_t);
@@ -2032,7 +2032,7 @@ static int
 bookmark_do_get (
     struct backend_ctx      *ctx,
     uint64_t                 id,
-    int                      attr_type,
+    int                      xattr_id,
     struct bookmark_get_ctx *qctx
 ) {
 #define BOOKMARK_GET_(cols, join)  "SELECT CASE ? " cols "END "  \
@@ -2050,7 +2050,7 @@ bookmark_do_get (
 
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET_EX];
     char const    *sql      = BOOKMARK_GET_EX;
-    if (attr_type >= MOZBM_XATTR_START) {
+    if (xattr_id >= MOZBM_XATTR_START) {
         stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET];
         sql      = BOOKMARK_GET_WITH_GUID;
         if (ctx->flags & BACKEND_FILENAME_GUID) {
@@ -2063,7 +2063,7 @@ bookmark_do_get (
         {
             qctx->tags_root_id = ctx->tags_root_id;
         },
-        DB_QUERY_BIND_INT64(attr_type),
+        DB_QUERY_BIND_INT64(xattr_id),
         DB_QUERY_BIND_INT64(id),
     );
     if (nrows < 0) {
@@ -2256,9 +2256,9 @@ bookmark_do_lookup (
     bookmark_type >>= BOOKMARKFS_BOOKMARK_TYPE_SHIFT;
 
     char const *sql_table[3][2] = {
-        { BOOKMARK_LOOKUP_TITLE,     BOOKMARK_LOOKUP_GUID      },
-        { BOOKMARK_LOOKUP_TAG_TITLE, BOOKMARK_LOOKUP_TAG_GUID  },
-        { BOOKMARK_LOOKUP_KEYWORD,   BOOKMARK_LOOKUP_KEYWORD   },
+        { BOOKMARK_LOOKUP_TITLE,     BOOKMARK_LOOKUP_GUID     },
+        { BOOKMARK_LOOKUP_TAG_TITLE, BOOKMARK_LOOKUP_TAG_GUID },
+        { BOOKMARK_LOOKUP_KEYWORD,   BOOKMARK_LOOKUP_KEYWORD  },
     };
     sql = sql_table[bookmark_type][filename_is_guid];
 
@@ -2300,9 +2300,6 @@ bookmark_check_cb (
     if (unlikely(!is_valid_id(id))) {
         log_printf("bad bookmark ID %" PRIi64, id);
         goto fail;
-    }
-    if (unlikely((uint64_t)id == ctx->tags_root_id)) {
-        return 0;
     }
 
     int64_t position = sqlite3_column_int64(stmt, 1);
@@ -2559,25 +2556,25 @@ free_dentmap_entry (
 }
 
 static int
-get_attr_type (
-    char const *key,
+get_xattr_id (
+    char const *name,
     uint32_t    flags
 ) {
-    if (key == NULL) {
+    if (name == NULL) {
         return BM_XATTR_NULL;
     }
-    if (0 == strcmp("date_added", key)) {
+    if (0 == strcmp("date_added", name)) {
         return BM_XATTR_DATE_ADDED;
     }
-    if (0 == strcmp("description", key)) {
+    if (0 == strcmp("description", name)) {
         return BM_XATTR_DESC;
     }
     if (flags & BACKEND_FILENAME_GUID) {
-        if (0 == strcmp("title", key)) {
+        if (0 == strcmp("title", name)) {
             return BM_XATTR_TITLE;
         }
     } else {
-        if (0 == strcmp("guid", key)) {
+        if (0 == strcmp("guid", name)) {
             return BM_XATTR_GUID;
         }
     }
@@ -3077,15 +3074,15 @@ static int
 bookmark_get (
     void                        *backend_ctx,
     uint64_t                     id,
-    char const                  *attr_key,
+    char const                  *xattr_name,
     bookmarkfs_bookmark_get_cb  *callback,
     void                        *user_data,
     void                       **cookie_ptr
 ) {
     struct backend_ctx *ctx = backend_ctx;
 
-    int attr_type = get_attr_type(attr_key, ctx->flags);
-    if (attr_type < 0) {
+    int xattr_id = get_xattr_id(xattr_name, ctx->flags);
+    if (xattr_id < 0) {
         return -ENOATTR;
     }
 
@@ -3107,7 +3104,7 @@ bookmark_get (
     struct bookmark_get_ctx qctx;
     qctx.callback  = callback;
     qctx.user_data = user_data;
-    int status = bookmark_do_get(ctx, id, attr_type, &qctx);
+    int status = bookmark_do_get(ctx, id, xattr_id, &qctx);
     if (status < 0) {
         return status;
     }
@@ -3594,7 +3591,7 @@ static int
 bookmark_set (
     void       *backend_ctx,
     uint64_t    id,
-    char const *attr_key,
+    char const *xattr_name,
     uint32_t    flags,
     void const *val,
     size_t      val_len
@@ -3612,17 +3609,17 @@ bookmark_set (
         .last_visit_date = -1,
     };
 
-    int attr_type = MOZBM_XATTR_START;
+    int xattr_id = MOZBM_XATTR_START;
     if (flags & BOOKMARK_FLAG(SET_TIME)) {
         struct timespec const *times = val;
         place_cols.last_visit_date = timespec_to_msecs(&times[0]);
         bm_cols.last_modified      = timespec_to_msecs(&times[1]);
         if (place_cols.last_visit_date >= 0) {
-            --attr_type;
+            --xattr_id;
         }
     } else {
-        attr_type = get_attr_type(attr_key, ctx->flags);
-        switch (attr_type) {
+        xattr_id = get_xattr_id(xattr_name, ctx->flags);
+        switch (xattr_id) {
           case BM_XATTR_NULL:
             place_cols.url     = val;
             place_cols.url_len = val_len;
@@ -3658,7 +3655,7 @@ bookmark_set (
             return -ENOATTR;
         }
 
-        if (attr_type != BM_XATTR_NULL
+        if (xattr_id != BM_XATTR_NULL
                 && ctx->flags & BOOKMARKFS_BACKEND_CTIME
         ) {
             struct timespec now;
@@ -3679,7 +3676,7 @@ bookmark_set (
         status = -EPERM;
         goto fail;
     }
-    if (attr_type >= MOZBM_XATTR_START) {
+    if (xattr_id >= MOZBM_XATTR_START) {
         goto end;
     }
 

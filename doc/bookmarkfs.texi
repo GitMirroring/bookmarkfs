@@ -2299,7 +2299,7 @@ Type of the @code{bookmark_get} function is defined as:
 typedef int (bookmarkfs_bookmark_get_func) (
     void                        *backend_ctx,
     uint64_t                     id,
-    char const                  *attr_key,
+    char const                  *xattr_name,
     bookmarkfs_bookmark_get_cb  *callback,
     void                        *user_data,
     void                       **cookie_ptr
@@ -2313,13 +2313,13 @@ Function arguments:
 The pointer referring to the backend context.
 
 @item id
-ID of the bookmark (could be a bookmark folder if @code{attr_key}
+ID of the bookmark (could be a bookmark folder if @code{xattr_name}
 is not @code{NULL}).
 
-@item attr_key
+@item xattr_name
 Name of an extended attribute.
 
-If not @code{NULL}, @code{attr_key} is guaranteed to be a NUL-terminated
+If not @code{NULL}, @code{xattr_name} is guaranteed to be a NUL-terminated
 string, and the function should get the corresponding extended attribute value
 instead of the bookmark content.
 
@@ -2367,7 +2367,7 @@ Pointer to the ``cookie'' for the current @code{bookmark_get} operation.
 @code{NULL} if not used by the caller.
 
 The “cookie” is an opaque pointer which stores internal states
-for subsequent operations on the same bookmark (and @code{attr_key})
+for subsequent operations on the same bookmark (and @code{xattr_name})
 to determine whether the corresponding data has changed.
 
 If the value pointered to by @code{cookie_ptr} is @code{NULL},
@@ -2459,7 +2459,7 @@ Type of the @code{bookmark_set} function is defined as:
 typedef int (bookmarkfs_bookmark_set_func) (
     void       *backend_ctx,
     uint64_t    id,
-    char const *attr_key,
+    char const *xattr_name,
     uint32_t    flags,
     void const *val,
     size_t      val_len
@@ -2476,10 +2476,10 @@ The pointer referring to the backend context.
 ID of the object to update.
 It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
-@item attr_key
+@item xattr_name
 Name of an extended attribute.
 
-If not @code{NULL}, @code{attr_key} is guaranteed to be a NUL-terminated
+If not @code{NULL}, @code{xattr_name} is guaranteed to be a NUL-terminated
 string, and the function should update the corresponding extended attribute
 value instead of the bookmark content.
 
@@ -2494,7 +2494,7 @@ the object.
 The @code{val} argument points to an array of @code{struct timespec},
 the first element refers to the last access time, and the second element
 refers to the last modification time of the object.
-Values of @code{attr_key} and @code{val_len} are unspecified.
+Values of @code{xattr_name} and @code{val_len} are unspecified.
 
 The @code{tv_nsec} field of each timestamp may be @code{UTIME_OMIT},
 which indicates that the timestamp should be left as-is.
