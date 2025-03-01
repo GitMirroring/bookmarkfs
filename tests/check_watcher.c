@@ -52,11 +52,6 @@ do_check_watcher (
 #define ASSERT_EQ(val, expr)  ASSERT_EXPR((val) == (expr), goto end;)
 #define ASSERT_NE(val, expr)  ASSERT_EXPR((val) != (expr), goto end;)
 
-    struct watcher *w = watcher_create(dirfd, FILE1_NAME, flags);
-    if (w == NULL) {
-        return -1;
-    }
-
     unsigned long msecs = 100;
     int           tries = 5;
     if (flags & WATCHER_FALLBACK) {
@@ -71,8 +66,11 @@ do_check_watcher (
 
     fd = openat(dirfd, FILE1_NAME, O_WRONLY | O_CREAT, 0600);
     ASSERT_NE(-1, fd);
-    // Lazy-init watcher.
-    ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
+
+    struct watcher *w = watcher_create(dirfd, FILE1_NAME, flags);
+    ASSERT_NE(NULL, w);
+    // Check for spurious zero returns.
+    ASSERT_EQ(-ETIMEDOUT, wait_for_watcher(w, &ts, tries));
 
     ASSERT_NE(-1, write(fd, "foo", 3));
     ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));

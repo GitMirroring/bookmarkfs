@@ -47,8 +47,8 @@
 #include "sandbox.h"
 #include "xstd.h"
 
-#define WATCHER_DEAD  ( 1u << 2 )
-#define WATCHER_IDLE  ( 1u << 3 )
+#define WATCHER_DEAD  ( 1u << 8 )
+#define WATCHER_IDLE  ( 1u << 9 )
 
 // This value is chosen according to how frequent Chromium saves its bookmarks
 // (`bookmarks::BookmarkStorage::kSaveDelay`).
@@ -311,7 +311,6 @@ worker_loop (
 
     pthread_mutex_lock(&w->mutex);
 
-#ifdef BOOKMARKFS_SANDBOX
     uint32_t sandbox_flags = w->flags >> WATCHER_SANDBOX_FLAGS_OFFSET;
     if (!(sandbox_flags & SANDBOX_NOOP)) {
         sandbox_flags |= SANDBOX_READONLY;
@@ -320,13 +319,17 @@ worker_loop (
         }
         debug_puts("worker thread enters sandbox");
     }
-#endif  /* defined(BOOKMARKFS_SANDBOX) */
 
-    debug_puts("worker ready");
-    do {
-        w->flags |= WATCHER_IDLE;
-        pthread_cond_wait(&w->cond, &w->mutex);
-    } while (0 == impl_watch(w));
+    switch (impl_rearm(w)) {
+      case 0:
+        debug_puts("worker ready");
+        while (0 == impl_watch(w)) {
+            // fallthrough
+      case -ENOENT:
+            w->flags |= WATCHER_IDLE;
+            pthread_cond_wait(&w->cond, &w->mutex);
+        }
+    }
 
   end:
     w->flags |= (WATCHER_DEAD | WATCHER_IDLE);
