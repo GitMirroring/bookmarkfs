@@ -1612,7 +1612,7 @@ store_load (
     struct watcher *watcher = ctx->watcher;
     if (unlikely(watcher == NULL)) {
         if (0 != init_watcher(ctx)) {
-            return -1;
+            return -EIO;
         }
         goto do_load;
     }
@@ -1626,22 +1626,22 @@ store_load (
 #endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
 
     switch (watcher_poll(watcher)) {
-      case WATCHER_POLL_ERR:
-        return -1;
-
-      case WATCHER_POLL_NOCHANGE:
+      case -EAGAIN:
         if (ctx->store == NULL) {
             break;
         }
         return 0;
 
-      case WATCHER_POLL_CHANGED:
+      case 0:
         json_decref(ctx->store);
         ctx->store = NULL;
         break;
 
+      case -ENOENT:
+        return -ENXIO;
+
       default:
-        unreachable();
+        return -EIO;
     }
 
   do_load:
@@ -1878,11 +1878,11 @@ bookmark_check (
     if (ctx->flags & BACKEND_FILENAME_GUID) {
         return -EPERM;
     }
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
-    int status = 0;
     struct bookmark_lcookie *cookie;
     size_t idx = 0;
     if (cookie_ptr != NULL) {
@@ -1940,8 +1940,9 @@ bookmark_get (
 ) {
     struct backend_ctx *ctx = backend_ctx;
 
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     if (cookie_ptr == NULL) {
@@ -1972,8 +1973,7 @@ bookmark_get (
     }
 
     json_t *value_node;
-    int status = get_xattr_val(entry->node, xattr_name, ctx->flags,
-            &value_node);
+    status = get_xattr_val(entry->node, xattr_name, ctx->flags, &value_node);
     if (status < 0) {
         return status;
     }
@@ -2016,11 +2016,11 @@ bookmark_list (
 ) {
     struct backend_ctx *ctx = backend_ctx;
 
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
-    int status = 0;
     struct bookmark_lcookie *cookie;
     struct node_entry const *entry = NULL;
     json_t *children;
@@ -2097,8 +2097,9 @@ bookmark_lookup (
 ) {
     struct backend_ctx *ctx = backend_ctx;
 
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, NULL);
@@ -2202,8 +2203,9 @@ bookmark_create (
     if (parent_id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     // Lookup parent entry
@@ -2245,7 +2247,7 @@ bookmark_create (
     struct build_node_ctx bctx = {
         .stat_buf = stat_buf,
     };
-    int status = build_node(ctx, node, &name, name_len, is_dir, &bctx);
+    status = build_node(ctx, node, &name, name_len, is_dir, &bctx);
     if (unlikely(status != 0)) {
         json_decref(node);
         return status;
@@ -2306,8 +2308,9 @@ bookmark_delete (
     if (parent_id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     // Lookup parent entry
@@ -2373,8 +2376,9 @@ bookmark_permute (
     if (parent_id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     size_t name1_len = strnlen(name1, NAME_MAX + 1);
@@ -2464,8 +2468,9 @@ bookmark_rename (
             || new_parent_id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
-    if (0 != store_load(ctx)) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     // Lookup old entry
@@ -2612,8 +2617,9 @@ bookmark_set (
     if (id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
-    if (unlikely(0 != store_load(ctx))) {
-        return -EIO;
+    int status = store_load(ctx);
+    if (unlikely(status < 0)) {
+        return status;
     }
 
     unsigned long entry_id;

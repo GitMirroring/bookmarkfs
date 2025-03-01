@@ -36,18 +36,7 @@
 #endif
 
 /**
- * A watcher_poll() call returning WATCHER_POLL_ERR
- * most likely means that the file being watched has gone.
- *
- * When the file is back, calling watcher_poll() again should
- * return WATCHER_POLL_CHANGED, and the watcher should continue to work.
- */
-#define WATCHER_POLL_ERR       -1
-#define WATCHER_POLL_NOCHANGE   0
-#define WATCHER_POLL_CHANGED    1
-
-/**
- * Always use fstat() to detect file change.
+ * Always use fstatat() to detect file change.
  */
 #define WATCHER_FALLBACK  ( 1u << 0 )
 /**
@@ -84,10 +73,13 @@ watcher_destroy (
 
 /**
  * Check whether the file associated with the watcher
- * has changed since the last watcher_poll() call
- * (or, if not yet called, since watcher initialization).
+ * has changed since the last watcher_poll() call.
  *
- * Returns one of WATCHER_POLL_*.
+ * - Returns 0 if the file has changed, -EAGAIN if not.
+ * - Returns -ENOENT if the file being watched has gone.
+ * - Returns -EIO if an internal error occurred,
+ *   in which case the watcher became defunct,
+ *   and further calls to this function always fail.
  */
 int
 watcher_poll (

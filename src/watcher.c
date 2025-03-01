@@ -111,8 +111,8 @@ impl_init (
         .flags  = EV_ADD,
     };
     if (0 != kevent(kqfd, &ev, 1, NULL, 0, NULL)) {
-        close(kqfd);
         log_printf("kevent(): %s", xstrerror(errno));
+        close(kqfd);
         return -1;
     }
     w->kqfd = kqfd;
@@ -146,15 +146,20 @@ static int
 impl_rearm (
     struct watcher *w
 ) {
+    if (unlikely(w->flags & WATCHER_DEAD)) {
+        log_puts("worker is dead");
+        return -EIO;
+    }
     if (w->flags & WATCHER_FALLBACK) {
         goto fallback;
     }
+    int err;
 
 #if defined(WATCHER_IMPL_FANOTIFY)
     uint32_t mask = FAN_DELETE_SELF | FAN_MOVE_SELF | FAN_MODIFY;
     if (0 != fanotify_mark(w->fanfd, FAN_MARK_ADD, mask, w->dirfd, w->name)) {
-        log_printf("fanotify_mark(): %s", xstrerror(errno));
-        return -1;
+        log_printf("fanotify_mark(): %s", xstrerror_save(&err));
+        goto fail;
     }
 
 #elif defined(WATCHER_IMPL_KQUEUE)
@@ -164,8 +169,8 @@ impl_rearm (
 #endif
     int wfd = openat(w->dirfd, w->name, open_flags);
     if (wfd < 0) {
-        log_printf("openat(): %s", xstrerror(errno));
-        return -1;
+        log_printf("openat(): %s", xstrerror_save(&err));
+        goto fail;
     }
     struct kevent ev = {
         .ident  = wfd,
@@ -174,9 +179,9 @@ impl_rearm (
         .fflags = NOTE_DELETE | NOTE_EXTEND | NOTE_RENAME | NOTE_WRITE,
     };
     if (0 != kevent(w->kqfd, &ev, 1, NULL, 0, NULL)) {
-        close(wfd);
         log_printf("kevent(): %s", xstrerror(errno));
-        return -1;
+        close(wfd);
+        return -EIO;
     }
     w->wfd = wfd;
 
@@ -185,10 +190,13 @@ impl_rearm (
 
   fallback:
     if (0 != fstatat(w->dirfd, w->name, &w->old_stat, 0)) {
-        log_printf("fstatat(): %s", xstrerror(errno));
-        return -1;
+        log_printf("fstatat(): %s", xstrerror_save(&err));
+        goto fail;
     }
     return 0;
+
+  fail:
+    return err == ENOENT ? -ENOENT : -EIO;
 }
 
 static int
@@ -276,7 +284,10 @@ impl_watch (
 
         struct stat new_stat;
         if (0 != fstatat(w->dirfd, w->name, &new_stat, 0)) {
-            debug_printf("fstatat(): %s", xstrerror(errno));
+            if (errno != ENOENT) {
+                debug_printf("fstatat(): %s", xstrerror(errno));
+                return -1;
+            }
             break;
         }
         if (new_stat.st_ino != old_stat->st_ino
@@ -311,14 +322,11 @@ worker_loop (
     }
 #endif  /* defined(BOOKMARKFS_SANDBOX) */
 
-    if (0 != impl_rearm(w)) {
-        goto end;
-    }
     debug_puts("worker ready");
-    while (0 == impl_watch(w)) {
+    do {
         w->flags |= WATCHER_IDLE;
         pthread_cond_wait(&w->cond, &w->mutex);
-    }
+    } while (0 == impl_watch(w));
 
   end:
     w->flags |= (WATCHER_DEAD | WATCHER_IDLE);
@@ -409,7 +417,7 @@ int
 watcher_poll (
     struct watcher *w
 ) {
-    int status = WATCHER_POLL_NOCHANGE;
+    int status = -EAGAIN;
     if (w->pipefd[1] < 0) {
         // WATCHER_NOOP
         return status;
@@ -424,16 +432,10 @@ watcher_poll (
         goto end;
     }
 
-    status = WATCHER_POLL_ERR;
-    if (unlikely(w->flags & WATCHER_DEAD)) {
-        log_puts("worker is dead");
+    status = impl_rearm(w);
+    if (status < 0) {
         goto end;
     }
-    if (0 != impl_rearm(w)) {
-        goto end;
-    }
-
-    status = WATCHER_POLL_CHANGED;
     w->flags &= ~WATCHER_IDLE;
     pthread_cond_signal(&w->cond);
 
