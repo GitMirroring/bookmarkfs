@@ -171,7 +171,7 @@ xstrerror (
 
 /**
  * Like xstrerror(), but takes `errno` as error number,
- * and saves its value to `err_ptr`.
+ * and saves its value to `errnum_ptr`.
  */
 BOOKMARKFS_INTERNAL
 FUNCATTR_RETURNS_NONNULL

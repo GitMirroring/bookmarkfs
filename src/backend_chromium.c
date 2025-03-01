@@ -1855,7 +1855,7 @@ backend_sandbox (
     if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
         sandbox_flags |= SANDBOX_READONLY;
     }
-#ifdef __Linux__
+#ifdef __linux__
     if (ctx->flags & BOOKMARKFS_BACKEND_NO_LANDLOCK) {
         sandbox_flags |= SANDBOX_NO_LANDLOCK;
     }
@@ -2465,7 +2465,8 @@ bookmark_rename (
     debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
 
     if (old_parent_id == BOOKMARKS_ROOT_ID
-            || new_parent_id == BOOKMARKS_ROOT_ID) {
+            || new_parent_id == BOOKMARKS_ROOT_ID
+    ) {
         return -EPERM;
     }
     int status = store_load(ctx);
@@ -2487,8 +2488,8 @@ bookmark_rename (
     struct lookup_ctx old_lctx;
     struct node_entry *old_entry;
     if (0 != lookup_name(ctx, old_parent_id, old_name, old_name_len,
-                &old_lctx, &old_entry))
-    {
+                &old_lctx, &old_entry)
+    ) {
         return -ENOENT;
     }
     json_t *old_node = old_entry->node;
@@ -2509,8 +2510,8 @@ bookmark_rename (
     struct lookup_ctx new_lctx;
     struct node_entry *new_entry;
     if (0 == lookup_name(ctx, new_parent_id, new_name, new_name_len,
-                &new_lctx, &new_entry))
-    {
+                &new_lctx, &new_entry)
+    ) {
         if (flags & BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE) {
             return -EEXIST;
         }

@@ -2127,8 +2127,8 @@ bookmark_do_list (
     uint32_t bookmark_type = flags & BOOKMARKFS_BOOKMARK_TYPE_MASK;
     bookmark_type >>= BOOKMARKFS_BOOKMARK_TYPE_SHIFT;
     if (bookmark_type == BOOKMARKFS_BOOKMARK_TYPE_TAG
-            && id == ctx->tags_root_id)
-    {
+            && id == ctx->tags_root_id
+    ) {
         bookmark_type = BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK;
     }
 

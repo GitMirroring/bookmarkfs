@@ -41,7 +41,7 @@
 #define WATCHER_FALLBACK  ( 1u << 0 )
 /**
  * Nothing is performed on the filesystem,
- * and watcher_poll() always returns WATCHER_POLL_NOCHANGE.
+ * and watcher_poll() always returns -EAGAIN.
  */
 #define WATCHER_NOOP      ( 1u << 1 )
 

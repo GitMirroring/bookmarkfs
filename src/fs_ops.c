@@ -30,13 +30,13 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include <fcntl.h>
 #include <sys/stat.h>
 #ifdef __linux__
 #  include <sys/xattr.h>
 #endif
-#include <time.h>
 #include <unistd.h>
 
 #include "hash.h"
