@@ -22,6 +22,8 @@
 #  include "config.h"
 #endif
 
+#include "check_lib.h"
+
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,6 +57,8 @@ dispatch_subcmds (
         status = subcmd_hash(argc, argv);
     } else if (0 == strcmp("prng", cmd)) {
         status = subcmd_prng(argc, argv);
+    } else if (0 == strcmp("watcher", cmd)) {
+        status = check_watcher(argc, argv);
     }
     return status;
 }

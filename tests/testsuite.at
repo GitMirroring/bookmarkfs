@@ -28,9 +28,9 @@ dnl
 dnl  Conditionally run script depending on whether a feature is enabled.
 dnl
 m4_define([ATX_FEAT_IF], [
-    if test -n "$ATX_FEAT_NAME($1)"; then
+    if test -n "$ATX_FEAT_NAME($1)"; then :
         $2
-    else
+    else :
         $3
     fi
 ])
@@ -47,7 +47,11 @@ m4_define([ATX_FEAT_PREREQ], [
 ])
 
 m4_define([ATX_CHECK_SIMPLE], [
-    AT_CHECK([$1], , [ignore], [ignore])
+    AT_CHECK([
+        atx_line_start=$LINENO
+        trap 'echo "Error $? at line $(($LINENO-$atx_line_start))"; exit 1' ERR
+        $1
+    ], , [ignore], [ignore])
 ])
 
 m4_define([ATX_CHECK_LIB], [
@@ -70,3 +74,4 @@ AT_TEST_HELPER_FN([rand_base64], , , [
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])
 m4_include([lib_prng.at])
+m4_include([lib_watcher.at])

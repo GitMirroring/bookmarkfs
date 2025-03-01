@@ -1,0 +1,25 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([util lib: file watcher])
+AT_KEYWORDS([lib watcher])
+
+ATX_CHECK_LIB([
+    args=
+    ATX_FEAT_IF([native-watcher], , [
+        args="$args -f"
+    ])
+
+    tmpdir=./$(ath_fn_rand_u64_hex).tmp.d
+
+    mkdir $tmpdir
+    check-bookmarkfs-util watcher $args $tmpdir
+])
+
+AT_CLEANUP
