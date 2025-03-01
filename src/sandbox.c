@@ -178,6 +178,10 @@ sandbox_enter (
 
         // signals
         SCMP_RULE_NOARG(sigaction,       10),
+#ifdef BOOKMARKFS_DEBUG
+        // Make ASAN happy...
+        SCMP_RULE_NOARG(sigaltstack,     0),
+#endif
         SCMP_RULE_NOARG(sigprocmask,     10),
         SCMP_RULE_NOARG(sigreturn,       10),
         SCMP_RULE_NOARG(restart_syscall, 10),

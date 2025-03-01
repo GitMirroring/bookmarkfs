@@ -169,6 +169,7 @@ check_watcher (
       default:
         return -1;
     }
+    argc -= optind;
     if (argc < 1) {
         return -1;
     }
