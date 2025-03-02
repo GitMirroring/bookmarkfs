@@ -49,11 +49,11 @@ do_check_watcher (
 #define FILE1_NAME  "foo.tmp"
 #define FILE2_NAME  "bar.tmp"
 
-#define ASSERT_EQ(val, expr)  ASSERT_EXPR((val) == (expr), goto end;)
-#define ASSERT_NE(val, expr)  ASSERT_EXPR((val) != (expr), goto end;)
+#define ASSERT_EQ(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) == r_, goto end;)
+#define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
-    unsigned long msecs = 100;
-    int           tries = 5;
+    unsigned long msecs = 50;
+    int           tries = 10;
     if (flags & WATCHER_FALLBACK) {
         msecs = 2500;
         tries = 2;
@@ -63,12 +63,15 @@ do_check_watcher (
 
     int status = -1;
     int fd     = -1;
+    struct watcher *w = NULL;
 
     fd = openat(dirfd, FILE1_NAME, O_WRONLY | O_CREAT, 0600);
     ASSERT_NE(-1, fd);
 
-    struct watcher *w = watcher_create(dirfd, FILE1_NAME, flags);
-    ASSERT_NE(NULL, w);
+    w = watcher_create(dirfd, FILE1_NAME, flags);
+    if (w == NULL) {
+        goto end;
+    }
     // Check for spurious zero returns.
     ASSERT_EQ(-ETIMEDOUT, wait_for_watcher(w, &ts, tries));
 
@@ -79,7 +82,9 @@ do_check_watcher (
 #if defined(__FreeBSD__)
     // For kevent() EVFILT_VNODE, ftruncate() only triggers NOTE_ATTRIB,
     // which we don't want to watch.
-    check_truncate = flags & WATCHER_FALLBACK;
+    if (!(flags & WATCHER_FALLBACK)) {
+        check_truncate = false;
+    }
 #endif
     if (check_truncate) {
         ASSERT_EQ(0, ftruncate(fd, 0));
@@ -90,10 +95,19 @@ do_check_watcher (
     ASSERT_NE(-1, fd2);
     close(fd2);
 
+    bool close_fd = false;
+#if defined(__linux__)
     // FAN_DELETE_SELF won't fire if the watched file
     // is still opened somewhere.
-    close(fd);
-    fd = -1;
+    if (!(flags & WATCHER_FALLBACK)) {
+        close_fd = true;
+    }
+#endif
+    if (close_fd) {
+        close(fd);
+        fd = -1;
+    }
+
     ASSERT_EQ(0, renameat(dirfd, FILE2_NAME, dirfd, FILE1_NAME));
     ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
 
@@ -165,18 +179,22 @@ check_watcher (
         break;
 
       default:
+        log_printf("bad option '-%c'", optopt);
         return -1;
     }
     argc -= optind;
     if (argc < 1) {
+        log_puts("path not specified");
         return -1;
     }
     argv += optind;
 
     int dirfd = open(argv[0], O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {
+        log_printf("failed to open '%s'", argv[0]);
         return -1;
     }
+
     int status = do_check_watcher(dirfd, flags);
     close(dirfd);
     return status;

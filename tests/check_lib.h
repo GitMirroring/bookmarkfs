@@ -23,11 +23,15 @@
 
 #include "xstd.h"
 
-#define ASSERT_EXPR(cond, action_if_false)           \
-    if (!(cond)) {                                   \
-        log_printf("assertion (%s) failed", #cond);  \
-        action_if_false                              \
-    }
+#define ASSERT_EXPR_INT(expr, r, cond, action_if_false)        \
+    do {                                                       \
+        int r = (expr);                                        \
+        if (cond) {                                            \
+            break;                                             \
+        }                                                      \
+        log_printf("assertion failed: (%d == %s)", r, #expr);  \
+        action_if_false                                        \
+    } while (0)
 
 int
 check_watcher (

@@ -59,6 +59,8 @@ dispatch_subcmds (
         status = subcmd_prng(argc, argv);
     } else if (0 == strcmp("watcher", cmd)) {
         status = check_watcher(argc, argv);
+    } else {
+        log_printf("bad subcmd '%s'", cmd);
     }
     return status;
 }
@@ -87,6 +89,7 @@ subcmd_hash (
         break;
 
       default:
+        log_printf("bad option '-%c'", optopt);
         return -1;
     }
 
@@ -110,6 +113,7 @@ subcmd_prng (
                 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
                 &seed[0], &seed[1], &seed[2], &seed[3]);
         if (cnt != 4) {
+            log_printf("bad seed '%s'", optarg);
             return -1;
         }
         break;
@@ -119,6 +123,7 @@ subcmd_prng (
         break;
 
       default:
+        log_printf("bad option '-%c'", optopt);
         return -1;
     }
 
