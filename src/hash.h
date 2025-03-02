@@ -29,57 +29,29 @@
 
 #include <sys/uio.h>
 
-/**
- * Callback function for hash_digestcb().
- *
- * The function should store the pointer to a buffer to buf_ptr,
- * which only need to be valid until the next call to the callback.
- *
- * Returns the length of data in buffer, or 0 to terminate.
- */
 typedef size_t (hash_digestcb_func) (
     void        *user_data,
     void const **buf_ptr
 );
 
-/**
- * Calculate the 64-bit hash for the given input.
- */
 uint64_t
 hash_digest (
     void const *input,
     size_t      len
 );
 
-/**
- * Like hash_digest(), but takes an array of input buffers.
- *
- * This function does not write to the input buffers.
- */
 uint64_t
 hash_digestv (
     struct iovec const *bufv,
     int                 bufcnt
 );
 
-/**
- * Like hash_digest(), but takes a callback function.
- *
- * The callback function is called continuously for each part of
- * the input data, until it returns 0.
- */
 uint64_t
 hash_digestcb (
     hash_digestcb_func *callback,
     void               *user_data
 );
 
-/**
- * Seed the hash function with the given value.
- * If not called, the seed equals to value 0.
- *
- * All threads share the same seed.
- */
 void
 hash_seed (
     uint64_t s

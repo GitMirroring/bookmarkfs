@@ -157,93 +157,6 @@ Meanwhile, FreeBSD does not support @code{FUSE_READDIRPLUS} and directory
 entry caching, which makes listing directory entries less efficient.
 
 
-@node Sandboxing
-@section Sandboxing
-
-A BookmarkFS backend can be instructed to enter a sandboxed state,
-where it irrevocably relinquishes most access to the system resources
-that it's not supposed to touch.
-For example:
-
-@itemize @bullet{}
-@item access local files other than the bookmark storage
-@item establish socket connections
-@item execute other files
-@end itemize
-
-This mechanism reduces the attack surface for exploit,
-if a vulnerability is discovered in BookmarkFS and/or its dependencies.
-However, it only deals with untrusted input,
-and cannot help if the operating system has already been compromised.
-
-Examples of what ``untrusted input'' may include:
-
-@itemize @bullet{}
-@item Bookmark storage @emph{not} created by the user with a trusted program
-(e.g., obtained from some random person on the internet).
-
-@item Filesystem calls from untrusted programs.
-The program may be running in an isolated environment,
-but it has a chance to escape if BookmarkFS can be exploited.
-@end itemize
-
-On Linux, sandboxing is achieved using @linuxmanpage{seccomp, 2} and
-@linuxmanpage{landlock, 7}.
-On FreeBSD, @freebsdmanpage{capsicum, 4} is used.
-
-
-@node The Utility Library
-@section The Utility Library
-
-The BookmarkFS Utility Library implements various common utility functions.
-It is used internally by most of BookmarkFS's components, including
-the backends (@pxref{Backends}) and the @command{mount.bookmarkfs} program.
-
-Typically, the library is built into a shared object, and installed as:
-
-@example
-@var{$@{libdir@}}/bookmarkfs_util@var{$@{shlib_suffix@}}
-@end example
-
-@table @var
-@item $@{libdir@}
-Presumably @file{@var{$@{prefix@}}/lib}.
-@xref{Uniform,, The Uniform Naming Scheme, automake, GNU Automake}.
-
-@item $@{shlib_suffix@}
-The common filename extension for shared library files on the current platform
-(e.g., @file{.so} on GNU/Linux and FreeBSD).
-@end table
-
-Public headers are installed under @file{@var{$@{pkgincludedir@}}}
-(presumably @file{@var{$@{prefix@}}/include/bookmarkfs}).
-To use the library functions, include the following headers as needed:
-
-@table @file
-@item hash.h
-Non-cryptographic hash function.
-
-@item hashmap.h
-A simple hashtable implementation.
-
-@item prng.h
-Non-cryptographic pseudo-random number generator.
-
-@item sandbox.h
-A simple sandbox implementation. @xref{Sandboxing}.
-
-@item version.h
-Get version and feature information of the library.
-
-@item watcher.h
-Single-file filesystem watcher.
-@end table
-
-Usage of the library functions is rather simple and straightforward,
-thus there are currently no dedicated manual sections.
-Refer to the comments in the corresponding header files for details.
-
-
 @node Programs
 @chapter Programs
 
@@ -1399,32 +1312,18 @@ Defaults to @samp{native} when the filesystem is mounted read-only,
 
 @table @samp
 @item native
-Watch for file changes using platform-specific features:
-
-@table @asis
-@item Linux
-@linuxmanpage{fanotify, 7} is used.
-Requires kernel version 5.13 or later for unprivileged users.
-
-@linuxmanpage{inotify, 7} does not have this limitation, however,
-it is incompatible with our sandboxing design.
-
-@item FreeBSD
-@freebsdmanpage{kevent, 2} with @code{EVFILT_VNODE} is used.
-@end table
-
 @item fallback
-Watch for file changes by checking @code{st_ino} and @code{st_mtim} attributes
-with @posixfuncmanpage{fstatat} periodically.
+Watch for changes of the bookmark storage,
+either using a ``native'' implementation using platform-specific features,
+or a ``fallback'' one which is less efficient but more portable.
 
-Less efficient than ``native'' implementations, but should work on any
-POSIX-compatible system.
+@xref{File Watcher}.
 
 @item none
-Do not watch for file changes.
+Do not watch for changes of the bookmark storage.
 
-With @option{watcher=none}, changes on the bookmark storage are not visible
-to the filesystem.
+With @option{watcher=none}, external changes to the bookmark storage are not
+visible to the BookmarkFS filesystem.
 @end table
 @end table
 
@@ -1941,10 +1840,6 @@ to enter sandbox separately without affecting other ones.
 Thus it is guaranteed that, when launched from a frontend program like
 @command{mount.bookmarkfs}, only one backend context will be created
 throughout the lifetime of the process if sandboxing is ever needed.
-
-Currently, the backends shipped with BookmarkFS use the sandbox implementation
-in the utility library (@pxref{The Utility Library}).
-It may require some tweaking to be used for other backends.
 
 Type of the @code{backend_sandbox} function is defined as:
 
@@ -3691,6 +3586,443 @@ Rewind all.
 @end table
 
 On error, the function should return @t{-1}.
+
+
+@node The Utility Library
+@chapter The Utility Library
+
+The BookmarkFS Utility Library implements various common utility functions.
+It is used internally by most of BookmarkFS's components, including
+the backends (@pxref{Backends}) and the @command{mount.bookmarkfs} program.
+
+@quotation Warning
+Currently BookmarkFS is experimental.
+Functions provided by the utility library may change drastically
+without prior notice.
+@end quotation
+
+Typically, the library is built into a shared object, and installed as:
+
+@example
+@var{$@{libdir@}}/bookmarkfs_util@var{$@{shlib_suffix@}}
+@end example
+
+@table @var
+@item $@{libdir@}
+Presumably @file{@var{$@{prefix@}}/lib}.
+@xref{Uniform,, The Uniform Naming Scheme, automake, GNU Automake}.
+
+@item $@{shlib_suffix@}
+The common filename extension for shared library files on the current platform
+(e.g., @file{.so} on GNU/Linux and FreeBSD).
+@end table
+
+
+@node Hash Function
+@section Hash Function
+
+Non-cryptographic hash function with 64-bit seed and digest,
+suitable for hash tables.
+
+Currently, the @uref{https://xxhash.com/, xxHash} (XXH3) algorithm is used.
+
+Functions:
+
+@table @code
+@item hash_seed
+Updates the seed used by the hash function.
+
+@example c
+#include <bookmarkfs/hash.h>
+
+void
+hash_seed (
+    uint64_t s
+);
+@end example
+
+With the same seed, the hash function always produces the same digest
+for the same input.
+
+If this function is never called, the hash function bahaves as if it is
+seeded with all bits zero.
+
+@item hash_digest
+
+Calculates the digest of the given input.
+
+@example c
+uint64_t
+hash_digest (
+    void const *input,
+    size_t      len
+);
+@end example
+
+@item hash_digestv
+
+Like @code{hash_digest()}, but takes input from multiple buffers.
+
+@example c
+uint64_t
+hash_digestv (
+    struct iovec const *bufv,
+    int                 bufcnt
+);
+@end example
+
+The function is guaranteed not to modify the buffer data of each
+@code{struct iovec} object.
+
+@item hash_digestcb
+
+Like @code{hash_digestv()}, but takes input buffers from a callback function.
+
+@example c
+uint64_t
+hash_digestcb (
+    hash_digestcb_func *callback,
+    void               *user_data
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item callback
+
+The function to provide input buffers.
+It must not be @code{NULL}.
+
+Type of the @code{callback} function is defined as:
+
+@example c
+typedef size_t (hash_digestcb_func) (
+    void        *user_data,
+    void const **buf_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item user_data
+Equals to the @code{user_data} pointer passed to the current
+@code{hash_digest} function call.
+
+@item buf_ptr
+Unless returning @t{0}, the callback function should store the pointer to
+an input buffer to the location pointed to by @code{buf_ptr}.
+
+The buffer must be valid until the next call to the callback function,
+or until @code{hash_digestcb()} returns.
+@end table
+
+The callback function should return the number of bytes to be read from
+the input buffer.
+It is called continuously until it returns @t{0}.
+
+@item user_data
+An opaque pointer to be passed to the @code{callback} function.
+@end table
+@end table
+
+
+@node Hash Tables
+@section Hash Tables
+
+
+@node Pseudo-Random Number Generator
+@section Pseudo-Random Number Generator
+
+Non-cryptographic pseudo-random number generator with 64-bit output
+and 256-bit state.
+
+Currently, the @uref{https://prng.di.unimi.it/, xoshiro256++} algorithm
+is used.
+
+Functions:
+
+@table @code
+@item prng_seed
+
+Updates the seed used by the PRNG.
+
+@example c
+#include <bookmarkfs/prng.h>
+
+int
+prng_seed (
+    uint64_t const s[4]
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item s
+The new seed (i.e., the internal state) for the PRNG.
+
+@quotation Note
+It is recommended to seed the PRNG with values that ``appear to be random''
+(have a uniform distribution of bits).
+
+A seed with all bits zero (equivalent to never calling @code{prng_seed()})
+results in @code{prng_rand()} producing a bad-quality number sequence.
+@end quotation
+
+If @code{NULL}, the seed will be obtained using @linuxmanpage{getrandom, 2}.
+@end table
+
+The function returns @t{0} on success, and @t{-1} on error.
+If @code{s} is not @code{NULL}, the function never fails.
+
+@item prng_rand
+Returns the next value in the pseudo-random number sequence.
+
+@example c
+uint64_t
+prng_rand (void);
+@end example
+
+With the same seed, the @code{prng_rand()} function always produces the same
+number sequence.
+
+@quotation Note
+This function is MT-Unsafe.
+@end quotation
+@end table
+
+
+@node Sandboxing
+@section Sandboxing
+
+While entering sandbox, the calling process/thread irrevocably relinquishes
+most access to the system resources that it's not supposed to touch.
+For example:
+
+@itemize @bullet{}
+@item access local files other than the bookmark storage
+@item establish socket connections
+@item execute other files
+@end itemize
+
+This mechanism reduces the attack surface for exploit,
+if a vulnerability is discovered in BookmarkFS and/or its dependencies.
+However, it only deals with untrusted input,
+and cannot help if the operating system has already been compromised.
+
+``Untrusted input'' includes but not limited to:
+
+@itemize @bullet{}
+@item Bookmark storage @emph{not} created by the user with a trusted program
+(e.g., obtained from some random person on the internet).
+
+@item Filesystem calls from untrusted programs.
+The program may be running in an isolated environment,
+but it has a chance to escape if BookmarkFS can be exploited.
+@end itemize
+
+The utility library provides a helper function for sandboxing:
+
+@example c
+#include <bookmarkfs/sandbox.h>
+
+int
+sandbox_enter (
+    int      dirfd,
+    uint32_t flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item dirfd
+File descriptor of a directory to grant access.
+@code{-1} if not needed.
+
+The process may access, modify and create filesystem objects under the
+directory using the @code{*at()} family of system calls.
+
+For other directory file descriptors, it is unspecified whether they can be
+used in any way.
+A security-aware program should close such file descriptors before entering
+sandbox.
+
+@item flags
+A bit array of the following flags:
+
+@table @code
+@item SANDBOX_READONLY
+Grants read-only access to the directory referred to by @code{dirfd},
+instead of read/write access.
+
+This option is ignored when @code{dirfd} is @code{-1}.
+
+@item SANDBOX_NO_LANDLOCK
+Do not use Landlock for sandboxing.
+
+This option is ignored on non-Linux platforms.
+
+@item SANDBOX_NOOP
+The sandbox does nothing, and always returns successfully.
+@end table
+@end table
+
+The function should return @t{0} on success, and @t{-1} on error.
+
+Despite the return value, the function should not be called again for the
+calling process/thread.
+Upon failure, the sandboxing state of the calling process/thread is
+unspecified.
+
+@quotation Note
+The @code{sandbox_enter()} function is designed to work with BookmarkFS
+components, and may require some tweaking to be used for other programs.
+@end quotation
+
+Sandboxing is implemented using platform-specific features,
+and may behave differently across platforms:
+
+@table @asis
+@item Linux
+Implemented using @linuxmanpage{seccomp, 2} and @linuxmanpage{landlock, 7}.
+
+Sandbox applies to the calling thread.
+
+@item FreeBSD
+Implemented using @freebsdmanpage{capsicum, 4}.
+
+Sandbox applies to the calling process.
+@end table
+
+Refer to the source code in @file{src/sandbox.c} for implementation details.
+
+
+@node File Watcher
+@section File Watcher
+
+File watchers detects filesystem changes using platform-specific features:
+
+@table @asis
+@item Linux
+Implemented with @linuxmanpage{fanotify, 7}.
+Requires kernel version 5.13 or later for unprivileged users.
+
+@linuxmanpage{inotify, 7} does not have this limitation, however,
+it is incompatible with our sandboxing design.
+
+@item FreeBSD
+Implemented with the @code{EVFILT_VNODE} filter of @freebsdmanpage{kevent, 2}.
+
+@item Fallback
+When no platform-specific filesystem watching mechanism is available,
+periodically checks the @code{st_ino} and @code{st_mtim} attributes
+of the watched file with @posixfuncmanpage{fstatat}.
+
+This approach is less efficient than ``native'' implementations,
+but should work on any POSIX-compatible system.
+@end table
+
+Functions:
+
+@table @code
+@item watcher_create
+Creates a new watcher.
+
+@example c
+#include <bookmarkfs/watcher.h>
+
+struct watcher *
+watcher_create (
+    int         dirfd,
+    char const *name,
+    uint32_t    flags
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item dirfd
+File descriptor of the directory holding the file to be watched.
+
+@item name
+Name of the file to be watched.
+
+@item flags
+A bit array of the following flags:
+
+@table @asis
+@item @code{WATCHER_FALLBACK}
+Do not use platform-specific features.
+
+@item @code{WATCHER_NOOP}
+The watcher does nothing, and @code{watcher_poll()} always return
+@code{-EAGAIN}.
+
+Values of @code{dirfd}, @code{name} and other flags are ignored.
+
+@item Sandbox Flags
+Flags for @code{sandbox_enter()}, shifted
+@code{WATCHER_SANDBOX_FLAGS_OFFSET} bits.
+
+The sandbox flags apply to the worker thread used internally by the watcher.
+@code{SANDBOX_READONLY} is always applied.
+
+@xref{Sandboxing}.
+@end table
+@end table
+
+On success, the function returns a pointer referring to the watcher.
+On error, it returns @code{NULL}.
+
+@item watcher_destroy
+Stop watching, and release all system resources associated with the watcher.
+
+@example c
+void
+watcher_destroy (
+    struct watcher *w
+);
+@end example
+
+@item watcher_poll
+
+Checks whether the file being watched has changed.
+This function never blocks.
+
+@example c
+int
+watcher_poll (
+    struct watcher *w
+);
+@end example
+
+Return value:
+
+@table @asis
+@item @t{0}
+The file has changed since the last call to @code{watcher_poll()};
+if it hasn't been called, since watcher initialization.
+
+@item @code{-EAGAIN}
+The file hasn't changed since the last call to @code{watcher_poll()} that
+returns @t{0}.
+
+If no previous @code{watcher_poll()} calls return @t{0}, it indicates that
+the watcher is being initialized.
+
+@item @code{-ENOENT}
+The file being watched does not exist.
+
+@item @code{-EIO}
+An internal error has occurred.
+
+Further calls to @code{watcher_poll()} will always fail.
+@end table
+@end table
 
 
 @node General Index

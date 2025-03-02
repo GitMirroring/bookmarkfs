@@ -35,30 +35,13 @@
 #  define WATCHER_CAN_CREATE_IN_SANDBOX
 #endif
 
-/**
- * Always use fstatat() to detect file change.
- */
 #define WATCHER_FALLBACK  ( 1u << 0 )
-/**
- * Nothing is performed on the filesystem,
- * and watcher_poll() always returns -EAGAIN.
- */
 #define WATCHER_NOOP      ( 1u << 1 )
 
-/**
- * Bit to shift when applying sandbox flags to the watcher.
- */
 #define WATCHER_SANDBOX_FLAGS_OFFSET  16
 
 struct watcher;
 
-/**
- * Creates a watcher that watches for changes of a single file.
- *
- * The `flags` argument is a bit combination of watcher flags
- * and sandbox flags.  The latter is used for
- * initializing the sandbox for the internal worker thread.
- */
 struct watcher *
 watcher_create (
     int         dirfd,
@@ -71,16 +54,6 @@ watcher_destroy (
     struct watcher *w
 );
 
-/**
- * Check whether the file associated with the watcher
- * has changed since the last watcher_poll() call.
- *
- * - Returns 0 if the file has changed, -EAGAIN if not.
- * - Returns -ENOENT if the file being watched has gone.
- * - Returns -EIO if an internal error occurred,
- *   in which case the watcher became defunct,
- *   and further calls to this function always fail.
- */
 int
 watcher_poll (
     struct watcher *w
