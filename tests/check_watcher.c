@@ -37,8 +37,7 @@
 
 // Forward declaration start
 static int  do_check_watcher  (int, uint32_t);
-static void msecs_to_timespec (struct timespec *, unsigned long);
-static int  wait_for_watcher  (struct watcher *, struct timespec const *, int);
+static int  wait_for_watcher  (struct watcher *);
 // Forward declaration end
 
 static int
@@ -52,15 +51,6 @@ do_check_watcher (
 #define ASSERT_EQ(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) == r_, goto end;)
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
-    unsigned long msecs = 50;
-    int           tries = 10;
-    if (flags & WATCHER_FALLBACK) {
-        msecs = 2500;
-        tries = 2;
-    }
-    struct timespec ts;
-    msecs_to_timespec(&ts, msecs);
-
     int status = -1;
     int fd     = -1;
     struct watcher *w = NULL;
@@ -73,10 +63,10 @@ do_check_watcher (
         goto end;
     }
     // Check for spurious zero returns.
-    ASSERT_EQ(-ETIMEDOUT, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(-ETIMEDOUT, wait_for_watcher(w));
 
     ASSERT_NE(-1, write(fd, "foo", 3));
-    ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(0, wait_for_watcher(w));
 
     bool check_truncate = true;
 #if defined(__FreeBSD__)
@@ -88,7 +78,7 @@ do_check_watcher (
 #endif
     if (check_truncate) {
         ASSERT_EQ(0, ftruncate(fd, 0));
-        ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
+        ASSERT_EQ(0, wait_for_watcher(w));
     }
 
     int fd2 = openat(dirfd, FILE2_NAME, O_WRONLY | O_CREAT, 0600);
@@ -109,18 +99,18 @@ do_check_watcher (
     }
 
     ASSERT_EQ(0, renameat(dirfd, FILE2_NAME, dirfd, FILE1_NAME));
-    ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(0, wait_for_watcher(w));
 
     ASSERT_EQ(0, renameat(dirfd, FILE1_NAME, dirfd, FILE2_NAME));
-    ASSERT_EQ(-ENOENT, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(-ENOENT, wait_for_watcher(w));
 
     // If the watched file has gone, but managed to come back,
     // the watcher should continue to work.
     ASSERT_EQ(0, renameat(dirfd, FILE2_NAME, dirfd, FILE1_NAME));
-    ASSERT_EQ(0, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(0, wait_for_watcher(w));
 
     ASSERT_EQ(0, unlinkat(dirfd, FILE1_NAME, 0));
-    ASSERT_EQ(-ENOENT, wait_for_watcher(w, &ts, tries));
+    ASSERT_EQ(-ENOENT, wait_for_watcher(w));
 
     status = 0;
 
@@ -134,23 +124,21 @@ do_check_watcher (
     return status;
 }
 
-static void
-msecs_to_timespec (
-    struct timespec *ts_buf,
-    unsigned long    millisecs
-) {
-    ts_buf->tv_sec  = millisecs / 1000;
-    ts_buf->tv_nsec = (millisecs % 1000) * 1000000;
-}
-
 static int
 wait_for_watcher (
-    struct watcher        *w,
-    struct timespec const *ts,
-    int                    retry
+    struct watcher *w
 ) {
-    for (int i = 0; i < retry; ++i) {
-        clock_nanosleep(CLOCK_MONOTONIC, 0, ts, NULL);
+#ifdef BOOKMARKFS_NATIVE_WATCHER
+#  define TRY_INTERVAL  { .tv_nsec = 50 * 1000000 }
+#  define MAX_TRIES     10
+#else
+#  define TRY_INTERVAL  { .tv_sec = 2, .tv_nsec = 500 * 1000000 }
+#  define MAX_TRIES     2
+#endif
+
+    struct timespec const ts = TRY_INTERVAL;
+    for (int i = 0; i < MAX_TRIES; ++i) {
+        clock_nanosleep(CLOCK_MONOTONIC, 0, &ts, NULL);
 
         int status = watcher_poll(w);
         if (status != -EAGAIN) {
@@ -165,36 +153,40 @@ check_watcher (
     int   argc,
     char *argv[]
 ) {
-    uint32_t flags = 0;
-#if defined(__FreeBSD__)
-    // Do not enable sandbox on FreeBSD,
-    // since the watcher sandbox only grants read access to dirfd,
-    // and cap_enter() applies to the entire process.
-    flags |= SANDBOX_NOOP << WATCHER_SANDBOX_FLAGS_OFFSET;
-#endif
+    char const *path = NULL;
 
-    getopt_foreach(argc, argv, ":f") {
-      case 'f':
-        flags |= WATCHER_FALLBACK;
+    getopt_foreach(argc, argv, ":d:") {
+      case 'd':
+        path = optarg;
         break;
 
       default:
         log_printf("bad option '-%c'", optopt);
         return -1;
     }
-    argc -= optind;
-    if (argc < 1) {
+    if (path == NULL) {
         log_puts("path not specified");
         return -1;
     }
-    argv += optind;
 
-    int dirfd = open(argv[0], O_RDONLY | O_DIRECTORY);
+    int dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {
-        log_printf("failed to open '%s'", argv[0]);
+        log_printf("failed to open '%s'", path);
         return -1;
     }
 
+    uint32_t sandbox_flags = 0;
+#ifndef BOOKMARKFS_SANDBOX_LANDLOCK
+    sandbox_flags |= SANDBOX_NO_LANDLOCK;
+#endif
+#if defined(__FreeBSD__)
+    // Do not enable sandbox on FreeBSD,
+    // since the watcher sandbox only grants read access to dirfd,
+    // and cap_enter() applies to the entire process.
+    sandbox_flags |= SANDBOX_NOOP;
+#endif
+
+    uint32_t flags = sandbox_flags << WATCHER_SANDBOX_FLAGS_OFFSET;
     int status = do_check_watcher(dirfd, flags);
     close(dirfd);
     return status;

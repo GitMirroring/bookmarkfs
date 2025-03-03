@@ -11,15 +11,10 @@ AT_SETUP([util lib: file watcher])
 AT_KEYWORDS([lib watcher])
 
 ATX_CHECK_LIB([
-    args=
-    ATX_FEAT_IF([native-watcher], , [
-        args="$args -f"
-    ])
-
     tmpdir=./$(ath_fn_rand_u64_hex).tmp.d
 
     mkdir $tmpdir
-    check-util-lib watcher $args $tmpdir
+    check-util-lib watcher -d $tmpdir
 ])
 
 AT_CLEANUP
