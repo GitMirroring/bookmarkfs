@@ -15,7 +15,7 @@ AT_KEYWORDS([lib prng])
 # For reliable testing of PRNGs, see <https://prng.di.unimi.it/#quality>.
 ATX_CHECK_LIB([
     gen_num() {
-        check-bookmarkfs-util prng -s$1 -n$2
+        check-util-lib prng -s$1 -n$2
     }
 
     gen_seed() {

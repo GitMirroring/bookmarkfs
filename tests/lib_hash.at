@@ -16,7 +16,7 @@ AT_KEYWORDS([lib hash])
 # see <https://github.com/Cyan4973/xxHash/tree/dev/tests>.
 ATX_CHECK_LIB([
     calc_digest() {
-        echo "$2" | check-bookmarkfs-util hash -s$1
+        echo "$2" | check-util-lib hash -s$1
     }
 
     seed=$(ath_fn_rand_u64_hex)

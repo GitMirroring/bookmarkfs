@@ -19,7 +19,7 @@ ATX_CHECK_LIB([
     tmpdir=./$(ath_fn_rand_u64_hex).tmp.d
 
     mkdir $tmpdir
-    check-bookmarkfs-util watcher $args $tmpdir
+    check-util-lib watcher $args $tmpdir
 ])
 
 AT_CLEANUP
