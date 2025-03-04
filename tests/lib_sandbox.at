@@ -1,0 +1,25 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([util lib: sandbox])
+AT_KEYWORDS([lib sandbox])
+
+ATX_CHECK_LIB([
+    tmpdir=./$(ath_fn_rand_u64_hex).tmp.d
+
+    mkdir $tmpdir
+    printf '%s\n\n%s\n' '#!/bin/sh' 'exit 2' > $tmpdir/false.sh
+    chmod +x $tmpdir/false.sh
+
+    # Check both read-only and read/write mode.
+    check-util-lib sandbox -r -d $tmpdir
+    check-util-lib sandbox    -d $tmpdir
+])
+
+AT_CLEANUP

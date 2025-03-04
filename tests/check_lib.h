@@ -34,6 +34,12 @@
     } while (0)
 
 int
+check_sandbox (
+    int   argc,
+    char *argv[]
+);
+
+int
 check_watcher (
     int   argc,
     char *argv[]
