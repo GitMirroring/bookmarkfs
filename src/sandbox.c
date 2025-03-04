@@ -69,6 +69,20 @@
     }
 #define SCMP_RULES(rules)  rules, sizeof(rules) / sizeof(struct scmp_rule_def)
 
+/**
+ * Whether the argument is a valid fd (non-negative 32-bit integer).
+ * Intended to filter out *at() calls with `AT_FDCWD`.
+ *
+ * A saner alternative is just `SCMP_Ax_32(SCMP_CMP_NE, AT_FDCWD)`,
+ * however, we have to workaround a glibc problem introduced in commit
+ * 89b53077d2a5, where syscall arguments passed to `SYSCALL_CANCEL()`
+ * are always explicitly casted to `long`, sign-extending the value
+ * (instead of zero-extending, as we expected).
+ *
+ * The only affected syscall here is openat().
+ */
+#define SCMP_ARG_FD(n)  SCMP_A##n##_32(SCMP_CMP_MASKED_EQ, (1u << 31), 0)
+
 struct scmp_rule_def {
     int                        syscall_num;
     int                        argc;
@@ -248,11 +262,20 @@ sandbox_enter (
     if (dirfd < 0) {
         goto apply_seccomp;
     }
+    // libseccomp can optimize out `SCMP_CMP_MASKED_EQ(0, 0)`.
+    int oflags_mask = 0;
+    int oflags_exp  = 0;
+    if ((flags & SANDBOX_NO_LANDLOCK) && (flags & SANDBOX_READONLY)) {
+        oflags_mask = O_ACCMODE | O_CREAT;
+        oflags_exp  = O_RDONLY;
+    }
     struct scmp_rule_def const rules_dir[] = {
-        SCMP_RULE(fanotify_mark, 40,  SCMP_A3_32(SCMP_CMP_NE, AT_FDCWD)),
-        SCMP_RULE(fstatat64,     100, SCMP_A0_32(SCMP_CMP_NE, AT_FDCWD)),
-        SCMP_RULE(newfstatat,    100, SCMP_A0_32(SCMP_CMP_NE, AT_FDCWD)),
-        SCMP_RULE(openat,        20,  SCMP_A0_32(SCMP_CMP_NE, AT_FDCWD)),
+        SCMP_RULE(fanotify_mark, 40,  SCMP_ARG_FD(3)),
+        SCMP_RULE(fstatat64,     100, SCMP_ARG_FD(0)),
+        SCMP_RULE(newfstatat,    100, SCMP_ARG_FD(0)),
+        SCMP_RULE(openat, 20, SCMP_ARG_FD(0),
+                              SCMP_A2_32(SCMP_CMP_MASKED_EQ, oflags_mask,
+                                                             oflags_exp)),
     };
     if (unlikely(0 != add_scmp_rules(sfctx, SCMP_RULES(rules_dir)))) {
         goto free_sfctx;
@@ -262,8 +285,9 @@ sandbox_enter (
         goto do_landlock;
     }
     struct scmp_rule_def const rules_dir_extra[] = {
-        SCMP_RULE(renameat, 20, SCMP_A0_32(SCMP_CMP_NE, AT_FDCWD),
-                                SCMP_A2_32(SCMP_CMP_NE, AT_FDCWD)),
+        SCMP_RULE(renameat, 20, SCMP_ARG_FD(0),
+                                SCMP_ARG_FD(2)),
+        SCMP_RULE(unlinkat, 20, SCMP_ARG_FD(0)),
     };
     if (unlikely(0 != add_scmp_rules(sfctx, SCMP_RULES(rules_dir_extra)))) {
         goto free_sfctx;
