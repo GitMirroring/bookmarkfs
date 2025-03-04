@@ -13,14 +13,14 @@ m4_define([ATX_FAIL], [exit 99])
 m4_define([ATX_SKIP], [exit 77])
 
 dnl
-dnl  ATX_FEAT_NAME(feature)
+dnl  ATX_FEAT_VAR(feature)
 dnl
-dnl  Name of the shell variable indicating whether the given feature
+dnl  Expands to the shell variable indicating whether the given feature
 dnl  is defined by BOOKMARKFS_FEAT() and enabled during `configure`.
 dnl
 dnl  A non-empty value indicates that the feature is enabled.
 dnl
-m4_define([ATX_FEAT_NAME], [[feat_]m4_translit($1, [-], [_])])
+m4_define([ATX_FEAT_VAR], [[${feat_]m4_translit($1, [-], [_])[}]])
 
 dnl
 dnl  ATX_FEAT_IF(feature, [action-if-enabled], [action-if-disabled])
@@ -28,7 +28,7 @@ dnl
 dnl  Conditionally run script depending on whether a feature is enabled.
 dnl
 m4_define([ATX_FEAT_IF], [
-    if test -n "$ATX_FEAT_NAME($1)"; then :
+    if test -n "ATX_FEAT_VAR($1)"; then :
         $2
     else :
         $3
@@ -41,7 +41,7 @@ dnl
 dnl  If any of the given features is not enabled, skip the current test.
 dnl
 m4_define([ATX_FEAT_PREREQ], [
-    if test -z "m4_join(, m4_foreach([s_], [$@], [$ATX_FEAT_NAME(s_)]))"; then
+    if test -z "m4_map([ATX_FEAT_VAR], [$@])"; then
         ATX_SKIP
     fi
 ])
