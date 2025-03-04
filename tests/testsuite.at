@@ -46,12 +46,34 @@ m4_define([ATX_FEAT_PREREQ], [
     fi
 ])
 
+dnl
+dnl  ATX_RUN_ONE(cmd)
+dnl
+dnl  Run a pipeline of shell command(s).
+dnl  If it exits with a non-zero status, fail the current test.
+dnl
+m4_define([ATX_RUN_ONE], [
+    m4_ifnblank([$1], [
+        if $1; then :
+        else
+            echo "exit status: $?"
+            ATX_FAIL
+        fi
+    ])
+])
+
+dnl
+dnl  ATX_RUN(cmd_list)
+dnl
+dnl  Like ATX_RUN_ONE, but takes multiple pipelines, separated by newline.
+dnl  If any exits with a non-zero status, fail the current test.
+dnl
+m4_define([ATX_RUN], [
+    m4_map([ATX_RUN_ONE], m4_split([$1], m4_newline([+])))
+])
+
 m4_define([ATX_CHECK_SIMPLE], [
-    AT_CHECK([
-        atx_line_start=$LINENO
-        trap 'echo "Error $? at line $(($LINENO-$atx_line_start))"; exit 1' ERR
-        $1
-    ], , [ignore], [ignore])
+    AT_CHECK([$1], , [ignore], [ignore])
 ])
 
 m4_define([ATX_CHECK_LIB], [

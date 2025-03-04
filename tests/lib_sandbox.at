@@ -18,8 +18,10 @@ ATX_CHECK_LIB([
     chmod +x $tmpdir/false.sh
 
     # Check both read-only and read/write mode.
-    check-util-lib sandbox -r -d $tmpdir
-    check-util-lib sandbox    -d $tmpdir
+    ATX_RUN([
+        check-util-lib sandbox -r -d $tmpdir
+        check-util-lib sandbox    -d $tmpdir
+    ])
 ])
 
 AT_CLEANUP
