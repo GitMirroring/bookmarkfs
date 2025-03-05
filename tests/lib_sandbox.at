@@ -17,6 +17,9 @@ ATX_CHECK_LIB([
     printf '%s\n\n%s\n' '#!/bin/sh' 'exit 2' > $tmpdir/false.sh
     chmod +x $tmpdir/false.sh
 
+    # LSAN does not play well with sandbox...
+    export ASAN_OPTIONS="$ASAN_OPTIONS:detect_leaks=0"
+
     # Check both read-only and read/write mode.
     ATX_RUN([
         check-util-lib sandbox -r -d $tmpdir
