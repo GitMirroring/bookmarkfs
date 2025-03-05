@@ -300,17 +300,19 @@ hashmap_create (
     hashmap_hash_func *entry_hash
 ) {
     size_t buckets_len = BUCKET_CNT(EXP_MIN);
-    // XXX: Null pointers have an implementation-defined value
-    // per ISO C standard, and should not be zero-initialized with calloc().
-    // However, it is guaranteed to be zero on most, if not all,
-    // modern ABI standards that we know of.
+    // XXX: According to the ISO C standard, null pointers have an
+    // implementation-defined value, and should not be zero-initialized
+    // with calloc() or memset().
     //
-    // Nevertheless, we add a build-time check just in case (see configure.ac).
+    // However, it is guaranteed to be all-bits-zero on most,
+    // if not all, modern ABI standards that we know of.
+    // POSIX also has such requirements since POSIX.1-2024.
     //
     // See:
     // - <https://github.com/ARM-software/abi-aa>
     // - <https://github.com/riscv-non-isa/riscv-elf-psabi-doc>
     // - <https://gitlab.com/x86-psABIs/x86-64-ABI>
+    // - <https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/stddef.h.html>
     struct bucket *buckets = xcalloc(buckets_len, sizeof(struct bucket));
 
     struct hashmap *h = xmalloc(sizeof(*h));

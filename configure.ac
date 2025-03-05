@@ -40,22 +40,6 @@ AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-# -- Checks for platform-specific features --
-
-AC_MSG_CHECKING([if null pointers have an all-zero representation])
-AC_RUN_IFELSE([
-    AC_LANG_PROGRAM([[#include <string.h>]],
-                    [[void *ptr = NULL; char buf[sizeof(ptr)] = { 0 };
-                      if (0 != memcmp(buf, &ptr, sizeof(ptr))) return 1;]])
-], [
-    AC_MSG_RESULT([yes])
-], [
-    AC_MSG_RESULT([no])
-    AC_MSG_ERROR(m4_normalize([
-        Null pointers do not have an all-zero representation on this platform.
-    ]))
-])
-
 # -- Checks for features --
 
 BOOKMARKFS_FEAT([bookmarkfs-util], [no], [the BookmarkFS utility library])
