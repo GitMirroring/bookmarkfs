@@ -527,7 +527,7 @@ fsck_apply (
 
     entry->name     = json_string_value(name_node);
     entry->name_len = name_len;
-    *hashmap_insert(assoc_map, key_assoc, hashcode_assoc) = entry;
+    hashmap_insert(assoc_map, hashcode_assoc, entry);
     return 0;
 
   callback:
@@ -670,10 +670,8 @@ update_guid (
     uint8_t           *guid,
     unsigned long      hashcode
 ) {
-    hashmap_entry_delete(guid_map, entry, old_entry_id);
-
-    union hashmap_key key = { .ptr = guid };
-    *hashmap_insert(guid_map, key, hashcode) = entry;
+    hashmap_delete(guid_map, entry, old_entry_id);
+    hashmap_insert(guid_map, hashcode, entry);
 
     memcpy(entry->guid, guid, UUID_LEN);
 }
@@ -768,13 +766,11 @@ build_maps (
         .node     = root,
         .children = children,
     };
-    union hashmap_key key_id      = { .u64 = root_id };
-    unsigned long     hashcode_id = hash_digest(&root_id, sizeof(root_id));
-    *hashmap_insert(id_map, key_id, hashcode_id) = root_entry;
+    unsigned long hashcode_id = hash_digest(&root_id, sizeof(root_id));
+    hashmap_insert(id_map, hashcode_id, root_entry);
 
-    union hashmap_key key_guid      = { .ptr = root_entry->guid };
-    unsigned long     hashcode_guid = hash_digest(root_entry->guid, UUID_LEN);
-    *hashmap_insert(guid_map, key_guid, hashcode_guid) = root_entry;
+    unsigned long hashcode_guid = hash_digest(root_entry->guid, UUID_LEN);
+    hashmap_insert(guid_map, hashcode_guid, root_entry);
 
     struct idmap_iter_ctx iter_ctx = {
         .id_map    = id_map,
@@ -879,8 +875,8 @@ free_blcookie (
 
 static void
 free_entry_cb (
-    void *entry,
-    void *UNUSED_VAR(user_data)
+    void *UNUSED_VAR(user_data),
+    void *entry
 ) {
     free(entry);
 }
@@ -1321,8 +1317,8 @@ maps_iter_cb (
     entry->node      = node;
     entry->children  = children;
     memcpy(entry->guid, guid, UUID_LEN);
-    *hashmap_insert(ctx->id_map,   key,      hashcode)      = entry;
-    *hashmap_insert(ctx->guid_map, key_guid, hashcode_guid) = entry;
+    hashmap_insert(ctx->id_map, hashcode, entry);
+    hashmap_insert(ctx->guid_map, hashcode_guid, entry);
 
     // bookmark bar, mobile bookmarks, other bookmarks, ...
     if (parent->id == BOOKMARKS_ROOT_ID) {
@@ -1359,7 +1355,7 @@ maps_iter_cb (
 
     entry->name     = name;
     entry->name_len = name_len;
-    *hashmap_insert(assoc_map, key_assoc, hashcode_assoc) = entry;
+    hashmap_insert(assoc_map, hashcode_assoc, entry);
 
   end:
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
@@ -2265,9 +2261,7 @@ bookmark_create (
         .node      = node,
         .children  = is_dir ? json_object_sget(node, "children") : NULL,
     };
-
-    union hashmap_key key = { .u64 = id };
-    *hashmap_insert(ctx->id_map, key, hash_digest(&id, sizeof(id))) = entry;
+    hashmap_insert(ctx->id_map, hash_digest(&id, sizeof(id)), entry);
 
     void          *guid          = lctx.guid;
     unsigned long  hashcode_guid = lctx.hashcode;
@@ -2275,16 +2269,9 @@ bookmark_create (
         guid          = bctx.guid;
         hashcode_guid = bctx.hashcode;
 
-        key.ptr = &(struct assocmap_key) {
-            .parent_id = parent_id,
-            .name      = name,
-            .name_len  = name_len,
-        };
-        *hashmap_insert(ctx->assoc_map, key, lctx.hashcode) = entry;
+        hashmap_insert(ctx->assoc_map, lctx.hashcode, entry);
     }
-
-    key.ptr = guid;
-    *hashmap_insert(ctx->guid_map, key, hashcode_guid) = entry;
+    hashmap_insert(ctx->guid_map, hashcode_guid, entry);
 
     memcpy(entry->guid, guid, UUID_LEN);
     ctx->dirty = DIRTY_LEVEL_DATA;
@@ -2344,10 +2331,10 @@ bookmark_delete (
     long guidmap_entry_id = lctx.entry_id;
     if (!(ctx->flags & BACKEND_FILENAME_GUID)) {
         guidmap_entry_id = -1;
-        hashmap_entry_delete(ctx->assoc_map, entry, lctx.entry_id);
+        hashmap_delete(ctx->assoc_map, entry, lctx.entry_id);
     }
-    hashmap_entry_delete(ctx->guid_map, entry, guidmap_entry_id);
-    hashmap_entry_delete(ctx->id_map, entry, -1);
+    hashmap_delete(ctx->guid_map, entry, guidmap_entry_id);
+    hashmap_delete(ctx->id_map, entry, -1);
     free(entry);
 
     // Remove from store
@@ -2566,10 +2553,10 @@ bookmark_rename (
         long new_guidmap_entry_id = new_lctx.entry_id;
         if (!filename_is_guid) {
             new_guidmap_entry_id = -1;
-            hashmap_entry_delete(ctx->assoc_map, new_entry, new_lctx.entry_id);
+            hashmap_delete(ctx->assoc_map, new_entry, new_lctx.entry_id);
         }
-        hashmap_entry_delete(ctx->guid_map, new_entry, new_guidmap_entry_id);
-        hashmap_entry_delete(ctx->id_map, new_entry, -1);
+        hashmap_delete(ctx->guid_map, new_entry, new_guidmap_entry_id);
+        hashmap_delete(ctx->id_map, new_entry, -1);
         free(new_entry);
     }
 
@@ -2577,16 +2564,8 @@ bookmark_rename (
         update_guid(old_entry, ctx->guid_map, old_lctx.entry_id, new_lctx.guid,
                 new_lctx.hashcode);
     } else {
-        hashmap_entry_delete(ctx->assoc_map, old_entry, old_lctx.entry_id);
-
-        union hashmap_key key = {
-            .ptr = &(struct assocmap_key) {
-                .parent_id = new_parent_id,
-                .name      = old_entry->name,
-                .name_len  = new_name_len,
-            },
-        };
-        *hashmap_insert(ctx->assoc_map, key, new_lctx.hashcode) = old_entry;
+        hashmap_delete(ctx->assoc_map, old_entry, old_lctx.entry_id);
+        hashmap_insert(ctx->assoc_map, new_lctx.hashcode, old_entry);
     }
     ctx->dirty = DIRTY_LEVEL_DATA;
 

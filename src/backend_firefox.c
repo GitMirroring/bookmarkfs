@@ -533,7 +533,7 @@ fsck_apply (
     dentry->name_len = name_len;
     memcpy(dentry->name, name, name_len);
 
-    *hashmap_insert(map, key, hashcode) = dentry;
+    hashmap_insert(map, hashcode, dentry);
     goto end;
 
   callback:
@@ -2347,7 +2347,7 @@ bookmark_check_cb (
             map = hashmap_create(dentmap_comp, dentmap_hash);
             ctx->dentry_map = map;
         }
-        *hashmap_insert(map, key, hashcode) = dentry;
+        hashmap_insert(map, hashcode, dentry);
         return 0;
     }
     if (dentry->id == (uint64_t)id) {
@@ -2457,7 +2457,7 @@ bookmark_list_cb (
         dentry->name_len = name_len;
         memcpy(dentry->name, name, name_len);
 
-        *hashmap_insert(map, key, hashcode) = dentry;
+        hashmap_insert(map, hashcode, dentry);
     }
     return ctx->status;
 
@@ -2547,8 +2547,8 @@ free_dentmap (
 
 static void
 free_dentmap_entry (
-    void *entry,
-    void *UNUSED_VAR(user_data)
+    void *UNUSED_VAR(user_data),
+    void *entry
 ) {
     struct bookmark_dentry *dentry = entry;
 

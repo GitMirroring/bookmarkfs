@@ -458,7 +458,7 @@ bm_fh_free (
     struct fs_file_handle *fh,
     long                   entry_id
 ) {
-    hashmap_entry_delete(ctx.fh_map, fh, entry_id);
+    hashmap_delete(ctx.fh_map, fh, entry_id);
     free(fh);
 }
 
@@ -493,8 +493,7 @@ bm_fh_new (
         .id       = id,
         .refcount = 1,
     };
-    union hashmap_key key = { .u64 = id };
-    *hashmap_insert(ctx.fh_map, key, hashcode) = fh;
+    hashmap_insert(ctx.fh_map, hashcode, fh);
     return fh;
 }
 

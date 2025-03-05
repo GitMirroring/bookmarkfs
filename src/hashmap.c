@@ -155,14 +155,14 @@ count_tz (
  */
 static int
 find_entry (
-    struct hashmap const  *h,
+    struct hashmap const  *map,
     void const            *entry,
     struct bucket        **home_ptr
 ) {
-    unsigned       exp       = h->exp;
-    unsigned long  hashcode  = h->entry_hash(entry);
+    unsigned       exp       = map->exp;
+    unsigned long  hashcode  = map->entry_hash(entry);
     size_t         hash_idx  = HASH_TO_IDX(hashcode, exp);
-    struct bucket *home      = h->buckets + hash_idx;
+    struct bucket *home      = map->buckets + hash_idx;
     unsigned long  hop       = home->bits;
     unsigned long  hash_mask = BUCKET_HASH_MASK(exp);
 
@@ -172,10 +172,10 @@ find_entry (
         debug_assert(hop_idx < exp);
 
         struct bucket *b = home + hop_idx;
-        if ((b->bits & hash_mask) != (hashcode << h->exp)) {
+        if ((b->bits & hash_mask) != (hashcode << map->exp)) {
             continue;
         }
-        if (entry != h->buckets[b - h->buckets].entry) {
+        if (entry != map->buckets[b - map->buckets].entry) {
             continue;
         }
 
@@ -241,10 +241,10 @@ make_room (
 
 static int
 rehash (
-    struct hashmap *h,
+    struct hashmap *map,
     bool            grow
 ) {
-    unsigned new_exp = h->exp;
+    unsigned new_exp = map->exp;
     if (grow) {
         if (unlikely(++new_exp > EXP_MAX)) {
             log_puts("rehash(): hashmap size exceeds max limit");
@@ -257,9 +257,9 @@ rehash (
     size_t new_nbuckets = BUCKET_CNT(new_exp);
     struct bucket *new_buckets = xcalloc(new_nbuckets, sizeof(struct bucket));
 
-    struct bucket *old_buckets_end = h->buckets + h->num_buckets;
-    unsigned long  new_hop_mask    = BUCKET_HOP_MASK(new_exp);
-    for (struct bucket *old_b = h->buckets; old_b < old_buckets_end; ++old_b) {
+    struct bucket *old_b_end    = map->buckets + map->num_buckets;
+    unsigned long  new_hop_mask = BUCKET_HOP_MASK(new_exp);
+    for (struct bucket *old_b = map->buckets; old_b < old_b_end; ++old_b) {
         void *old_e = old_b->entry;
         if (old_e == NULL) {
             continue;
@@ -267,7 +267,7 @@ rehash (
 
         // Cannot trivially deduce hashcode from old hash fragment,
         // since we have to find its home bucket.
-        unsigned long  hashcode     = h->entry_hash(old_e);
+        unsigned long  hashcode     = map->entry_hash(old_e);
         size_t         new_hash_idx = HASH_TO_IDX(hashcode, new_exp);
         struct bucket *new_home     = new_buckets + new_hash_idx;
 
@@ -283,10 +283,10 @@ rehash (
         new_b->entry = old_e;
     }
 
-    free(h->buckets);
-    h->buckets     = new_buckets;
-    h->num_buckets = new_nbuckets;
-    h->exp         = new_exp;
+    free(map->buckets);
+    map->buckets     = new_buckets;
+    map->num_buckets = new_nbuckets;
+    map->exp         = new_exp;
     return 0;
 
   fail:
@@ -328,34 +328,34 @@ hashmap_create (
 
 void
 hashmap_destroy (
-    struct hashmap *h
+    struct hashmap *map
 ) {
-    if (h == NULL) {
+    if (map == NULL) {
         return;
     }
 
-    free(h->buckets);
-    free(h);
+    free(map->buckets);
+    free(map);
 }
 
 void
 hashmap_foreach (
-    struct hashmap const *h,
+    struct hashmap const *map,
     hashmap_walk_func    *walk_func,
     void                 *user_data
 ) {
-    struct bucket *end = h->buckets + h->num_buckets;
-    for (struct bucket *b = h->buckets; b < end; ++b) {
+    struct bucket *end = map->buckets + map->num_buckets;
+    for (struct bucket *b = map->buckets; b < end; ++b) {
         void *entry = b->entry;
         if (entry == NULL) {
             continue;
         }
-        walk_func(b->entry, user_data);
+        walk_func(user_data, b->entry);
     }
 }
 
 void
-hashmap_entry_delete (
+hashmap_delete (
     struct hashmap *h,
     void const     *entry,
     long            entry_id
@@ -386,42 +386,44 @@ hashmap_entry_delete (
     }
 }
 
-void **
+void
 hashmap_insert (
-    struct hashmap    *h,
-    union hashmap_key  key,
-    unsigned long      hashcode
+    struct hashmap *map,
+    unsigned long   hashcode,
+    void           *entry
 ) {
-    unsigned       exp      = h->exp;
+    unsigned       exp      = map->exp;
     size_t         hash_idx = HASH_TO_IDX(hashcode, exp);
-    struct bucket *home     = h->buckets + hash_idx;
+    struct bucket *home     = map->buckets + hash_idx;
 
-    int hop_idx = make_room(home, h->buckets + h->num_buckets, exp);
+    int hop_idx = make_room(home, map->buckets + map->num_buckets, exp);
     if (unlikely(hop_idx < 0)) {
         debug_printf("hashmap_insert(): rehashing (%zu/%zu)",
-                h->num_used, h->num_buckets - (exp - 1));
-        xassert(0 == rehash(h, true));
-        return hashmap_insert(h, key, hashcode);
+                map->num_used, map->num_buckets - (exp - 1));
+        xassert(0 == rehash(map, true));
+        hashmap_insert(map, hashcode, entry);
+        return;
     }
     BIT_SET(home->bits, hop_idx);
 
     struct bucket *b = home + hop_idx;
     b->bits = (b->bits & BUCKET_HOP_MASK(exp)) | (hashcode << exp);
 
-    ++h->num_used;
-    return &b->entry;
+    ++map->num_used;
+    debug_assert(entry != NULL);
+    b->entry = entry;
 }
 
 void *
 hashmap_search (
-    struct hashmap const *h,
+    struct hashmap const *map,
     union hashmap_key     key,
     unsigned long         hashcode,
     unsigned long        *entry_id_ptr
 ) {
-    unsigned       exp       = h->exp;
+    unsigned       exp       = map->exp;
     size_t         hash_idx  = HASH_TO_IDX(hashcode, exp);
-    struct bucket *home      = h->buckets + hash_idx;
+    struct bucket *home      = map->buckets + hash_idx;
     unsigned long  hop       = home->bits;
     unsigned long  hash_mask = BUCKET_HASH_MASK(exp);
 
@@ -438,7 +440,7 @@ hashmap_search (
         }
         void *e = b->entry;
         debug_assert(e != NULL);
-        if (0 != h->entry_comp(key, e)) {
+        if (0 != map->entry_comp(key, e)) {
             continue;
         }
         if (entry_id_ptr != NULL) {

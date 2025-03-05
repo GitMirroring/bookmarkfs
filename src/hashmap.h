@@ -33,8 +33,8 @@ union hashmap_key {
 };
 
 typedef void (hashmap_walk_func) (
-    void *entry,
-    void *user_data
+    void *user_data,
+    void *entry
 );
 
 /**
@@ -67,7 +67,7 @@ hashmap_create (
 
 void
 hashmap_destroy (
-    struct hashmap *h
+    struct hashmap *map
 );
 
 /**
@@ -76,7 +76,7 @@ hashmap_destroy (
  */
 void
 hashmap_foreach (
-    struct hashmap const *h,
+    struct hashmap const *map,
     hashmap_walk_func    *walk_func,
     void                 *user_data
 );
@@ -95,7 +95,7 @@ hashmap_foreach (
  */
 void *
 hashmap_search (
-    struct hashmap const *h,
+    struct hashmap const *map,
     union hashmap_key     key,
     unsigned long         hashcode,
     unsigned long        *entry_id_ptr
@@ -105,16 +105,12 @@ hashmap_search (
  * Insert an entry into the hashmap.
  *
  * Invalidates all entry IDs given by previous hashmap_search() calls.
- *
- * Returns a pointer to the inserted entry.
- * The entry must be set to a non-NULL value using this pointer
- * prior to any further search/insert/delete calls on this hashmap.
  */
-void **
+void
 hashmap_insert (
-    struct hashmap    *h,
-    union hashmap_key  key,
-    unsigned long      hashcode
+    struct hashmap *map,
+    unsigned long   hashcode,
+    void           *entry
 );
 
 /**
@@ -124,12 +120,10 @@ hashmap_insert (
  * The entry_id argument should either be the value given by the
  * hashmap_search() or hashmap_insert() function call where the
  * entry is returned from, or -1 (less efficient).
- *
- * Unlike hashmap_insert(), previously entry IDs are not affected.
  */
 void
-hashmap_entry_delete (
-    struct hashmap *h,
+hashmap_delete (
+    struct hashmap *map,
     void const     *entry,
     long            entry_id
 );
