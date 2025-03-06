@@ -3731,6 +3731,242 @@ An opaque pointer to be passed to the @code{callback} function.
 @node Hash Tables
 @section Hash Tables
 
+A simple hash table implementation, based on a variant of
+@uref{https://en.wikipedia.org/wiki/Hopscotch_hashing, Hopscotch Hashing}.
+
+Time complexity:
+
+@multitable @columnfractions .33 .33 .33
+@headitem Operation @tab Average @tab Worst case
+@item Insert @tab @t{Θ(1)} @tab @t{O(n log n)}
+@item Search @tab @t{Θ(1)} @tab @t{O(log n)}
+@item Delete @tab @t{Θ(1)} @tab @t{O(log n)}
+@end multitable
+
+Functions:
+
+@table @code
+@item hashmap_create
+Creates a new hash table.
+
+@example c
+#include <bookmarkfs/hashmap.h>
+
+struct hashmap *
+hashmap_create (
+    hashmap_comp_func *entry_comp,
+    hashmap_hash_func *entry_hash
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item entry_comp
+The callback function for checking whether a key matches an entry.
+
+Type of @code{entry_comp} is defined as:
+
+@example c
+typedef int (hashmap_comp_func) (
+    union hashmap_key  key,
+    void const        *entry
+);
+@end example
+
+The function should return @t{0} if the objects match, non-zero if not.
+
+@item entry_hash
+The callback function for obtaining the hashcode for an entry.
+
+Type of @code{entry_hash} is defined as:
+
+@example c
+typedef unsigned long (hashmap_hash_func) (
+    void const *entry
+);
+@end example
+
+This function is only called during rehashing and @code{hashmap_entry_delete}.
+@end table
+
+Returns an opaque pointer referring to the new hash table.
+
+@item hashmap_insert
+Inserts a new entry into a hash table.
+
+@example c
+void
+hashmap_insert (
+    struct hashmap *map,
+    unsigned long   hashcode,
+    void           *entry
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item map
+The hash table to insert entry into.
+
+@item hashcode
+The hash code for the new entry.
+
+@item entry
+An arbitrary pointer to be associated with the new entry.
+It must not be @code{NULL}.
+@end table
+
+@item hashmap_search
+Searches for an entry in a hash table.
+
+@example c
+void *
+hashmap_search (
+    struct hashmap const *map,
+    union hashmap_key     key,
+    unsigned long         hashcode,
+    unsigned long        *entry_id_ptr
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item map
+The hash table to search from.
+
+@item key
+An object to identify the entry being searched.
+
+Type of the @code{hashmap_key} union is defined as:
+
+@example c
+union hashmap_key @{
+    void const *ptr;
+    uint64_t    u64;
+@};
+@end example
+
+For each entry in the hash table with the given @code{hashcode},
+the @code{entry_comp} callback function is called with @code{key}
+as the first argument, until a matching entry is found.
+
+@item hashcode
+The hash code for the entry to search.
+
+@item entry_id_ptr
+If not @code{NULL}, and a matching entry is found,
+the function sets @code{*entry_id_ptr} to an opaque integer value,
+which can be used to identify the entry when calling @code{hashmap_delete()}.
+
+A subsequent call to @code{hashmap_insert()} and @code{hashmap_delete()}
+on this hash table invalidates that value.
+@end table
+
+Returns the pointer associated with the entry,
+or @code{NULL} if no matching entry is found.
+
+@item hashmap_delete
+Removes an entry from a hash table.
+
+@example c
+void
+hashmap_delete (
+    struct hashmap *map,
+    void const     *entry,
+    long            entry_id
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item map
+The hash table to delete entry from.
+
+@item entry
+The entry to be deleted from the hash table.
+
+If the hash table does not contain this entry, function behavior is undefined.
+
+@item entry_id
+An opaque integer obtained from @code{hashmap_search()} which identifies
+the entry to be deleted.
+If not readily available, @t{-1} should be used.
+
+If provided, the delete operation is always of @t{O(1)} time complexity.
+@end table
+
+@item hashmap_foreach
+Iterates through all entries of a hash table.
+
+@example c
+void
+hashmap_foreach (
+    struct hashmap const *map,
+    hashmap_walk_func    *walk_func,
+    void                 *user_data
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item map
+The hash table to traverse.
+
+@item walk_func
+The callback function to be called for each entry.
+
+Type of @code{walk_func} is defined as:
+
+@example c
+typedef void (hashmap_walk_func) (
+    void *entry,
+    void *user_data
+);
+@end example
+
+The callback function must not insert to or delete from the current hash table.
+
+@item user_data
+An opaque pointer to be passed to @code{walk_func}.
+@end table
+
+@item hashmap_destroy
+Destroys a hash table.
+
+@example c
+void
+hashmap_destroy (
+    struct hashmap *map
+);
+@end example
+
+Function arguments:
+
+@table @code
+@item map
+The hash table to destroy.
+If @code{NULL}, this function has no effect.
+@end table
+@end table
+
+Limitations:
+
+@itemize @bullet{}
+@item Insertion performance is sacrificed in favor of search performance.
+
+@item Suffers more from collisions than traditional open addressing.
+
+@item Performance is suboptimal without hardware support for
+@uref{https://en.wikipedia.org/wiki/Find_first_set, Find First Set}.
+
+@item Concurrent writes on the same hash table is MT-Unsafe.
+@end itemize
+
 
 @node Pseudo-Random Number Generator
 @section Pseudo-Random Number Generator
