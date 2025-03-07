@@ -3648,7 +3648,6 @@ If this function is never called, the hash function bahaves as if it is
 seeded with all bits zero.
 
 @item hash_digest
-
 Calculates the digest of the given input.
 
 @example c
@@ -3660,7 +3659,6 @@ hash_digest (
 @end example
 
 @item hash_digestv
-
 Like @code{hash_digest()}, but takes input from multiple buffers.
 
 @example c
@@ -3675,7 +3673,6 @@ The function is guaranteed not to modify the buffer data of each
 @code{struct iovec} object.
 
 @item hash_digestcb
-
 Like @code{hash_digestv()}, but takes input buffers from a callback function.
 
 @example c
@@ -3690,7 +3687,6 @@ Function arguments:
 
 @table @code
 @item callback
-
 The function to provide input buffers.
 It must not be @code{NULL}.
 
@@ -3981,7 +3977,6 @@ Functions:
 
 @table @code
 @item prng_seed
-
 Updates the seed used by the PRNG.
 
 @example c
@@ -4225,7 +4220,6 @@ watcher_destroy (
 @end example
 
 @item watcher_poll
-
 Checks whether the file being watched has changed.
 This function never blocks.
 

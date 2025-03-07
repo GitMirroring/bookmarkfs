@@ -51,7 +51,7 @@
 #define BACKEND_OPT_BAD_VAL()  BACKEND_OPT_ERR_(BAD_VAL)
 #define BACKEND_OPT_NO_VAL     \
     if (val_ != NULL) return BACKEND_OPT_ERR_(HAS_VAL);
-#define BACKEND_OPT_VAL_STR    val_
+#define BACKEND_OPT_VAL_STR    (val_)
 
 #define FILENAME_BADCHAR  -1
 #define FILENAME_BADLEN   -2
@@ -67,14 +67,12 @@
  * Returns the directory file descriptor if successful.
  * On error, -1 is returned, and errno is set.
  */
-BOOKMARKFS_INTERNAL
 int
 basename_opendir (
     char  *path,
     char **basename_ptr
 );
 
-BOOKMARKFS_INTERNAL
 FUNCATTR_COLD
 int
 print_backend_opt_err_ (
@@ -91,7 +89,6 @@ print_backend_opt_err_ (
  * If returning FILENAME_BADCHAR, stores the pointer to the first
  * bad character to `end_ptr` unless it is NULL.
  */
-BOOKMARKFS_INTERNAL
 int
 validate_filename (
     char const  *str,
@@ -99,7 +96,6 @@ validate_filename (
     char const **end_ptr
 );
 
-BOOKMARKFS_INTERNAL
 int
 validate_filename_fsck (
     char const *str,

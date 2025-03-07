@@ -61,6 +61,12 @@
 #  endif  /* defined(HAVE_FUNC_ATTRIBUTE_NORETURN) */
 #endif
 
+#ifdef HAVE_FUNC_ATTRIBUTE_PURE
+#  define FUNCATTR_PURE  __attribute__((pure))
+#else
+#  define FUNCATTR_PURE
+#endif  /* defined(HAVE_FUNC_ATTRIBUTE_PURE) */
+
 #ifdef HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL
 #  define FUNCATTR_RETURNS_NONNULL  __attribute__((returns_nonnull))
 #else
@@ -85,15 +91,6 @@
 #  endif  /* defined(HAVE_VAR_ATTRIBUTE_UNUSED) */
 #  define UNUSED_VAR(name)  name##_unused_ VARATTR_UNUSED_
 #endif  /* defined(HAVE_STDC_23) */
-
-#if defined(HAVE_STDC_23)
-#  define BOOKMARKFS_TLS  thread_local
-#elif defined(HAVE_STDC_11)
-#  define BOOKMARKFS_TLS  _Thread_local
-// Incomprehensive list.  Add more if needed.
-#elif defined(__GNUC__) || defined(__clang__)
-#  define BOOKMARKFS_TLS  __thread
-#endif
 
 #if defined(__FreeBSD__) || (defined(__linux__) && defined(_GNU_SOURCE))
 #  define HAVE_PIPE2  1

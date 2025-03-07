@@ -28,9 +28,7 @@ AS_CASE(["${host_os}"], [linux*], [
 ], [freebsd*], [
     AS_VAR_SET([host_os_is_freebsd], [yes])
 ], [
-    AC_MSG_WARN(m4_normalize([
-        Unsupported platform "${host_os}".
-    ]))
+    AC_MSG_WARN(m4_normalize([Unsupported platform "${host_os}".]))
 ])
 
 # -- Checks for programs --
@@ -176,6 +174,7 @@ AX_GCC_FUNC_ATTRIBUTE([cold])
 AX_GCC_FUNC_ATTRIBUTE([destructor])
 AX_GCC_FUNC_ATTRIBUTE([malloc])
 AX_GCC_FUNC_ATTRIBUTE([noreturn])
+AX_GCC_FUNC_ATTRIBUTE([pure])
 AX_GCC_FUNC_ATTRIBUTE([returns_nonnull])
 AX_GCC_FUNC_ATTRIBUTE([visibility])
 AX_GCC_VAR_ATTRIBUTE([unused])
@@ -209,8 +208,7 @@ m4_version_prereq([2.72], [
     AC_SYS_YEAR2038
     AS_VAR_IF([ac_have_year2038], [no], [
         AC_MSG_ERROR(m4_normalize([
-            64-bit time_t (required by some backends) is unsupported on
-            this platform.
+            64-bit time_t is unsupported on this platform.
         ]))
     ])
 ], [

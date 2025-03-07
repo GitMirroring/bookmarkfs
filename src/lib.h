@@ -25,11 +25,9 @@
 
 #include "defs.h"
 
-BOOKMARKFS_INTERNAL
 int
 bookmarkfs_lib_init (void);
 
-BOOKMARKFS_INTERNAL
 FUNCATTR_COLD
 void
 bookmarkfs_print_lib_version (

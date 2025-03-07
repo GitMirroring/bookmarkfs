@@ -88,7 +88,7 @@ AC_DEFUN([BOOKMARKFS_AMCOND], [
 ])
 
 dnl
-dnl  BOOKMARKFS_FEAT_OUT([features]...)
+dnl  BOOKMARKFS_FEAT_EXPORT([features]...)
 dnl
 dnl  Export feature flags to Autoconf output variables,
 dnl  similar to the ones set by AM_CONTITIONAL() (`xxx_TRUE` only).

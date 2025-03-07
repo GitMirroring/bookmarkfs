@@ -197,7 +197,7 @@ static int  bm_create      (uint64_t, char const *, int, struct stat *);
 static int  bm_delete      (uint64_t, char const *, uint32_t);
 static int  bm_do_write    (uint64_t, struct fs_file_handle *);
 static void bm_fh_free     (struct fs_file_handle *, long);
-static struct fs_file_handle *
+static struct fs_file_handle * FUNCATTR_PURE
             bm_fh_get      (uint64_t, unsigned long *, unsigned long *);
 static struct fs_file_handle *
             bm_fh_new      (uint64_t);
