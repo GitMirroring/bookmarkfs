@@ -1,0 +1,35 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([util lib: hashmap])
+AT_KEYWORDS([lib hashmap])
+
+ATX_CHECK_LIB([
+    seed="${CHECK_HASHMAP_PRNG_SEED}"
+    if test -z "$seed"; then
+        seed=$(ath_fn_prng_seed)
+    fi
+
+    size="${CHECK_HASHMAP_DATA_SIZE}"
+    if test -z "$size"; then
+        # Requires at least 128 MiB of memory on a 64-bit platform.
+        size=22
+    fi
+
+    rounds="${CHECK_HASHMAP_ROUNDS}"
+    if test -z "$rounds"; then
+        rounds=5
+    fi
+
+    ATX_RUN([
+        check-util-lib hashmap -s "$seed" -n "$size" -r "$rounds"
+    ])
+])
+
+AT_CLEANUP

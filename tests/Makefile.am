@@ -8,7 +8,8 @@
 
 EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTS_)
 
-TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at
+TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at  \
+         lib_hashmap.at
 
 # Helper programs for testing
 
@@ -20,7 +21,8 @@ if BOOKMARKFS_UTIL
 
   check_util_lib_CPPFLAGS = -I$(top_srcdir)/src
   check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
-  check_util_lib_SOURCES  = check_lib.c check_watcher.c check_sandbox.c
+  check_util_lib_SOURCES  = check_lib.c check_watcher.c check_sandbox.c  \
+                            check_hashmap.c
 endif  # BOOKMARKFS_UTIL
 
 # Autotest setup

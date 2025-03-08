@@ -36,6 +36,12 @@
     } while (0)
 
 int
+check_hashmap (
+    int   argc,
+    char *argv[]
+);
+
+int
 check_sandbox (
     int   argc,
     char *argv[]

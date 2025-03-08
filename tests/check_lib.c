@@ -61,6 +61,8 @@ dispatch_subcmds (
         status = check_watcher(argc, argv);
     } else if (0 == strcmp("sandbox", cmd)) {
         status = check_sandbox(argc, argv);
+    } else if (0 == strcmp("hashmap", cmd)) {
+        status = check_hashmap(argc, argv);
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }
