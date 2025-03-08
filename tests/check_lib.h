@@ -21,6 +21,8 @@
 #ifndef BOOKMARKFS_CHECK_LIB_H_
 #define BOOKMARKFS_CHECK_LIB_H_
 
+#include <stdint.h>
+
 #include "xstd.h"
 
 #define ASSERT_EXPR_INT(expr, r, cond, action_if_false)        \
@@ -43,6 +45,12 @@ int
 check_watcher (
     int   argc,
     char *argv[]
+);
+
+int
+prng_seed_from_hex (
+    uint64_t   *buf,
+    char const *str
 );
 
 #endif  /* !defined(BOOKMARKFS_CHECK_LIB_H_) */

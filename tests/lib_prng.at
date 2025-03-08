@@ -18,16 +18,7 @@ ATX_CHECK_LIB([
         check-util-lib prng -s$1 -n$2
     }
 
-    gen_seed() {
-        seed_1=$(ath_fn_rand_u64_hex)
-        seed_2=$(ath_fn_rand_u64_hex)
-        seed_3=$(ath_fn_rand_u64_hex)
-        seed_4=$(ath_fn_rand_u64_hex)
-
-        echo $seed_1$seed_2$seed_3$seed_4
-    }
-
-    seed=$(gen_seed)
+    seed=$(ath_fn_prng_seed)
     count=32
 
     num_1=$(gen_num $seed $count)

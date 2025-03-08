@@ -105,19 +105,16 @@ subcmd_prng (
     int   argc,
     char *argv[]
 ) {
-    static uint64_t seed[4];
-    int cnt = 0;
+    static uint64_t buf[4];
+    uint64_t *seed = NULL;
     int n = 0;
 
     getopt_foreach(argc, argv, ":s:n:") {
       case 's':
-        cnt = sscanf(optarg,
-                "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
-                &seed[0], &seed[1], &seed[2], &seed[3]);
-        if (cnt != 4) {
-            log_printf("bad seed '%s'", optarg);
+        if (0 != prng_seed_from_hex(buf, optarg)) {
             return -1;
         }
+        seed = buf;
         break;
 
       case 'n':
@@ -129,11 +126,26 @@ subcmd_prng (
         return -1;
     }
 
-    if (0 != prng_seed(cnt == 0 ? NULL : seed)) {
+    if (0 != prng_seed(seed)) {
         return -1;
     }
     for (; n > 0; --n) {
         printf("%016" PRIx64 "\n", prng_rand());
+    }
+    return 0;
+}
+
+int
+prng_seed_from_hex (
+    uint64_t   *buf,
+    char const *str
+) {
+    int cnt = sscanf(str,
+            "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
+            &buf[0], &buf[1], &buf[2], &buf[3]);
+    if (cnt != 4) {
+        log_printf("bad seed '%s'", optarg);
+        return -1;
     }
     return 0;
 }

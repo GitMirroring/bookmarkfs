@@ -93,6 +93,15 @@ AT_TEST_HELPER_FN([rand_base64], , , [
     echo $(head -c$1 /dev/urandom | base64 -w0)
 ])
 
+AT_TEST_HELPER_FN([prng_seed], , , [
+    seed_1=$(ath_fn_rand_u64_hex)
+    seed_2=$(ath_fn_rand_u64_hex)
+    seed_3=$(ath_fn_rand_u64_hex)
+    seed_4=$(ath_fn_rand_u64_hex)
+
+    echo $seed_1$seed_2$seed_3$seed_4
+])
+
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])
 m4_include([lib_prng.at])
