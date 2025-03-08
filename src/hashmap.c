@@ -206,8 +206,7 @@ make_room (
         }
     }
     if (unlikely(b == end)) {
-        debug_printf("make_room(): %s",
-                "reaching end of buckets, but no empty slot found");
+        // Reaching end of buckets, but no empty slot found
         return -1;
     }
 
@@ -231,7 +230,6 @@ make_room (
         }
         if (unlikely(swp == b)) {
             // Not able to swap empty slot to the neighborhood of home bucket.
-            debug_printf("make_room(): %s", "neighborhood too crowded");
             b->entry = NULL;
             return -1;
         }
@@ -247,7 +245,7 @@ rehash (
     unsigned new_exp = map->exp;
     if (grow) {
         if (unlikely(++new_exp > EXP_MAX)) {
-            log_puts("rehash(): hashmap size exceeds max limit");
+            log_puts("hashmap size exceeds max limit");
             return -1;
         }
     } else {
@@ -273,7 +271,7 @@ rehash (
 
         int hop_idx = make_room(new_home, new_buckets + new_nbuckets, new_exp);
         if (unlikely(hop_idx < 0)) {
-            log_puts("rehash(): collision attack or poor hash function");
+            log_puts("collision attack or poor hash function");
             goto fail;
         }
         BIT_SET(new_home->bits, hop_idx);
@@ -346,26 +344,24 @@ hashmap_foreach (
 ) {
     struct bucket *end = map->buckets + map->num_buckets;
     for (struct bucket *b = map->buckets; b < end; ++b) {
-        void *entry = b->entry;
-        if (entry == NULL) {
-            continue;
+        if (b->entry != NULL) {
+            walk_func(user_data, b->entry);
         }
-        walk_func(user_data, b->entry);
     }
 }
 
 void
 hashmap_delete (
-    struct hashmap *h,
+    struct hashmap *map,
     void const     *entry,
     long            entry_id
 ) {
     struct bucket *home;
     unsigned long  hop_idx;
     if (entry_id < 0) {
-        hop_idx = find_entry(h, entry, &home);
+        hop_idx = find_entry(map, entry, &home);
     } else {
-        home    = h->buckets + (entry_id >> HOP_IDX_WIDTH);
+        home    = map->buckets + (entry_id >> HOP_IDX_WIDTH);
         hop_idx = entry_id & ((1 << HOP_IDX_WIDTH) - 1);
     }
     BIT_UNSET(home->bits, hop_idx);
@@ -374,15 +370,15 @@ hashmap_delete (
     debug_assert(b->entry == entry);
     b->entry = NULL;
 
-    size_t buckets_used = --h->num_used;
-    if (h->exp <= EXP_MIN) {
+    size_t buckets_used = --map->num_used;
+    if (map->exp <= EXP_MIN) {
         return;
     }
     // load factor < 0.125
-    if (buckets_used < (h->num_buckets >> 3)) {
-        debug_printf("hashmap_entry_delete(): rehashing (%zu/%zu)",
-                buckets_used, h->num_buckets);
-        xassert(0 == rehash(h, false));
+    if (buckets_used < (map->num_buckets >> 3)) {
+        debug_printf("%p: rehashing: %zu / %zu", (void *)map,
+                buckets_used, map->num_buckets - (map->exp - 1));
+        xassert(0 == rehash(map, false));
     }
 }
 
@@ -398,7 +394,7 @@ hashmap_insert (
 
     int hop_idx = make_room(home, map->buckets + map->num_buckets, exp);
     if (unlikely(hop_idx < 0)) {
-        debug_printf("hashmap_insert(): rehashing (%zu/%zu)",
+        debug_printf("%p: rehashing: %zu / %zu", (void *)map,
                 map->num_used, map->num_buckets - (exp - 1));
         xassert(0 == rehash(map, true));
         hashmap_insert(map, hashcode, entry);
