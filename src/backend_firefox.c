@@ -162,9 +162,11 @@ struct bookmark_lcookie {
 };
 
 struct bookmark_dentry {
-    uint64_t id;
-    size_t   name_len;
-    char     name[];
+    uint64_t      id;
+    unsigned long hashcode;
+
+    size_t name_len;
+    char   name[];
 };
 
 struct bookmark_name_key {
@@ -530,6 +532,7 @@ fsck_apply (
 
     dentry = xmalloc(sizeof(*dentry) + name_len);
     dentry->id       = id;
+    dentry->hashcode = hashcode;
     dentry->name_len = name_len;
     memcpy(dentry->name, name, name_len);
 
@@ -2454,6 +2457,7 @@ bookmark_list_cb (
     if (ctx->status == 0 && ctx->check_name && dentry == NULL) {
         dentry = xmalloc(sizeof(*dentry) + name_len);
         dentry->id       = id;
+        dentry->hashcode = hashcode;
         dentry->name_len = name_len;
         memcpy(dentry->name, name, name_len);
 
@@ -2522,7 +2526,7 @@ dentmap_hash (
 ) {
     struct bookmark_dentry const *dentry = entry;
 
-    return hash_digest(dentry->name, dentry->name_len);
+    return dentry->hashcode;
 }
 
 static void

@@ -126,7 +126,9 @@ enum {
 };
 
 struct fs_file_handle {
-    uint64_t id;
+    uint64_t      id;
+    unsigned long hashcode;
+
     uint32_t refcount;
     uint32_t flags;
 
@@ -491,6 +493,7 @@ bm_fh_new (
     fh = xmalloc(sizeof(*fh));
     *fh = (struct fs_file_handle) {
         .id       = id,
+        .hashcode = hashcode,
         .refcount = 1,
     };
     hashmap_insert(ctx.fh_map, hashcode, fh);
@@ -1285,7 +1288,7 @@ fh_entry_hash (
 ) {
     struct fs_file_handle const *fh = entry;
 
-    return hash_digest(&fh->id, sizeof(fuse_ino_t));
+    return fh->hashcode;
 }
 
 static int
