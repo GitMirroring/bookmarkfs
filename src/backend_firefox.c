@@ -735,9 +735,9 @@ mozbm_insert (
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_INSERT];
     char const *sql =
         "INSERT INTO `moz_bookmarks` (`parent`, `position`, `title`, "
-            "`dateAdded`, `lastModified`, `type`, `fk`, `guid`) "
+            "`dateAdded`, `lastModified`, `type`, `fk`, `guid`, `syncStatus`) "
         "VALUES (?1, safeincr((" MOZBM_MAXPOS("?1") ")), ?2, ?3, ?3, "
-            "?4, nullif(?5, -1), ?6)";
+            "?4, nullif(?5, -1), ?6, 1)";
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, prepare:, ,
