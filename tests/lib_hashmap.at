@@ -15,6 +15,7 @@ ATX_CHECK_LIB([
     if test -z "$seed"; then
         seed=$(ath_fn_prng_seed)
     fi
+    echo "prng seed: $seed"
 
     size="${CHECK_HASHMAP_DATA_SIZE}"
     if test -z "$size"; then

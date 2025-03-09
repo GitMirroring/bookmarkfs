@@ -22,8 +22,6 @@
 #  include "config.h"
 #endif
 
-#include <limits.h>
-
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -39,7 +37,7 @@ struct check_item {
 
 // Forward declaration start
 static int  check_one_round  (struct hashmap *, struct check_item *, size_t);
-static int  do_check_hashmap (int, int);
+static int  do_check_hashmap (size_t, int);
 static int  item_comp_func   (union hashmap_key, void const *);
 static unsigned long
             item_hash_func   (void const *);
@@ -81,14 +79,14 @@ check_one_round (
 
 int
 do_check_hashmap (
-    int n,
-    int rounds
+    size_t items_cnt,
+    int    rounds
 ) {
-    size_t items_cnt = 1u << n;
     size_t buf_size = sizeof(struct check_item) * items_cnt;
     struct check_item *items = mmap(NULL, buf_size, PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (items == MAP_FAILED) {
+        log_puts("failed to allocate memory");
         return -1;
     }
     struct hashmap *map = hashmap_create(item_comp_func, item_hash_func);
@@ -112,9 +110,8 @@ do_check_hashmap (
 
     for (size_t i = 0; i < items_cnt; ++i) {
         struct check_item *item = items + i;
-        unsigned long id = item->id;
 
-        if (id & 1) {
+        if (item->id & 1) {
             --cnt;
             hashmap_delete(map, item, -1);
         }
@@ -171,18 +168,16 @@ check_hashmap (
     int   argc,
     char *argv[]
 ) {
-    static uint64_t buf[4];
-    uint64_t *seed = NULL;
-
+    uint64_t seed_buf[4], *seed = NULL;
     int n = -1;
     int r = -1;
 
     getopt_foreach(argc, argv, ":s:n:r:") {
       case 's':
-        if (0 != prng_seed_from_hex(buf, optarg)) {
+        if (0 != prng_seed_from_hex(seed_buf, optarg)) {
             return -1;
         }
-        seed = buf;
+        seed = seed_buf;
         break;
 
       case 'n':
@@ -209,5 +204,5 @@ check_hashmap (
     if (0 != prng_seed(seed)) {
         return -1;
     }
-    return do_check_hashmap(n, r);
+    return do_check_hashmap(1u << n, r);
 }

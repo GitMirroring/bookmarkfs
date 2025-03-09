@@ -37,7 +37,7 @@
 
 // Forward declaration start
 static int    dispatch_subcmds (int, char *[]);
-static size_t hash_cb          (void *, void const **);
+static size_t hash_check_cb    (void *, void const **);
 static int    subcmd_hash      (int, char *[]);
 static int    subcmd_prng      (int, char *[]);
 // Forward declaration end
@@ -70,7 +70,7 @@ dispatch_subcmds (
 }
 
 static size_t
-hash_cb (
+hash_check_cb (
     void        *UNUSED_VAR(user_data),
     void const **buf_ptr
 ) {
@@ -98,7 +98,7 @@ subcmd_hash (
     }
 
     hash_seed(seed);
-    printf("%016" PRIx64 "\n", hash_digestcb(hash_cb, NULL));
+    printf("%016" PRIx64 "\n", hash_digestcb(hash_check_cb, NULL));
     return 0;
 }
 
@@ -107,16 +107,15 @@ subcmd_prng (
     int   argc,
     char *argv[]
 ) {
-    static uint64_t buf[4];
-    uint64_t *seed = NULL;
+    uint64_t seed_buf[4], *seed = NULL;
     int n = 0;
 
     getopt_foreach(argc, argv, ":s:n:") {
       case 's':
-        if (0 != prng_seed_from_hex(buf, optarg)) {
+        if (0 != prng_seed_from_hex(seed_buf, optarg)) {
             return -1;
         }
-        seed = buf;
+        seed = seed_buf;
         break;
 
       case 'n':
