@@ -886,8 +886,7 @@ mozbm_mtime_update (
         usecs = *usecs_ptr;
     }
     if (usecs < 0) {
-        struct timespec now;
-        usecs = usecs_now(&now);
+        usecs = usecs_now(NULL);
         if (unlikely(usecs < 0)) {
             return -EIO;
         }
@@ -2022,6 +2021,10 @@ static int64_t
 usecs_now (
     struct timespec *ts_buf
 ) {
+    struct timespec ts_tmp;
+    if (ts_buf == NULL) {
+        ts_buf = &ts_tmp;
+    }
     if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts_buf))) {
         log_printf("clock_gettime(): %s", xstrerror(errno));
         return -1;
@@ -3230,8 +3233,7 @@ backend_mkfs (
         return -1;
     }
     if (opts.date_added < 0) {
-        struct timespec now;
-        opts.date_added = usecs_now(&now);
+        opts.date_added = usecs_now(NULL);
         if (unlikely(opts.date_added < 0)) {
             return -1;
         }
@@ -3662,8 +3664,7 @@ bookmark_set (
         if (xattr_id != BM_XATTR_NULL
                 && ctx->flags & BOOKMARKFS_BACKEND_CTIME
         ) {
-            struct timespec now;
-            bm_cols.last_modified = usecs_now(&now);
+            bm_cols.last_modified = usecs_now(NULL);
         }
     }
 
