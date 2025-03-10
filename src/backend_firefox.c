@@ -134,6 +134,7 @@ enum {
     STMT_MOZBM_POS_SHIFT,
     STMT_MOZBM_POS_UPDATE,
     STMT_MOZBM_UPDATE,
+    STMT_MOZBMDEL_INSERT,
     STMT_MOZKW_DELETE,
     STMT_MOZKW_INSERT,
     STMT_MOZKW_LOOKUP,
@@ -212,6 +213,13 @@ struct mozbm_check_ctx {
     int status;
 };
 
+struct mozbm_delete_ctx {
+    char buf[GUID_STR_LEN];
+    char const *guid;
+
+    int64_t place_id;
+};
+
 struct mozplace_addref_ctx {
     struct timespec *atime_buf;
     int64_t          id;
@@ -281,6 +289,7 @@ static int     keyword_create     (struct backend_ctx *, char const *, size_t,
                                    struct bookmarkfs_bookmark_stat *);
 static int     mozbm_check_cb     (void *, sqlite3_stmt *);
 static int     mozbm_delete       (struct backend_ctx *, int64_t, bool);
+static int     mozbm_delete_cb    (void *, sqlite3_stmt *);
 static int     mozbm_get_title    (struct backend_ctx *, int64_t, int64_t,
                                    db_query_row_func *, void *);
 static int     mozbm_insert       (struct backend_ctx *, struct mozbm *);
@@ -294,6 +303,7 @@ static int     mozbm_pos_shift    (struct backend_ctx *, int64_t, int64_t,
                                    int64_t *, enum bookmarkfs_permd_op);
 static int     mozbm_pos_update   (struct backend_ctx *, int64_t, int64_t);
 static int     mozbm_update       (struct backend_ctx *, struct mozbm *);
+static int     mozbmdel_insert    (struct backend_ctx *, char const *, int64_t);
 static int     mozkw_delete       (struct backend_ctx *, char const *, size_t);
 static int     mozkw_insert       (struct backend_ctx *, struct mozkw *);
 static int     mozkw_lookup       (struct backend_ctx *, struct mozkw *);
@@ -668,40 +678,63 @@ mozbm_delete (
     int64_t             id,
     bool                is_dir
 ) {
-#define MOZBM_DELETE_     "DELETE FROM `moz_bookmarks` WHERE `id` = ? "
-#define MOZBM_DELETE_DIR  MOZBM_DELETE_  \
-    "AND `id` NOT IN (SELECT DISTINCT `parent` FROM `moz_bookmarks`)"
-#define MOZBM_DELETE_URL  MOZBM_DELETE_ "RETURNING `fk`"
+#define MOZBM_DELETE_(cond)  \
+    "DELETE FROM `moz_bookmarks` WHERE `id` = ? " cond  \
+    "RETURNING iif(`syncStatus` = 2, `guid`, NULL), `fk`"
+#define MOZBM_DELETE_DIR  MOZBM_DELETE_(  \
+    "AND `id` NOT IN (SELECT DISTINCT `parent` FROM `moz_bookmarks`) ")
+#define MOZBM_DELETE_URL  MOZBM_DELETE_("")
 
-    sqlite3_stmt      **stmt_ptr = &ctx->stmts[STMT_MOZBM_DELETE_URL];
-    char const         *sql      = MOZBM_DELETE_URL;
-    db_query_row_func  *row_cb   = db_query_i64_cb;
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_DELETE_URL];
+    char const    *sql      = MOZBM_DELETE_URL;
     if (is_dir) {
         stmt_ptr = &ctx->stmts[STMT_MOZBM_DELETE_DIR];
         sql      = MOZBM_DELETE_DIR;
-        row_cb   = NULL;
     }
 
-    int64_t place_id;
+    struct mozbm_delete_ctx qctx;
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, row_cb, &place_id, nrows, ,
-        {
-            place_id = 0;
-        },
+    DO_QUERY(ctx, stmt_ptr, sql, mozbm_delete_cb, &qctx, nrows, , ,
         DB_QUERY_BIND_INT64(id),
     );
     if (nrows < 0) {
         return nrows;
     }
     if (is_dir) {
-        if (0 == sqlite3_changes(ctx->db)) {
+        if (nrows == 0) {
             return -ENOTEMPTY;
         }
-        return 0;
     } else {
+        // The ID is alwayed obtained from a previous query in
+        // the same transaction.  This shall not happen.
         xassert(nrows > 0);
-        return mozplace_delref(ctx, place_id);
+        int status = mozplace_delref(ctx, qctx.place_id);
+        if (status < 0) {
+            return status;
+        }
     }
+    if (qctx.guid == NULL) {
+        return 0;
+    }
+    return mozbmdel_insert(ctx, qctx.guid, usecs_now(NULL));
+}
+
+static int
+mozbm_delete_cb (
+    void         *user_data,
+    sqlite3_stmt *stmt
+) {
+    struct mozbm_delete_ctx *ctx = user_data;
+
+    size_t guid_len = sqlite3_column_bytes(stmt, 0);
+    if (guid_len != GUID_STR_LEN) {
+        ctx->guid = NULL;
+    } else {
+        ctx->guid = memcpy(ctx->buf, sqlite3_column_text(stmt, 0), guid_len);
+    }
+
+    ctx->place_id = sqlite3_column_int64(stmt, 1);
+    return 1;
 }
 
 static int
@@ -1017,6 +1050,28 @@ mozbm_update (
     }
     if (nrows == 0) {
         return -ESTALE;
+    }
+    return 0;
+}
+
+static int
+mozbmdel_insert (
+    struct backend_ctx *ctx,
+    char const         *guid,
+    int64_t             date_removed
+) {
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBMDEL_INSERT];
+    char const *sql =
+        "INSERT OR IGNORE INTO `moz_bookmarks_deleted` (`guid`, `dateRemoved`)"
+        "VALUES (?, ?)";
+
+    int status;
+    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+        DB_QUERY_BIND_TEXT(guid, GUID_STR_LEN),
+        DB_QUERY_BIND_INT64(date_removed),
+    );
+    if (status < 0) {
+        return status;
     }
     return 0;
 }
