@@ -84,20 +84,18 @@ Currently, the following browsers (and their derivatives) are supported:
 @item Chromium
 @end itemize
 
+BookmarkFS is free software, distributed under the terms of the
+@uref{https://www.gnu.org/licenses/#GPL, GNU General Public License},
+either version 3, or any later version of the license.
+
 To install BookmarkFS, refer to the @file{INSTALL.md} file under the
 root directory of the project codebase.
 
-BookmarkFS is free software, distributed under the terms of the GNU General
-Public License, either version 3, or any later version of the license.
-You should have received a copy of the GNU General Public License along with
-BookmarkFS.  If not, see @uref{https://www.gnu.org/licenses/}.
-
 BookmarkFS is
-@uref{https://savannah.nongnu.org/projects/bookmarkfs, hosted on Savannah}.
-Write to the
-@uref{https://savannah.nongnu.org/mail/?group=bookmarkfs, mailing lists}
-for bug reports, feature requests, and other discussions.
-
+@uref{https://savannah.nongnu.org/projects/bookmarkfs, hosted on Savannah},
+where latest releases, development sources and other information are available.
+Also see @uref{https://builds.sr.ht/~cismonx/bookmarkfs, builds.sr.ht}
+for CI build logs.
 
 @node Porting BookmarkFS
 @section Porting BookmarkFS
@@ -115,8 +113,8 @@ However, that's not the case for other operating systems.
 
 For example, OpenBSD implements its own FUSE protocol,
 which is incompatible with the Linux one.
-While OpenBSD does provide a libfuse-compatible library, however,
-it only covers the high-level API, and BookmarkFS uses the
+OpenBSD does provide a libfuse-compatible library, however,
+it only covers the high-level API, while BookmarkFS uses the
 @uref{https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html, low-level API}.
 For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
 won't work if you're trying to port BookmarkFS to Microsoft Windows.
@@ -157,11 +155,25 @@ Meanwhile, FreeBSD does not support @code{FUSE_READDIRPLUS} and directory
 entry caching, which makes listing directory entries less efficient.
 
 
+@node Mailing Lists
+@section Mailing Lists
+
+Write to the
+@uref{https://savannah.nongnu.org/mail/?group=bookmarkfs, mailing lists}
+for bug reports, feature requests, and other discussions.
+
+Please do @emph{not} send feature patches, since BookmarkFS is
+currently in experimental stage, and is not yet ready for collaboration.
+Trivial patches, such as bugfix and typo corrections, are okay.
+
+For security-related problems, please email directly to the project maintainer.
+
+
 @node Programs
 @chapter Programs
 
-BookmarkFS ships with programs that provide users with a command-line
-interface to create, mount, fix, and manage BookmarkFS filesystems.
+BookmarkFS ships with command-line programs to create, mount, fix,
+and manage BookmarkFS filesystems.
 
 Those programs do not work on their own, and usually require a ``backend''
 for low-level functionalities.
@@ -185,8 +197,7 @@ that contains bookmark data.
 The exact interpretation of this option is backend-defined.
 
 @item target
-Pathname of the directory where the filesystem shall be mounted to
-(i.e., the ``mountpoint'').
+Pathname of the directory to mount the filesystem.
 @end table
 
 Files under the filesystem are assigned ownership according to
@@ -770,7 +781,7 @@ An unexpected internal error occurred, likely due to a bug in BookmarkFS,
 or a corruption in the bookmark storage.
 
 When this error occurs, a log message describing the situation may be printed
-to the standard error of the daemon process.
+to the standard error of the filesystem daemon.
 Sometimes this error comes from the kernel-side FUSE implementation,
 and there's no error message.
 
@@ -803,7 +814,7 @@ On FreeBSD, see @freebsdmanpage{extattr, 2}.
 All BookmarkFS extended attributes fall under the ``user'' namespace,
 which means they have a @samp{user.} name prefix on Linux, and should be
 accessed with @code{EXTATTR_NAMESPACE_USER} on FreeBSD.
-All attributes have a @samp{bookmarkfs.} name prefix.
+All attribute names have a @samp{bookmarkfs.} prefix.
 
 For example, to get the GUID of a bookmark file (Firefox backend):
 
@@ -818,8 +829,9 @@ len = extattr_get_fd(fd, EXTATTR_NAMESPACE_USER, "bookmarkfs.guid",
 
 BookmarkFS does not define any common attributes, neither can users create
 arbitrary ones.
-The backend decides which attributes are available during initialization,
-and all bookmark files share the same set of attributes.
+The backend context decides which attributes are available
+(@pxref{Create Backend Context}),
+and all bookmark files under it share the same set of attributes.
 
 
 @node Directory Entries
@@ -1799,8 +1811,7 @@ The function should return @t{0} on success, and @t{-1} on error.
 @node Destroy Backend Context
 @subsection Destroy Backend Context
 
-When a backend context is no longer used, the @code{backend_destroy} function
-is called.
+The @code{backend_destroy} function is called to destroy a backend context.
 It must not be @code{NULL}.
 
 Upon destruction, the backend should release all system resources
@@ -2461,7 +2472,7 @@ Function arguments:
 The pointer referring to the backend context.
 
 @item parent_id
-ID of the parent directory where the new object shall be created.
+ID of the parent directory to create the new object.
 It could be a bookmark ID or tag ID, depending on the value of @code{flags}.
 
 @item name
@@ -3046,9 +3057,8 @@ The function should return @t{0} on success, and @t{-1} on error.
 @node Filesystem-Check Handlers
 @chapter Filesystem-Check Handlers
 
-The filesystem-check handler is responsible for instructing the
-@command{fsck.bookmarkfs} program on what to do with each invalid
-bookmark name.
+The filesystem-check handler instructs the @command{fsck.bookmarkfs} program
+on what to do with invalid bookmark names.
 
 Like backends, filesystem-check handlers are typically built into
 shared libraries, and are installed as:
@@ -3432,8 +3442,7 @@ The function should return @t{0} on success, and @t{-1} on error.
 @node Destroy Handler Context
 @subsection Destroy Handler Context
 
-When a handler context is no longer used, the @code{destroy} function
-is called.
+The @code{destroy} function is called to destroy a handler context.
 It must not be @code{NULL}.
 
 Upon destruction, The handler should release all system resources
@@ -4134,7 +4143,7 @@ Refer to the source code in @file{src/sandbox.c} for implementation details.
 @node File Watcher
 @section File Watcher
 
-File watchers detects filesystem changes using platform-specific features:
+File watchers detect filesystem changes using platform-specific features:
 
 @table @asis
 @item Linux
@@ -4250,7 +4259,7 @@ The file being watched does not exist.
 @item @code{-EIO}
 An internal error has occurred.
 
-Further calls to @code{watcher_poll()} will always fail.
+Further calls to @code{watcher_poll()} on this watcher will always fail.
 @end table
 @end table
 
