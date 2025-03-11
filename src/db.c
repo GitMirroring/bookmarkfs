@@ -69,8 +69,8 @@ db_pragma_cb (
 ) {
     struct db_pragma_ctx *ctx = user_data;
 
-    size_t               val_len = sqlite3_column_bytes(stmt, 0);
-    unsigned char const *val     = sqlite3_column_text(stmt, 0);
+    char const *val     = (char const *)sqlite3_column_text(stmt, 0);
+    size_t      val_len = sqlite3_column_bytes(stmt, 0);
     xassert(val != NULL);
 
     ctx->status = 0;
@@ -265,8 +265,7 @@ db_pragma (
                 return -1;
             }
             again = false;
-            // strlen(" = ") == 3
-            sql_len = pragma_ctx.val - sql - 3;
+            sql_len = pragma_ctx.val - sql - strlen(" = ");
             goto query;
         }
     }

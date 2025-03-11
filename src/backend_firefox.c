@@ -214,7 +214,7 @@ struct mozbm_check_ctx {
 };
 
 struct mozbm_delete_ctx {
-    char buf[GUID_STR_LEN];
+    char guid_buf[GUID_STR_LEN];
     char const *guid;
 
     int64_t place_id;
@@ -303,7 +303,7 @@ static int     mozbm_pos_shift    (struct backend_ctx *, int64_t, int64_t,
                                    int64_t *, enum bookmarkfs_permd_op);
 static int     mozbm_pos_update   (struct backend_ctx *, int64_t, int64_t);
 static int     mozbm_update       (struct backend_ctx *, struct mozbm *);
-static int     mozbmdel_insert    (struct backend_ctx *, char const *, int64_t);
+static int     mozbmdel_insert    (struct backend_ctx *, char const *);
 static int     mozkw_delete       (struct backend_ctx *, char const *, size_t);
 static int     mozkw_insert       (struct backend_ctx *, struct mozkw *);
 static int     mozkw_lookup       (struct backend_ctx *, struct mozkw *);
@@ -643,8 +643,8 @@ mozbm_check_cb (
 ) {
     struct mozbm_check_ctx *ctx = user_data;
 
-    size_t      name_len = sqlite3_column_bytes(stmt, 0);
     char const *name     = (char const *)sqlite3_column_text(stmt, 0);
+    size_t      name_len = sqlite3_column_bytes(stmt, 0);
     if (unlikely(name == NULL)) {
         name = "";
     }
@@ -716,7 +716,7 @@ mozbm_delete (
     if (qctx.guid == NULL) {
         return 0;
     }
-    return mozbmdel_insert(ctx, qctx.guid, usecs_now(NULL));
+    return mozbmdel_insert(ctx, qctx.guid);
 }
 
 static int
@@ -726,11 +726,12 @@ mozbm_delete_cb (
 ) {
     struct mozbm_delete_ctx *ctx = user_data;
 
-    size_t guid_len = sqlite3_column_bytes(stmt, 0);
+    char const *guid     = (char const *)sqlite3_column_text(stmt, 0);
+    size_t      guid_len = sqlite3_column_bytes(stmt, 0);
     if (guid_len != GUID_STR_LEN) {
         ctx->guid = NULL;
     } else {
-        ctx->guid = memcpy(ctx->buf, sqlite3_column_text(stmt, 0), guid_len);
+        ctx->guid = memcpy(ctx->guid_buf, guid, guid_len);
     }
 
     ctx->place_id = sqlite3_column_int64(stmt, 1);
@@ -1057,13 +1058,17 @@ mozbm_update (
 static int
 mozbmdel_insert (
     struct backend_ctx *ctx,
-    char const         *guid,
-    int64_t             date_removed
+    char const         *guid
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBMDEL_INSERT];
     char const *sql =
         "INSERT OR IGNORE INTO `moz_bookmarks_deleted` (`guid`, `dateRemoved`)"
         "VALUES (?, ?)";
+
+    int64_t date_removed = usecs_now(NULL);
+    if (unlikely(date_removed < 0)) {
+        return -EIO;
+    }
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
@@ -2374,8 +2379,8 @@ bookmark_check_cb (
         return 0;
     }
 
-    size_t      name_len = sqlite3_column_bytes(stmt, 2);
     char const *name     = (char const *)sqlite3_column_text(stmt, 2);
+    size_t      name_len = sqlite3_column_bytes(stmt, 2);
     if (unlikely(name == NULL)) {
         name = "";
     }
@@ -2433,10 +2438,13 @@ bookmark_get_cb (
 ) {
     struct bookmark_get_ctx *ctx = user_data;
 
-    size_t      len = sqlite3_column_bytes(stmt, 0);
     char const *val = (char const *)sqlite3_column_text(stmt, 0);
+    size_t      len = sqlite3_column_bytes(stmt, 0);
+    if (unlikely(val == NULL)) {
+        val = "";
+    }
 
-    ctx->status = ctx->callback(ctx->user_data, val == NULL ? "" : val, len);
+    ctx->status = ctx->callback(ctx->user_data, val, len);
     return 1;
 }
 
@@ -2465,8 +2473,8 @@ bookmark_list_cb (
     }
     entry.off = position + 1;
 
-    size_t      name_len = sqlite3_column_bytes(stmt, 2);
     char const *name     = (char const *)sqlite3_column_text(stmt, 2);
+    size_t      name_len = sqlite3_column_bytes(stmt, 2);
     if (unlikely(name == NULL)) {
         name = "";
     }
