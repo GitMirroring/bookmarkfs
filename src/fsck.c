@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>
-
 #ifdef BOOKMARKFS_INTERACTIVE_FSCK
 #  include <readline/history.h>
 #  include <readline/readline.h>
@@ -382,8 +380,8 @@ parse_opts (
         BOOKMARKFS_OPT(END_, NULL),
     };
 
-    getopt_foreach(argc, argv, ":o:iRhV") {
-      case 'o':
+    OPT_START(argc, argv, "o:iRhV")
+    OPT_OPT('o') {
         SUBOPT_START(opts)
         SUBOPT_OPT(BOOKMARKFS_OPT_BACKEND) SUBOPT_HAS_VAL {
             char const *name = SUBOPT_VAL;
@@ -438,8 +436,8 @@ parse_opts (
             }
         }
         SUBOPT_END
-
-      case 'i':
+    }
+    OPT_OPT('i') {
 #ifdef BOOKMARKFS_INTERACTIVE_FSCK
         info->flags.interactive = 1;
         break;
@@ -448,34 +446,24 @@ parse_opts (
                 "interactive fsck is not enabled on this build");
         return -1;
 #endif
-
-      case 'R':
+    }
+    OPT_OPT('R') {
         info->flags.recursive = 1;
         break;
-
-      case 'h':
+    }
+    OPT_OPT('h') {
         info->flags.print_help = 1;
         info->flags.no_fsck    = 1;
         return 0;
-
-      case 'V':
+    }
+    OPT_OPT('V') {
         info->flags.print_version = 1;
         info->flags.no_fsck       = 1;
         return 0;
-
-      case ':':
-        log_printf("no value provided for option '-%c'", optopt);
-        return -1;
-
-      case '?':
-        log_printf("invalid option '-%c'", optopt);
-        return -1;
-
-      default:
-        unreachable();
     }
+    OPT_NOVAL
+    OPT_END
 
-    argc -= optind;
     if (argc != 1) {
         if (argc < 1) {
             log_puts("pathname must be specified");
@@ -484,8 +472,6 @@ parse_opts (
         }
         return -1;
     }
-
-    argv += optind;
     info->path = argv[0];
     return 0;
 }

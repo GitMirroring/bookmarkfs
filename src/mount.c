@@ -28,8 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>
-
 #include "frontend_util.h"
 #include "fs_ops.h"
 #include "lib.h"
@@ -415,8 +413,8 @@ parse_opts (
         (result) = num_;                          \
     } while (0)
 
-    getopt_foreach(argc, argv, ":o:FhV") {
-      case 'o':
+    OPT_START(argc, argv, "o:FhV")
+    OPT_OPT('o') {
         SUBOPT_START(opts)
         SUBOPT_OPT(BOOKMARKFS_OPT_ACCMODE) SUBOPT_HAS_VAL {
             SUBOPT_PARSE_NUM(0, 0777, info->fs_flags.accmode);
@@ -469,39 +467,29 @@ parse_opts (
             debug_printf("option '-o %s' ignored", SUBOPT_STR);
         }
         SUBOPT_END
-
-      case 'F':
+    }
+    OPT_OPT('F') {
         info->flags.is_foreground = 1;
         break;
-
-      case 'h':
+    }
+    OPT_OPT('h') {
         info->flags.print_help = 1;
         info->flags.no_mount   = 1;
         return 0;
-
-      case 'V':
+    }
+    OPT_OPT('V') {
         info->flags.print_version = 1;
         info->flags.no_mount      = 1;
         return 0;
-
-      case ':':
-        log_printf("no value provided for option '-%c'", optopt);
-        return -1;
-
-      case '?':
-        log_printf("invalid option '-%c'", optopt);
-        return -1;
-
-      default:
-        unreachable();
     }
+    OPT_NOVAL
+    OPT_END
 
     if (info->backend_name == NULL) {
         log_puts("backend not specified");
         return -1;
     }
 
-    argc -= optind;
     if (argc != 2) {
         if (argc < 2) {
             log_puts("mount source and target must be specified");
@@ -510,8 +498,6 @@ parse_opts (
         }
         return -1;
     }
-
-    argv += optind;
     info->backend_conf.store_path = argv[0];
     info->mount_target            = argv[1];
     return 0;

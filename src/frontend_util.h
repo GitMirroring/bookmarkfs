@@ -25,13 +25,28 @@
 
 #include <stdlib.h>
 
-#include "backend.h"
-#include "defs.h"
-#include "fsck_handler.h"
+#include <unistd.h>
 
-#define getopt_foreach(argc, argv, optstr) \
-    for (int opt_; -1 != (opt_ = getopt(argc, argv, optstr)); )  \
-        switch (opt_)
+#include "backend.h"
+#include "fsck_handler.h"
+#include "xstd.h"
+
+#define OPT_START(argc, argv, optstr)  \
+    for (int opt_; -1 != (opt_ = getopt(argc, argv, ":" optstr)); ) {  \
+        switch (opt_) {
+#define OPT_OPT(opt)  case opt:
+#define OPT_NOVAL       \
+          case ':':     \
+            log_printf("no value provided for option '-%c'", optopt);  \
+            return -1;
+#define OPT_END         \
+          default:      \
+            log_printf("invalid option '-%c'", optopt);  \
+            return -1;  \
+        }               \
+    }                   \
+    argc -= optind;     \
+    argv += optind;
 
 #define SUBOPT_START(opts)                                               \
     while (optarg[0] != '\0') {                                          \

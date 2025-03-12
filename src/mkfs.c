@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <unistd.h>
-
 #include "frontend_util.h"
 #include "macros.h"
 #include "version.h"
@@ -76,8 +74,8 @@ parse_opts (
         BOOKMARKFS_OPT(END_, NULL),
     };
 
-    getopt_foreach(argc, argv, ":o:hV") {
-      case 'o':
+    OPT_START(argc, argv, "o:hV")
+    OPT_OPT('o') {
         SUBOPT_START(opts)
         SUBOPT_OPT(BOOKMARKFS_OPT_BACKEND) SUBOPT_HAS_VAL {
             char const *name = SUBOPT_VAL;
@@ -99,45 +97,33 @@ parse_opts (
             }
         }
         SUBOPT_END
-
-      case 'h':
+    }
+    OPT_OPT('h') {
         ctx->flags.no_mkfs    = 1;
         ctx->flags.print_help = 1;
         return 0;
-
-      case 'V':
+    }
+    OPT_OPT('V') {
         ctx->flags.no_mkfs       = 1;
         ctx->flags.print_version = 1;
         return 0;
-
-      case ':':
-        log_printf("no value provided for option '-%c'", optopt);
-        return -1;
-
-      case '?':
-        log_printf("invalid option '-%c'", optopt);
-        return -1;
-
-      default:
-        unreachable();
     }
+    OPT_NOVAL
+    OPT_END
 
     if (ctx->backend_name == NULL) {
         log_puts("backend not specified");
         return -1;
     }
 
-    argc -= optind;
     if (argc != 1) {
         if (argc == 0) {
-            log_puts("bookmark filepath must be specified");
+            log_puts("destination must be specified");
         } else {
             log_puts("too many arguments");
         }
         return -1;
     }
-
-    argv += optind;
     ctx->backend_conf.store_path = argv[0];
     return 0;
 }
