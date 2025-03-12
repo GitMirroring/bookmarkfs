@@ -1548,7 +1548,7 @@ parse_mkfsopts (
         BACKEND_OPT_VAL_START
         char *end;
         int64_t val = strtoll(BACKEND_OPT_VAL_STR, &end, 10);
-        if (*end == '\0' || val < 0 || val == LLONG_MAX) {
+        if (*end != '\0' || val < 0 || val == LLONG_MAX) {
             return BACKEND_OPT_BAD_VAL();
         }
         parsed_opts->date_added = val;
@@ -1640,7 +1640,7 @@ parse_usecs (
 
     char *end;
     int64_t usecs = strtoll(buf, &end, 10);
-    if (*end == '\0' || usecs < 0 || usecs == LLONG_MAX) {
+    if (*end != '\0' || usecs < 0 || usecs == LLONG_MAX) {
         return -1;
     }
 
