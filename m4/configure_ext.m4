@@ -8,12 +8,12 @@ dnl  This file is offered as-is, without any warranty.
 dnl
 
 dnl
-dnl  BOOKMARKFS_FEAT(feature, default-value, description,
-dnl                  [action-if-enabled], [action-if-disabled])
+dnl  EX_FEAT(feature, default-value, description, [action-if-enabled],
+dnl          [action-if-disabled])
 dnl
-dnl  Provides an option to enable or disable a feature.
+dnl  Provide an option to enable or disable a feature.
 dnl
-AC_DEFUN([BOOKMARKFS_FEAT], [
+AC_DEFUN([EX_FEAT], [
     m4_pushdef([arg_action_], m4_if([$2], [no], [enable], [disable]))
     m4_pushdef([feat_name_], m4_translit([$1], [-], [_]))
     AC_MSG_CHECKING(m4_normalize([if $3 is enabled]))
@@ -35,13 +35,13 @@ AC_DEFUN([BOOKMARKFS_FEAT], [
 ])
 
 dnl
-dnl  BOOKMARKFS_DEP(pkg-name, version, pkg-desc, [action-if-found],
-dnl                 [required-by-features]...)
+dnl  EX_DEP(pkg-name, version, pkg-desc, [action-if-found],
+dnl         [required-by-features]...)
 dnl
-dnl  Checks if a package exists with `pkg-config`, and provides option for
-dnl  the config script to specify the package's custom install location.
+dnl  Check whether a package exists with `pkg-config`,
+dnl  and provide an option to specify the package's custom install location.
 dnl
-AC_DEFUN([BOOKMARKFS_DEP], [
+AC_DEFUN([EX_DEP], [
     m4_pushdef([with_var_], [with_]m4_translit([$1], [-], [_]))
     AC_ARG_WITH([$1], m4_normalize([
         AS_HELP_STRING([--with-$1[[=PKGCONFIGDIR]]],
@@ -76,11 +76,11 @@ AC_DEFUN([BOOKMARKFS_DEP], [
 ])
 
 dnl
-dnl  BOOKMARKFS_AMCOND([features]...)
+dnl  EX_AMCOND([features]...)
 dnl
 dnl  Export feature flags to Makefile templates.
 dnl
-AC_DEFUN([BOOKMARKFS_AMCOND], [
+AC_DEFUN([EX_AMCOND], [
     m4_foreach([feat_name_], [$@], [
         AM_CONDITIONAL(m4_translit(feat_name_, [-a-z], [_A-Z]),
                 [test x$enable_]m4_translit(feat_name_, [-], [_])[ != xno])
@@ -88,12 +88,12 @@ AC_DEFUN([BOOKMARKFS_AMCOND], [
 ])
 
 dnl
-dnl  BOOKMARKFS_FEAT_EXPORT([features]...)
+dnl  EX_FEAT_EXPORT([features]...)
 dnl
 dnl  Export feature flags to Autoconf output variables,
 dnl  similar to the ones set by AM_CONTITIONAL() (`xxx_TRUE` only).
 dnl
-AC_DEFUN([BOOKMARKFS_FEAT_EXPORT], [
+AC_DEFUN([EX_FEAT_EXPORT], [
     m4_foreach([feat_name_], [$@], [
         m4_pushdef([out_var_], m4_translit(feat_name_, [-a-z], [_A-Z])[_TRUE])
         AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [

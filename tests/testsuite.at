@@ -16,7 +16,7 @@ dnl
 dnl  ATX_FEAT_VAR(feature)
 dnl
 dnl  Expands to the shell variable indicating whether the given feature
-dnl  is defined by BOOKMARKFS_FEAT() and enabled during `configure`.
+dnl  is defined by EX_FEAT() and enabled during `configure`.
 dnl
 dnl  A non-empty value indicates that the feature is enabled.
 dnl

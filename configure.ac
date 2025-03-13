@@ -40,76 +40,70 @@ AC_PROG_MAKE_SET
 
 # -- Checks for features --
 
-BOOKMARKFS_FEAT([bookmarkfs-util], [no], [the BookmarkFS utility library])
+EX_FEAT([bookmarkfs-util], [no], [the BookmarkFS utility library])
 
-BOOKMARKFS_FEAT([bookmarkctl], [no], [the bookmarkctl program])
+EX_FEAT([bookmarkctl], [no], [the bookmarkctl program])
 
-BOOKMARKFS_FEAT([bookmarkfs-fsck], [no], [the fsck.bookmarkfs program], [
+EX_FEAT([bookmarkfs-fsck], [no], [the fsck.bookmarkfs program], [
     AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
-BOOKMARKFS_FEAT([bookmarkfs-mkfs], [no], [the mkfs.bookmarkfs program])
+EX_FEAT([bookmarkfs-mkfs], [no], [the mkfs.bookmarkfs program])
 
-BOOKMARKFS_FEAT([bookmarkfs-mount], [no], [the mount.bookmarkfs program], [
+EX_FEAT([bookmarkfs-mount], [no], [the mount.bookmarkfs program], [
     AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
-BOOKMARKFS_FEAT([sandbox], [yes], [sandboxing], [
+EX_FEAT([sandbox], [yes], [sandboxing], [
     AC_DEFINE([BOOKMARKFS_SANDBOX], [1],
             [Define to 1 if sandboxing is enabled.])
 ])
 
 AS_VAR_IF([host_os_is_linux], [yes], [
-    BOOKMARKFS_FEAT([sandbox-landlock], [yes],
-            [Linux Landlock features for sandboxing],
-    [
+    EX_FEAT([sandbox-landlock], [yes], [Landlock features for sandboxing], [
         AC_DEFINE([BOOKMARKFS_SANDBOX_LANDLOCK], [1],
                 [Define to 1 if Landlock is enabled for sandboxing.])
     ])
 ])
 
-BOOKMARKFS_FEAT([xxhash-inline], [no],
-        [using xxhash as a header-only library],
-[
+EX_FEAT([xxhash-inline], [no], [using xxhash as a header-only library], [
     AC_DEFINE([BOOKMARKFS_XXHASH_INLINE], [1],
             [Define to 1 if using xxhash as a header-only library.])
 ])
 
-BOOKMARKFS_FEAT([bookmarkfs-debug], [no],
-        [debugging features for BookmarkFS],
-[
+EX_FEAT([bookmarkfs-debug], [no], [debugging features for BookmarkFS], [
     AC_DEFINE([BOOKMARKFS_DEBUG], [1],
             [Define to 1 if BookmarkFS debugging is enabled.])
 ])
 
-BOOKMARKFS_FEAT([backend-firefox], [no], [Firefox backend], [
+EX_FEAT([backend-firefox], [no], [Firefox backend], [
     AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
-BOOKMARKFS_FEAT([backend-firefox-write], [yes],
+EX_FEAT([backend-firefox-write], [yes],
         [write support for the Firefox backend],
 [
     AC_DEFINE([BOOKMARKFS_BACKEND_FIREFOX_WRITE], [1],
             [Define to 1 if the Firefox backend supports writing.])
 ])
 
-BOOKMARKFS_FEAT([backend-chromium], [no], [Chromium backend], [
+EX_FEAT([backend-chromium], [no], [Chromium backend], [
     AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
-BOOKMARKFS_FEAT([backend-chromium-write], [yes],
+EX_FEAT([backend-chromium-write], [yes],
         [write support for the Chromium backend],
 [
     AC_DEFINE([BOOKMARKFS_BACKEND_CHROMIUM_WRITE], [1],
             [Define to 1 if the Chromium backend supports writing.])
 ])
 
-BOOKMARKFS_FEAT([native-watcher], [yes], [platform-specific file watcher], [
+EX_FEAT([native-watcher], [yes], [platform-specific file watcher], [
     AC_DEFINE([BOOKMARKFS_NATIVE_WATCHER], [1],
             [Define to 1 if platform-specific file watcher is enabled.])
 ])
 
-BOOKMARKFS_FEAT([interactive-fsck], [yes],
+EX_FEAT([interactive-fsck], [yes],
         [interactive features for fsck.bookmarkfs],
 [
     AS_VAR_IF([enable_bookmarkfs_fsck], [no], [
@@ -120,49 +114,47 @@ BOOKMARKFS_FEAT([interactive-fsck], [yes],
     ])
 ])
 
-BOOKMARKFS_FEAT([fsck-handler-tcl], [no], [Tcl-based fsck handler])
+EX_FEAT([fsck-handler-tcl], [no], [Tcl-based fsck handler])
 
 # -- Checks for libraries --
 
 AX_PTHREAD
 
-BOOKMARKFS_DEP([bookmarkfs], [>= 0.1], [BookmarkFS utility library], [
+EX_DEP([bookmarkfs], [>= 0.1], [BookmarkFS utility library], [
     AS_VAR_SET([enable_bookmarkfs_util], [no])
 ])
 
-BOOKMARKFS_DEP([fuse3], [>= 3.5], [fuse3 library], , [bookmarkfs-mount])
+EX_DEP([fuse3], [>= 3.5], [fuse3 library], , [bookmarkfs-mount])
 
 AS_VAR_IF([host_os_is_linux], [yes], [
-    BOOKMARKFS_DEP([libseccomp], [>= 2.5], [libseccomp library], , [sandbox])
+    EX_DEP([libseccomp], [>= 2.5], [libseccomp library], , [sandbox])
 ])
 
-BOOKMARKFS_DEP([sqlite3], [>= 3.35], [SQLite3 library], , [backend-firefox])
+EX_DEP([sqlite3], [>= 3.35], [SQLite3 library], , [backend-firefox])
 
-BOOKMARKFS_DEP([jansson], [>= 2.14], [Jansson library], , [backend-chromium])
+EX_DEP([jansson], [>= 2.14], [Jansson library], , [backend-chromium])
 
-BOOKMARKFS_DEP([nettle], [>= 3.4], [Nettle library], ,
+EX_DEP([nettle], [>= 3.4], [Nettle library], ,
         [backend-firefox-write], [backend-chromium-write])
 
-BOOKMARKFS_DEP([readline], [>= 6.0], [GNU Readline library], ,
-        [interactive-fsck])
+EX_DEP([readline], [>= 6.0], [GNU Readline library], , [interactive-fsck])
 
-BOOKMARKFS_DEP([tcl], [>= 8.6], [Tcl library], , [fsck-handler-tcl])
+EX_DEP([tcl], [>= 8.6], [Tcl library], , [fsck-handler-tcl])
 
-BOOKMARKFS_DEP([liburiparser], [>= 0.9], [uriparser library], ,
+EX_DEP([liburiparser], [>= 0.9], [uriparser library], ,
         [backend-firefox-write])
 
-BOOKMARKFS_DEP([libxxhash], [>= 0.8], [xxHash library], [
+EX_DEP([libxxhash], [>= 0.8], [xxHash library], [
     AS_VAR_IF([enable_xxhash_inline], [yes], [
         AS_VAR_SET([LIBXXHASH_LIBS])
     ])
 ], [bookmarkfs-util])
 
-BOOKMARKFS_AMCOND([bookmarkfs-util], [bookmarkctl], [bookmarkfs-fsck],
+EX_AMCOND([bookmarkfs-util], [bookmarkctl], [bookmarkfs-fsck],
         [bookmarkfs-mkfs], [bookmarkfs-mount], [sandbox], [backend-firefox],
         [backend-firefox-write], [backend-chromium], [backend-chromium-write],
         [interactive-fsck], [fsck-handler-tcl])
-BOOKMARKFS_FEAT_EXPORT([bookmarkfs-debug], [sandbox-landlock],
-        [native-watcher])
+EX_FEAT_EXPORT([bookmarkfs-debug], [sandbox-landlock], [native-watcher])
 
 # -- Checks for compiler builtins and attributes --
 
