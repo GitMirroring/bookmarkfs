@@ -9,14 +9,13 @@ bookmarkctl - manage a mounted BookmarkFS filesystem
 .RI [ args ]
 .PP
 .B "bookmarkctl permd"
-.I pathname
-.I op
+.RI [ options ]
 .I name1
 .I name2
+.I pathname
 .PP
 .B "bookmarkctl fsck"
 .I pathname
-.I op
 .PP
 .B "bookmarkctl help"
 .PP
@@ -30,7 +29,8 @@ filesystem.
 .SS Permute directory entries
 The
 .B permd
-sub-command re-arranges the order of the directory entries returned from
+sub-command re-arranges the order of the directory entries to be returned
+from future
 .BR readdir (3)
 calls.
 .PP
@@ -42,41 +42,38 @@ The
 and
 .I name2
 arguments are filenames under that directory.
-.PP
+.SS Filesystem check
 The
-.I op
-argument is the operation to perform on the directory:
+.B fsck
+sub-command displays a list of filesystem errors found under the directory
+referred to by
+.IR pathname .
+It does not recurse into subdirectories.
+.PP
+For the full fsck functionalities, use
+.BR fsck.bookmarkfs (1).
+.
+.SH OPTIONS
+.SS Permute directory entries
 .TP
-.B swap
+.B \-s
 Exchange the positions of the directory entries represented by
 .I name1
 and
 .IR name2 .
 .TP
-.BR move\-before | move\-after
+.BR \-b ", " \-a
 Move the directory entry represented by
 .I name1
 to the position just before/after the one represented by
 .IR name2 .
-.SS Filesystem check
-The
-.B fsck
-sub-command checks for errors within a BookmarkFS filesystem.
 .PP
 The
-.I pathname
-argument is the path to the directory to perform checks on.
-.PP
-The
-.I op
-argument is the operation to perform on the directory:
-.TP
-.B list
-Display a list of errors found under the given directory.
-Will not recurse into subdirectories.
-.PP
-For the full fsck functionalities, use
-.BR fsck.bookmarkfs (1).
+.BR \-s ", " \-b
+and
+.B \-a
+options are mutually exclusive.
+If multiple options are provided, the last one takes effect.
 .
 .SH EXIT STATUS
 .TP

@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "frontend_util.h"
 #include "fsck_util.h"
 #include "ioctl.h"
 #include "macros.h"
@@ -104,21 +105,15 @@ subcmd_fsck (
     int   argc,
     char *argv[]
 ) {
-#define FSCK_NARGS  2
-    if (--argc != FSCK_NARGS) {
-        log_printf("fsck: " STRINGIFY(FSCK_NARGS) " args expected, %d given",
-                argc);
+    if (--argc != 1) {
+        if (argc == 0) {
+            log_puts("fsck: pathname must be specified");
+        } else {
+            log_puts("fsck: too many arguments");
+        }
         return -1;
     }
-    char const *path  = *(++argv);
-    char const *opstr = *(++argv);
-
-    if (0 == strcmp("list", opstr)) {
-        // NOOP
-    } else {
-        log_printf("fsck: bad operation name '%s'", opstr);
-        return -1;
-    }
+    char const *path = *(++argv);
 
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {
@@ -138,8 +133,10 @@ subcmd_fsck (
             break;
         }
     } while (status != BOOKMARKFS_FSCK_RESULT_END);
+
     close(dirfd);
     return status;
+
 }
 
 static int
@@ -147,29 +144,41 @@ subcmd_permd (
     int   argc,
     char *argv[]
 ) {
-#define PERMD_NARGS  4
-    if (--argc != PERMD_NARGS) {
-        log_printf("permd: " STRINGIFY(PERMD_NARGS) " args expected, %d given",
-                argc);
+    int op = -1;
+
+    OPT_START(argc, argv, "sba")
+    OPT_OPT('s') {
+        op = BOOKMARKFS_PERMD_OP_SWAP;
+        break;
+    }
+    OPT_OPT('b') {
+        op = BOOKMARKFS_PERMD_OP_MOVE_BEFORE;
+        break;
+    }
+    OPT_OPT('a') {
+        op = BOOKMARKFS_PERMD_OP_MOVE_AFTER;
+        break;
+    }
+    OPT_END
+
+    if (op < 0) {
+        log_puts("permd: no operation specified");
         return -1;
     }
-    char const *path  = *(++argv);
-    char const *opstr = *(++argv);
-    char const *name1 = *(++argv);
-    char const *name2 = *(++argv);
-
     struct bookmarkfs_permd_data permd_data;
+    permd_data.op = op;
 
-    if (0 == strcmp("swap", opstr)) {
-        permd_data.op = BOOKMARKFS_PERMD_OP_SWAP;
-    } else if (0 == strcmp("move-before", opstr)) {
-        permd_data.op = BOOKMARKFS_PERMD_OP_MOVE_BEFORE;
-    } else if (0 == strcmp("move-after", opstr)) {
-        permd_data.op = BOOKMARKFS_PERMD_OP_MOVE_AFTER;
-    } else {
-        log_printf("permd: bad operation name '%s'", opstr);
+    if (argc != 3) {
+        if (argc < 3) {
+            log_puts("permd: dentry names and dir path must be specified");
+        } else {
+            log_puts("permd: too many arguments");
+        }
         return -1;
     }
+    char const *name1 = argv[0];
+    char const *name2 = argv[1];
+    char const *path  = argv[2];
 
 #define COPY_NAME(dst, src)                                        \
     if ((dst) + sizeof(dst) == stpncpy(dst, src, sizeof(dst))) {   \

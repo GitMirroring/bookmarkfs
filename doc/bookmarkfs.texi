@@ -547,59 +547,55 @@ Sub-commands:
 
 @table @command
 @item permd
-Rearranges the order of the directory entries obtained from @code{readdir()}.
+Rearranges the order of the directory entries to be returned from
+future calls to @code{readdir()}.
 @xref{Permute Directory Entries}.
 
 @example
-bookmarkctl permd @var{pathname} @var{op} @var{name1} @var{name2}
+bookmarkctl permd [@var{options}] @var{name1} @var{name2} @var{pathname}
 @end example
 
 @table @var
-@item pathname
-Path to the directory.
-
 @item name1
 @item name2
 Filename of entries under the directory.
 
-@item op
-Operation to perform on the directory:
+@item pathname
+Path to the parent directory.
+@end table
 
-@table @samp
-@item swap
+Options:
+
+@table @option
+@item -s
 Exchange the positions of the directory entries represented by @var{name1}
 and @var{name2}.
 
-@item move-before
+@item -b
 Move the directory entry represented by @var{name1} to the position just
 @emph{before} the one represented by @var{name2}.
 
-@item move-after
+@item -a
 Move the directory entry represented by @var{name1} to the position just
 @emph{after} the one represented by @var{name2}.
 @end table
-@end table
+
+The @option{-s}, @option{-b} and @option{-a} options are mutually exclusive.
+If multiple options are provided, the last one takes effect.
 
 @item fsck
-Check for errors within a BookmarkFS filesystem.
+Displays a list of filesystem errors found under the given directory.
 @xref{Filesystem Check}.
 
+Does not recurse into subdirectories.
+
 @example
-bookmarkctl fsck @var{pathname} @var{op}
+bookmarkctl fsck @var{pathname}
 @end example
 
 @table @var
 @item pathname
 Path to the directory to perform checks on.
-
-@item op
-Operation to perform on the directory:
-
-@table @samp
-@item list
-Display a list of errors found under the given directory.
-Will not recurse into subdirectories.
-@end table
 @end table
 
 For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
