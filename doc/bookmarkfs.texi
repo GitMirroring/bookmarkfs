@@ -238,7 +238,7 @@ This option can be provided multiple times.
 
 @item -o accmode=@var{mode}
 File access mode.
-Defaults to @t{0700}.
+Defaults to @samp{0700}.
 
 This option applies to both directories and regular files.
 Execution bits on regular files are masked off.
@@ -285,7 +285,7 @@ a trailing newline is automatically removed (if one exists).
 
 @item -o file_max=@var{bytes}
 Max file size limit.
-Defaults to @t{32768}.
+Defaults to @samp{32768}.
 
 This limit also applies to extended attribute values.
 
@@ -3788,7 +3788,8 @@ typedef unsigned long (hashmap_hash_func) (
 );
 @end example
 
-This function is only called during rehashing and @code{hashmap_entry_delete}.
+This function is only called during rehashing,
+and during @code{hashmap_delete} with a negative @code{entry_id}.
 @end table
 
 Returns an opaque pointer referring to the new hash table.
