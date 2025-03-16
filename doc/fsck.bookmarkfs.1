@@ -47,7 +47,7 @@ relative to the root directory of the subsystem.
 .
 .SH OPTIONS
 .TP
-\fB\-o backend=\fIname\fR
+.BI "\-o backend=" name
 The backend used by the filesystem.
 .IP
 If this option is not provided, or
@@ -58,7 +58,7 @@ is empty, performs online fsck.
 A backend-specific option.
 This option can be provided multiple times.
 .TP
-\fB\-o handler=\fIname\fR
+.BI "\-o handler=" name
 The handler for resolving errors found during fsck.
 .IP
 If this option is not provided, or
@@ -72,7 +72,7 @@ This option can be provided multiple times.
 .B \-o repair
 Attempt to repair errors found during fsck.
 .TP
-\fB\-o rl_app=\fIname\fR
+.BI "\-o rl_app=" name
 Readline application name in interactive mode.
 Defaults to "fsck.bookmarkfs".
 .TP
