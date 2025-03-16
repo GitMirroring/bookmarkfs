@@ -158,19 +158,17 @@ check_sandbox (
 #endif
     char const *path = NULL;
 
-    getopt_foreach(argc, argv, ":d:r") {
-      case 'd':
+    OPT_START(argc, argv, "d:r")
+    OPT_OPT('d') {
         path = optarg;
         break;
-
-      case 'r':
+    }
+    OPT_OPT('r') {
         flags |= SANDBOX_READONLY;
         break;
-
-      default:
-        log_printf("bad option '-%c'", optopt);
-        return -1;
     }
+    OPT_END
+
     if (path == NULL) {
         log_puts("path not specified");
         return -1;

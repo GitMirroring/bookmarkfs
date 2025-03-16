@@ -155,15 +155,13 @@ check_watcher (
 ) {
     char const *path = NULL;
 
-    getopt_foreach(argc, argv, ":d:") {
-      case 'd':
+    OPT_START(argc, argv, "d:")
+    OPT_OPT('d') {
         path = optarg;
         break;
-
-      default:
-        log_printf("bad option '-%c'", optopt);
-        return -1;
     }
+    OPT_END
+
     if (path == NULL) {
         log_puts("path not specified");
         return -1;

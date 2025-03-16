@@ -172,26 +172,24 @@ check_hashmap (
     int n = -1;
     int r = -1;
 
-    getopt_foreach(argc, argv, ":s:n:r:") {
-      case 's':
+    OPT_START(argc, argv, "s:n:r:")
+    OPT_OPT('s') {
         if (0 != prng_seed_from_hex(seed_buf, optarg)) {
             return -1;
         }
         seed = seed_buf;
         break;
-
-      case 'n':
+    }
+    OPT_OPT('n') {
         n = atoi(optarg);
         break;
-
-      case 'r':
+    }
+    OPT_OPT('r') {
         r = atoi(optarg);
         break;
-
-      default:
-        log_printf("bad option '-%c'", optopt);
-        return -1;
     }
+    OPT_END
+
     if (n < 10 || n > 30) {
         log_printf("bad size %d", n);
         return -1;

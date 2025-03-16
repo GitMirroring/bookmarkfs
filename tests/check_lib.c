@@ -87,15 +87,12 @@ subcmd_hash (
 ) {
     unsigned long long seed = 0;
 
-    getopt_foreach(argc, argv, ":s:") {
-      case 's':
+    OPT_START(argc, argv, "s:")
+    OPT_OPT('s') {
         seed = strtoull(optarg, NULL, 16);
         break;
-
-      default:
-        log_printf("bad option '-%c'", optopt);
-        return -1;
     }
+    OPT_END
 
     hash_seed(seed);
     printf("%016" PRIx64 "\n", hash_digestcb(hash_check_cb, NULL));
@@ -110,22 +107,19 @@ subcmd_prng (
     uint64_t seed_buf[4], *seed = NULL;
     int n = 0;
 
-    getopt_foreach(argc, argv, ":s:n:") {
-      case 's':
+    OPT_START(argc, argv, "s:n:")
+    OPT_OPT('s') {
         if (0 != prng_seed_from_hex(seed_buf, optarg)) {
             return -1;
         }
         seed = seed_buf;
         break;
-
-      case 'n':
+    }
+    OPT_OPT('n') {
         n = atoi(optarg);
         break;
-
-      default:
-        log_printf("bad option '-%c'", optopt);
-        return -1;
     }
+    OPT_END
 
     if (0 != prng_seed(seed)) {
         return -1;
