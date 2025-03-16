@@ -3739,7 +3739,7 @@ Time complexity:
 
 @multitable @columnfractions .33 .33 .33
 @headitem Operation @tab Average @tab Worst case
-@item Insert @tab @t{Θ(1)} @tab @t{O(n log n)}
+@item Insert @tab @t{Θ(1)} @tab @t{O(n)}
 @item Search @tab @t{Θ(1)} @tab @t{O(log n)}
 @item Delete @tab @t{Θ(1)} @tab @t{O(log n)}
 @end multitable
@@ -3962,6 +3962,10 @@ Limitations:
 @item Insertion performance is sacrificed in favor of search performance.
 
 @item Suffers more from collisions than traditional open addressing.
+Too many collisions on a single bucket forces a rehash.
+
+With a good-quality hash function, the average load factor of a hash table
+should be around 70%~75% before it must rehash.
 
 @item Performance is suboptimal without hardware support for
 @uref{https://en.wikipedia.org/wiki/Find_first_set, Find First Set}.
