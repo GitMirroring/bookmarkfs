@@ -39,7 +39,7 @@ explain_fsck_result (
     struct bookmarkfs_fsck_data const *data
 ) {
     char name_buf[sizeof(data->name)];
-    escape_control_chars(name_buf, sizeof(name_buf), data->name, '?');
+    translit_control_chars(name_buf, sizeof(name_buf), data->name, '?');
 
 #define PRINT_FSCK_RESULT(s, ...)  \
     printf("bookmark %" PRIu64 " name '%.*s' " s "\n", data->id,  \
@@ -78,7 +78,7 @@ explain_fsck_result (
 }
 
 int
-escape_control_chars (
+translit_control_chars (
     char *restrict       dst,
     size_t               dst_max,
     char const *restrict src,

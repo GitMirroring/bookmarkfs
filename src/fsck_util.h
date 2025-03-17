@@ -40,7 +40,7 @@ explain_fsck_result (
  * Returns the number of characters replaced.
  */
 int
-escape_control_chars (
+translit_control_chars (
     char *restrict       dst,
     size_t               dst_max,
     char const *restrict src,

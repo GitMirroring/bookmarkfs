@@ -190,7 +190,7 @@ print_entry (
     struct bookmarkfs_fsck_data const *data
 ) {
     char name_buf[sizeof(data->name)];
-    escape_control_chars(name_buf, sizeof(name_buf), data->name, '?');
+    translit_control_chars(name_buf, sizeof(name_buf), data->name, '?');
 
     printf("id:   %" PRIu64 "\nname: %s\n", data->id, name_buf);
 }
