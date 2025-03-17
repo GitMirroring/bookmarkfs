@@ -242,13 +242,9 @@ subcmd_xattr_get (
         .eol = '\n',
     };
 
-    OPT_START(argc, argv, "n:Nbmqs:")
+    OPT_START(argc, argv, "n:bmqs:")
     OPT_OPT('n') {
         ctx.eol = optarg[0];
-        break;
-    }
-    OPT_OPT('N') {
-        ctx.flags |= BMCTL_XATTR_GET_NOEOL;
         break;
     }
     OPT_OPT('b') {
@@ -260,6 +256,9 @@ subcmd_xattr_get (
         break;
     }
     OPT_OPT('q') {
+        if (ctx.flags & BMCTL_XATTR_GET_QUIET) {
+            ctx.flags |= BMCTL_XATTR_GET_NOEOL;
+        }
         ctx.flags |= BMCTL_XATTR_GET_QUIET;
         break;
     }
