@@ -537,7 +537,8 @@ Print version and feature information, and then exit.
 @section @command{bookmarkctl}
 
 The @command{bookmarkctl} program is a command-line wrapper for various
-I/O controls of a BookmarkFS filesystem.
+operations on a BookmarkFS filesystem that cannot be done portably with
+POSIX utilities alone, including I/O controls and managing extended attributes.
 
 @example
 bookmarkctl @var{subcmd} [@var{args}]
@@ -599,6 +600,99 @@ Path to the directory to perform checks on.
 @end table
 
 For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
+
+@item xattr-list
+Displays a list of extended attribute names.
+@xref{Extended Attributes}.
+
+@example
+bookmarkctl xattr-list @var{pathname}
+@end example
+
+@table @var
+@item pathname
+Path to the file to obtain extended attribute names.
+@end table
+
+Only the names prefixed with @samp{user.bookmarkfs.} are listed,
+with the prefix removed.
+
+@item xattr-get
+Displays extended attribute values.
+@xref{Extended Attributes}.
+
+@example
+bookmarkctl xattr-get [@var{options}]    @var{name}    @var{pathname}...
+bookmarkctl xattr-get [@var{options}] -m @var{name}... @var{pathname}
+@end example
+
+@table @var
+@item name
+Name of the extended attribute, without the @samp{user.bookmarkfs.} prefix.
+
+@item pathname
+Path to the file to obtain extended attribute values.
+@end table
+
+Options:
+
+@table @option
+@item -b
+Treat the value as binary, and print it verbatim.
+
+If this option is not provided, non-printable characters are replaced with
+@samp{?}.
+
+@item -m
+Switch to multi-name mode, where multiple extended attribute names
+can be specified instead of multiple files.
+
+Also, the corresponding @var{name} is printed alongside with the value,
+instead of @var{pathname}.
+
+@item -q
+Print values only, do not print names.
+
+If provided twice, do not print the suffix character after each value.
+
+@item -s @var{char}
+The character separating each name and value.
+Defaults to the ASCII LT character.
+
+@item -n @var{char}
+The character suffixing each value.
+Defaults to the ASCII LF character.
+@end table
+
+For the @option{-s} and @option{-n} options,
+if @var{char} contains multiple characters, the first one is used.
+If empty, the ASCII NUL character is used.
+
+@item xattr-set
+Update the value of an extended attribute.
+@xref{Extended Attributes}.
+
+@example
+bookmarkctl xattr-set [@var{options}] @var{name} @var{pathname}
+@end example
+
+@table @var
+@item name
+Name of the extended attribute to update,
+without the @samp{user.bookmarkfs.} prefix.
+
+@item pathname
+Path to the file to update extended attribute value.
+@end table
+
+Options:
+
+@table @option
+@item -v @var{value}
+New value for the extended attribute.
+
+If this option is not provided, the new value is read from standard input.
+@end table
 
 @item help
 Print help text, and then exit.

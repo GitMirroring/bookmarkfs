@@ -20,6 +20,28 @@ bookmarkctl - manage a mounted BookmarkFS filesystem
 .I pathname
 .PP
 .B bookmarkctl
+.B xattr\-list
+.I pathname
+.PP
+.B bookmarkctl
+.B xattr\-get
+.RI [ options ]
+.I name
+.IR pathname ...
+.PP
+.B bookmarkctl
+.B xattr\-get
+.RI [ options ]
+.B \-m
+.IR name "... " pathname
+.PP
+.B bookmarkctl
+.B xattr\-set
+.RI [ options ]
+.I name
+.I pathname
+.PP
+.B bookmarkctl
 .B help
 .PP
 .B bookmarkctl
@@ -28,8 +50,9 @@ bookmarkctl - manage a mounted BookmarkFS filesystem
 .SH DESCRIPTION
 The
 .B bookmarkctl
-program is a command-line wrapper for various I/O controls of a BookmarkFS
-filesystem.
+program is a command-line wrapper for various operations on a BookmarkFS
+filesystem that cannot be done portably with POSIX utilities alone,
+including I/O controls and managing extended attributes.
 .SS Permute directory entries
 The
 .B permd
@@ -56,6 +79,37 @@ It does not recurse into subdirectories.
 .PP
 For the full fsck functionalities, use
 .BR fsck.bookmarkfs (1).
+.SS List extended attribute names
+The
+.B xattr\-list
+sub-command displays a list of extended attribute names
+of the file referred to by
+.IR pathname .
+.PP
+Only the names prefixed with "user.bookmarkfs." are listed,
+with the prefix removed.
+.SS Get extended attribute value
+The
+.B xattr\-get
+sub-command displays one or multiple extended attribute values
+of the file referred to by
+.IR pathname .
+.PP
+The
+.I name
+argument is the name of the extended attribute,
+without the "user.bookmarkfs." prefix.
+.SS Set extended attribute value
+The
+.B xattr\-set
+sub-command updates the value of an extended attribute
+of the file referred to by
+.IR pathname .
+.PP
+The
+.I name
+argument is the name of the extended attribute,
+without the "user.bookmarkfs." prefix.
 .
 .SH OPTIONS
 .SS Permute directory entries
@@ -78,6 +132,49 @@ and
 .B \-a
 options are mutually exclusive.
 If multiple options are provided, the last one takes effect.
+.SS Get extended attribute value
+.TP
+.B \-b
+Treat the value as binary, and print it verbatim.
+.IP
+If this option is not provided, non-printable characters are replaced with '?'.
+.TP
+.B \-m
+Switch to multi-name mode, where multiple extended attribute names
+can be specified instead of multiple files.
+.IP
+Also, the corresponding
+.I name
+is printed alongside with the value, instead of
+.IR pathname .
+.TP
+.B \-q
+Print values only, do not print names.
+.IP
+If provided twice, do not print the suffix character after each value.
+.TP
+\fB\-s\fR \fIchar\fR
+The character separating each name and value.
+Defaults to the ASCII LT character.
+.TP
+\fB\-n\fR \fIchar\fR
+The character suffixing each value.
+Defaults to the ASCII LF character.
+.PP
+For the
+.B \-s
+and
+.B \-n
+options, if
+.I char
+contains multiple characters, the first one is used.
+If empty, the ASCII NUL character is used.
+.SS Set extended attribute value
+.TP
+\fB\-v\fR \fIvalue\fR
+New value for the extended attribute.
+.IP
+If this option is not provided, the new value is read from standard input.
 .
 .SH EXIT STATUS
 .TP
@@ -101,7 +198,8 @@ implementation.
 .BR mount.bookmarkfs (1),
 .BR ioctl (2),
 .BR readdir (3),
-.BR fusefs (5)
+.BR fusefs (5),
+.BR xattr (7)
 .PP
 The full BookmarkFS User Manual is maintained as a Texinfo document.
 To read it locally, run:
