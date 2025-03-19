@@ -107,7 +107,7 @@ xattr_do_set (
     size_t      buf_len
 ) {
 #if defined(__linux__)
-    if (0 != fsetxattr(fd, name, buf, buf_len, 0)) {
+    if (0 != fsetxattr(fd, name, buf, buf_len, XATTR_REPLACE)) {
         log_printf("fsetxattr(): %s", strerror(errno));
         return -1;
     }

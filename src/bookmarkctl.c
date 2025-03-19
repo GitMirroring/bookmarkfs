@@ -41,16 +41,14 @@
 #include "xattr.h"
 #include "xstd.h"
 
-#define BMCTL_XATTR_GET_NOEOL   (1u << 0)
-#define BMCTL_XATTR_GET_BINARY  (1u << 1)
-#define BMCTL_XATTR_GET_MULTI   (1u << 2)
-#define BMCTL_XATTR_GET_QUIET   (1u << 3)
-
 struct xattr_get_ctx {
     char const *prefix;
+    unsigned    quiet;
     char        sep;
     char        eol;
-    uint32_t    flags;
+
+    unsigned binary     : 1;
+    unsigned multi_name : 1;
 };
 
 // Forward declaration start
@@ -248,18 +246,15 @@ subcmd_xattr_get (
         break;
     }
     OPT_OPT('b') {
-        ctx.flags |= BMCTL_XATTR_GET_BINARY;
+        ctx.binary = 1;
         break;
     }
     OPT_OPT('m') {
-        ctx.flags |= BMCTL_XATTR_GET_MULTI;
+        ctx.multi_name = 1;
         break;
     }
     OPT_OPT('q') {
-        if (ctx.flags & BMCTL_XATTR_GET_QUIET) {
-            ctx.flags |= BMCTL_XATTR_GET_NOEOL;
-        }
-        ctx.flags |= BMCTL_XATTR_GET_QUIET;
+        ++ctx.quiet;
         break;
     }
     OPT_OPT('s') {
@@ -274,7 +269,7 @@ subcmd_xattr_get (
         return -1;
     }
 
-    if (ctx.flags & BMCTL_XATTR_GET_MULTI) {
+    if (ctx.multi_name) {
         return xattr_get_one(argv[argc - 1], argv, argc - 1, &ctx);
     }
     for (int i = 1; i < argc; ++i) {
@@ -379,14 +374,13 @@ xattr_get_cb (
 ) {
     struct xattr_get_ctx const *ctx = user_data;
 
-    uint32_t flags = ctx->flags;
-    if (!(flags & BMCTL_XATTR_GET_QUIET)) {
+    if (ctx->quiet < 1) {
         if (0 > printf("%s%c", ctx->prefix, ctx->sep)) {
             log_printf("printf(): %s", strerror(errno));
             return -1;
         }
     }
-    if (!(flags & BMCTL_XATTR_GET_BINARY)) {
+    if (!ctx->binary) {
         for (unsigned char *s = buf, *end = s; s < end; ++s) {
             if (iscntrl(*s)) {
                 *s = '?';
@@ -397,7 +391,7 @@ xattr_get_cb (
         log_printf("fwrite(): %s", strerror(errno));
         return -1;
     }
-    if (!(flags & BMCTL_XATTR_GET_NOEOL)) {
+    if (ctx->quiet < 2) {
         if (EOF == fputc(ctx->eol, stdout)) {
             log_printf("fputc(): %s", strerror(errno));
             return -1;
@@ -422,7 +416,7 @@ xattr_get_one (
     for (int i = 0; i < names_cnt; ++i) {
         char const *name = names[i];
 
-        ctx->prefix = (ctx->flags & BMCTL_XATTR_GET_MULTI) ? name : path;
+        ctx->prefix = ctx->multi_name ? name : path;
         status = bookmarkfs_xattr_get(fd, name, xattr_get_cb, ctx);
         if (status < 0) {
             goto end;

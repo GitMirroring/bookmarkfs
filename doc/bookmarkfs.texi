@@ -697,8 +697,16 @@ If this option is not provided, the new value is read from standard input.
 @item help
 Print help text, and then exit.
 
+@example
+bookmarkctl help
+@end example
+
 @item version
 Print version information, and then exit.
+
+@example
+bookmarkctl version
+@end example
 @end table
 
 
