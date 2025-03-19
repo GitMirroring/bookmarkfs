@@ -235,7 +235,6 @@ static int  bm_setattr     (uint64_t, int, bool, struct fuse_file_info const *,
 static int  bm_setxattr    (uint64_t, char const *, void const *, size_t, int);
 static int  bm_write       (fuse_req_t, int, char const *, size_t, off_t,
                             struct fs_file_handle *);
-static int  current_time   (struct timespec *);
 static void do_delete      (fuse_req_t, fuse_ino_t, char const *);
 static void do_readdir     (fuse_req_t, fuse_ino_t, size_t, off_t, uint32_t,
                             struct fuse_file_info const *);
@@ -798,7 +797,7 @@ bm_open (
         // We choose to silently ignore O_TRUNC.
         if ((flags & O_ACCMODE) != O_RDONLY) {
             fh->data_len = 0;
-            current_time(&fh->mtime);
+            xgetrealtime(&fh->mtime);
             fh->flags |= FH_FLAG_DIRTY;
         }
     }
@@ -1091,9 +1090,7 @@ bm_setattr (
             memset(fh->buf + fh->data_len, 0, new_len - fh->data_len);
         }
         fh->data_len = new_len;
-        if (unlikely(0 != current_time(&fh->mtime))) {
-            return -EIO;
-        }
+        xgetrealtime(&fh->mtime);
         fh->flags |= FH_FLAG_DIRTY;
     }
 
@@ -1104,9 +1101,7 @@ bm_setattr (
 
         struct timespec ts = { .tv_nsec = UTIME_OMIT };
         if (mask & TO_SET(ATIME_NOW, MTIME_NOW)) {
-            if (unlikely(0 != current_time(&ts))) {
-                return -EIO;
-            }
+            xgetrealtime(&ts);
         }
 
         struct timespec times[] = { ts, ts };
@@ -1195,25 +1190,12 @@ bm_write (
         fh->data_len = req_off_max;
     }
 
-    if (unlikely(0 != current_time(&fh->mtime))) {
-        return -EIO;
-    }
+    xgetrealtime(&fh->mtime);
     // We're tempted to free the cookie here, however,
     // that would make a read following a writeback always realloc the buffer.
     fh->flags |= FH_FLAG_DIRTY;
 
     return send_reply(write, req, req_buf_len);
-}
-
-static int
-current_time (
-    struct timespec *ts
-) {
-    if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts))) {
-        log_printf("clock_gettime(): %s", xstrerror(errno));
-        return -1;
-    }
-    return 0;
 }
 
 static void

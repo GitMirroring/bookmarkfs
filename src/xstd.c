@@ -86,6 +86,16 @@ xfsync (
     return 0;
 }
 
+void
+xgetrealtime (
+    struct timespec *ts
+) {
+    if (0 != clock_gettime(CLOCK_REALTIME, ts)) {
+        log_printf("clock_gettime(): %s", xstrerror(errno));
+        abort();
+    }
+}
+
 void *
 xmalloc (
     size_t size

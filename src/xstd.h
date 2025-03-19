@@ -24,6 +24,7 @@
 #define BOOKMARKFS_XSTD_H_
 
 #include <stdio.h>
+#include <time.h>
 
 #include "defs.h"
 
@@ -117,6 +118,15 @@ BOOKMARKFS_INTERNAL
 int
 xfsync (
     int fd
+);
+
+/**
+ * Like clock_gettime(CLOCK_REALTIME, ts), but aborts on error.
+ */
+BOOKMARKFS_INTERNAL
+void
+xgetrealtime (
+    struct timespec *ts
 );
 
 /**

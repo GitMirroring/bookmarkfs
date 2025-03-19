@@ -808,10 +808,7 @@ build_ts (
         return 0;
     }
     if (ts->tv_nsec == UTIME_NOW) {
-        if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts))) {
-            log_printf("clock_gettime(): %s", xstrerror(errno));
-            return -1;
-        }
+        xgetrealtime(ts);
     }
 
     // XXX: May overflow if system time is badly wrong,

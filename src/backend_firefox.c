@@ -2085,10 +2085,7 @@ usecs_now (
     if (ts_buf == NULL) {
         ts_buf = &ts_tmp;
     }
-    if (unlikely(0 != clock_gettime(CLOCK_REALTIME, ts_buf))) {
-        log_printf("clock_gettime(): %s", xstrerror(errno));
-        return -1;
-    }
+    xgetrealtime(ts_buf);
     return timespec_to_usecs(ts_buf);
 }
 
