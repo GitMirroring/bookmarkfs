@@ -37,7 +37,6 @@
 
 #include <fcntl.h>
 #include <iconv.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
@@ -205,22 +204,20 @@ static int  fsck_apply      (struct backend_ctx *, uint64_t,
                              struct bookmarkfs_fsck_data const *,
                              bookmarkfs_bookmark_check_cb *, void *);
 static int  init_iconv      (iconv_t *);
-static int  node_mtime_now  (json_t *, json_t **);
+static void node_mtime_now  (json_t *, json_t **);
 static int  parse_mkfsopts  (struct bookmarkfs_conf_opt const *,
                              struct parsed_mkfsopts *);
-static int  store_new       (struct timespec *, json_t **);
+static int  store_new       (struct timespec const *, json_t **);
 static int  store_save      (struct backend_ctx *);
 static void update_guid     (struct node_entry *, struct hashmap *,
                              unsigned long, uint8_t *, unsigned long);
-static int  update_node_ts  (json_t *, struct timespec *);
 #endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
 
 static int  assocmap_comp (union hashmap_key, void const *);
 static unsigned long
             assocmap_hash (void const *);
 static int  build_maps    (struct backend_ctx *);
-static int  build_ts      (struct timespec *, char *, size_t);
-static int  build_tsnode  (struct timespec *, json_t **);
+static void build_tsnode  (struct timespec const *, json_t **);
 static void free_bgcookie (struct bookmark_gcookie *);
 static void free_blcookie (struct bookmark_lcookie *);
 static void free_entry_cb (void *, void *);
@@ -289,11 +286,10 @@ build_node (
     }
     json_object_sset_new(node, "type", type);
 
-    struct timespec ts = { .tv_nsec = UTIME_NOW };
-    json_t *date_added = NULL;
-    if (unlikely(0 != build_tsnode(&ts, &date_added))) {
-        return -EIO;
-    }
+    struct timespec  ts;
+    json_t          *date_added;
+    xgetrealtime(&ts);
+    build_tsnode(&ts, &date_added);
     json_object_sset_new(node, "date_added", date_added);
     json_object_sset_new(node, "date_last_used", json_sstring("0"));
 
@@ -547,23 +543,18 @@ init_iconv (
     return 0;
 }
 
-static int
+static void
 node_mtime_now (
     json_t  *node,
     json_t **tsnode_ptr
 ) {
-    struct timespec ts = { .tv_nsec = UTIME_NOW };
-
-    json_t *tsnode = NULL;
-    if (unlikely(0 != build_tsnode(&ts, &tsnode))) {
-        return -1;
-    }
+    json_t *tsnode;
+    build_tsnode(NULL, &tsnode);
     json_object_sset_new(node, "date_modified", tsnode);
 
     if (tsnode_ptr != NULL) {
         *tsnode_ptr = tsnode;
     }
-    return 0;
 }
 
 static int
@@ -586,13 +577,12 @@ parse_mkfsopts (
 
 static int
 store_new (
-    struct timespec  *btime,
-    json_t          **store_ptr
+    struct timespec const  *btime,
+    json_t                **store_ptr
 ) {
-    json_t *date_added = NULL;
-    if (unlikely(0 != build_tsnode(btime, &date_added))) {
-        return -1;
-    }
+    json_t *date_added;
+    build_tsnode(btime, &date_added);
+
     json_t *children = json_array();
     json_t *type     = json_sstring("folder");
     json_t *zero_str = json_sstring("0");
@@ -676,31 +666,6 @@ update_guid (
     memcpy(entry->guid, guid, UUID_LEN);
 }
 
-static int
-update_node_ts (
-    json_t          *node,
-    struct timespec *times
-) {
-    json_t *ts_node = json_object_sget(node, "date_last_used");
-    if (unlikely(0 != build_tsnode(&times[0], &ts_node))) {
-        return -1;
-    }
-
-    ts_node = json_object_sget(node, "date_modified");
-    if (ts_node == NULL) {
-        ts_node = json_object_sget(node, "date_added");
-        if (unlikely(ts_node == NULL)) {
-            return -1;
-        }
-        json_object_sset_copy(node, "date_modified", ts_node);
-    }
-    if (unlikely(0 != build_tsnode(&times[1], &ts_node))) {
-        return -1;
-    }
-
-    return 0;
-}
-
 #endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
 
 static int
@@ -733,11 +698,9 @@ static int
 build_maps (
     struct backend_ctx *ctx
 ) {
-    json_t *ts_node = NULL;
-    struct timespec now = { .tv_nsec = UTIME_NOW };
-    if (unlikely(0 != build_tsnode(&now, &ts_node))) {
-        return -1;
-    }
+    json_t *ts_node;
+    build_tsnode(NULL, &ts_node);
+
     json_t *root     = json_object();
     json_t *children = json_array();
     json_object_sset_new(root, "children", children);
@@ -798,60 +761,30 @@ build_maps (
     return -1;
 }
 
-static int
-build_ts (
-    struct timespec *ts,
-    char            *buf,
-    size_t           buf_len
+static void
+build_tsnode (
+    struct timespec const  *ts,
+    json_t                **node_ptr
 ) {
-    if (ts->tv_nsec == UTIME_OMIT) {
-        return 0;
-    }
-    if (ts->tv_nsec == UTIME_NOW) {
-        xgetrealtime(ts);
+    struct timespec now;
+    if (ts == NULL) {
+        xgetrealtime(&now);
+        ts = &now;
     }
 
     // XXX: May overflow if system time is badly wrong,
     // but don't bother to check.
-    time_t secs  = ts->tv_sec + EPOCH_DIFF;
-    long   nsecs = ts->tv_nsec;
-
-    long microsecs = nsecs / 1000;
-    if (unlikely(microsecs >= 1000000)) {
-        secs      += microsecs / 1000000;
-        microsecs %= 1000000;
+    time_t  secs      = ts->tv_sec + EPOCH_DIFF;
+    int64_t microsecs = secs * 1000000 + ts->tv_nsec / 1000;
+    if (microsecs < 0) {
+        microsecs = 0;
     }
 
-    int nbytes = snprintf(buf, buf_len, "%" PRIuMAX "%06ld",
-            (uintmax_t)secs, microsecs);
-    if (unlikely(nbytes < 0) || unlikely((size_t)nbytes >= buf_len)) {
-        return -1;
-    }
-    return nbytes;
-}
-
-static int
-build_tsnode (
-    struct timespec  *ts,
-    json_t          **node_ptr
-) {
     char buf[32];
-    int nbytes = build_ts(ts, buf, 32);
-    if (unlikely(nbytes < 0)) {
-        return -1;
-    }
-    if (nbytes == 0) {
-        // UTIME_OMIT
-        return 0;
-    }
+    int nbytes = snprintf(buf, sizeof(buf), "%" PRIi64, microsecs);
+    xassert(nbytes > 0 && (size_t)nbytes < sizeof(buf));
 
-    json_t *node = *node_ptr;
-    if (node == NULL) {
-        *node_ptr = json_stringn_nocheck(buf, nbytes);
-    } else {
-        json_string_setn_nocheck(node, buf, nbytes);
-    }
-    return 0;
+    *node_ptr = json_stringn_nocheck(buf, nbytes);
 }
 
 static void
@@ -2132,9 +2065,8 @@ static int
 backend_mkfs (
     struct bookmarkfs_backend_conf const *conf
 ) {
-    struct parsed_mkfsopts opts = {
-        .btime = { .tv_nsec = UTIME_NOW },
-    };
+    struct parsed_mkfsopts opts;
+    xgetrealtime(&opts.btime);
     if (0 != parse_mkfsopts(conf->opts, &opts)) {
         return -1;
     }
@@ -2253,9 +2185,7 @@ bookmark_create (
     memcpy(entry->guid, guid, UUID_LEN);
     ctx->dirty = DIRTY_LEVEL_DATA;
 
-    if (unlikely(0 != node_mtime_now(parent_entry->node, NULL))) {
-        return -EIO;
-    }
+    node_mtime_now(parent_entry->node, NULL);
     return 0;
 }
 
@@ -2319,9 +2249,7 @@ bookmark_delete (
 
     ctx->dirty = DIRTY_LEVEL_DATA;
 
-    if (unlikely(0 != node_mtime_now(parent_entry->node, NULL))) {
-        return -EIO;
-    }
+    node_mtime_now(parent_entry->node, NULL);
     return 0;
 }
 
@@ -2410,9 +2338,7 @@ bookmark_permute (
     }
     ctx->dirty = DIRTY_LEVEL_DATA;
 
-    if (unlikely(0 != node_mtime_now(parent_entry->node, NULL))) {
-        return -EIO;
-    }
+    node_mtime_now(parent_entry->node, NULL);
     return 0;
 }
 
@@ -2547,9 +2473,7 @@ bookmark_rename (
     ctx->dirty = DIRTY_LEVEL_DATA;
 
     json_t *tsnode_now;
-    if (unlikely(0 != node_mtime_now(old_parent->node, &tsnode_now))) {
-        return -EIO;
-    }
+    node_mtime_now(old_parent->node, &tsnode_now);
     if (old_parent != new_parent) {
         json_object_sset_copy(new_parent->node, "date_modified", tsnode_now);
     }
@@ -2587,12 +2511,18 @@ bookmark_set (
     if (entry->parent_id == BOOKMARKS_ROOT_ID) {
         return -EPERM;
     }
+    json_t *node = entry->node;
 
-    if (flags & BOOKMARK_FLAG(SET_TIME)) {
-        // Without UTIME_NOW, it is safe to cast away the const qualifier.
-        struct timespec *times = (struct timespec *)val;
-        if (unlikely(0 != update_node_ts(entry->node, times))) {
-            return -EIO;
+    if (flags & BOOKMARK_FLAG(SET_ATIME, SET_MTIME)) {
+        struct timespec const *times = val;
+        json_t *ts_node;
+        if (flags & BOOKMARK_FLAG(SET_ATIME)) {
+            build_tsnode(&times[0], &ts_node);
+            json_object_sset_new(node, "date_last_used", ts_node);
+        }
+        if (flags & BOOKMARK_FLAG(SET_MTIME)) {
+            build_tsnode(&times[1], &ts_node);
+            json_object_sset_new(node, "date_modified", ts_node);
         }
         if (ctx->dirty < DIRTY_LEVEL_METADATA) {
             ctx->dirty = DIRTY_LEVEL_METADATA;
@@ -2601,8 +2531,7 @@ bookmark_set (
     }
 
     json_t *val_node;
-    int key_type = get_xattr_val(entry->node, xattr_name, ctx->flags,
-            &val_node);
+    int key_type = get_xattr_val(node, xattr_name, ctx->flags, &val_node);
     if (key_type < 0) {
         return key_type;
     }
@@ -2649,9 +2578,7 @@ bookmark_set (
     ctx->dirty = DIRTY_LEVEL_DATA;
 
     if (key_type != BM_XATTR_NULL && ctx->flags & BOOKMARKFS_BACKEND_CTIME) {
-        if (unlikely(0 != node_mtime_now(entry->node, NULL))) {
-            return -EIO;
-        }
+        node_mtime_now(node, NULL);
     }
     return 0;
 }

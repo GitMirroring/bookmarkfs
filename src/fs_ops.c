@@ -440,11 +440,10 @@ bm_do_write (
         return status;
     }
 
-    struct timespec const times[] = {
-        { .tv_nsec = UTIME_OMIT },
-        fh->mtime,
+    struct timespec const times[2] = {
+        [1] = fh->mtime,
     };
-    uint32_t set_flags = BOOKMARK_FLAG(SET_TIME);
+    uint32_t set_flags = BOOKMARK_FLAG(SET_MTIME);
     status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
     if (status < 0) {
         return status;
@@ -1099,22 +1098,27 @@ bm_setattr (
             mask |= TO_SET(MTIME, MTIME_NOW);
         }
 
-        struct timespec ts = { .tv_nsec = UTIME_OMIT };
+        struct timespec now = { 0 };
         if (mask & TO_SET(ATIME_NOW, MTIME_NOW)) {
-            xgetrealtime(&ts);
+            xgetrealtime(&now);
         }
 
-        struct timespec times[] = { ts, ts };
-        if (TO_SET(ATIME) == (mask & TO_SET(ATIME, ATIME_NOW))) {
-            times[0] = stat_buf->st_atim;
-        }
-        if (TO_SET(MTIME) == (mask & TO_SET(MTIME, MTIME_NOW))) {
-            times[1] = stat_buf->st_mtim;
-        }
-
-        uint32_t set_flags = BOOKMARK_FLAG(SET_TIME);
+        uint32_t set_flags = 0;
         if (is_tag) {
             set_flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
+        }
+        struct timespec times[] = { now, now };
+        if (mask & TO_SET(ATIME)) {
+            if (!(mask & TO_SET(ATIME_NOW))) {
+                times[0] = stat_buf->st_atim;
+            }
+            set_flags |= BOOKMARK_FLAG(SET_ATIME);
+        }
+        if (mask & TO_SET(MTIME)) {
+            if (!(mask & TO_SET(MTIME_NOW))) {
+                times[1] = stat_buf->st_mtim;
+            }
+            set_flags |= BOOKMARK_FLAG(SET_MTIME);
         }
         int status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
         if (status < 0) {

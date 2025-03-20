@@ -2491,21 +2491,17 @@ value instead of the bookmark content.
 A bit array of the following flags:
 
 @table @code
-@item BOOKMARKFS_BOOKMARK_SET_TIME
+@item BOOKMARKFS_BOOKMARK_SET_ATIME
+@item BOOKMARKFS_BOOKMARK_SET_MTIME
 Indicates that the function should update the timestamps associated with
-the object.
+the object, instead of the bookmark content or extended attribute value.
 
 The @code{val} argument points to an array of @code{struct timespec},
 the first element refers to the last access time, and the second element
-refers to the last modification time of the object.
+refers to the last modification time for the object.
+If a flag is not set, the corresponding timestamp should be left as-is.
+
 Values of @code{xattr_name} and @code{val_len} are unspecified.
-
-The @code{tv_nsec} field of each timestamp may be @code{UTIME_OMIT},
-which indicates that the timestamp should be left as-is.
-It is guaranteed not to be @code{UTIME_NOW}.
-
-If this flag is not set, the function should update the bookmark content
-or extended attribute value instead.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_MASK
 The subsystem to operate on.

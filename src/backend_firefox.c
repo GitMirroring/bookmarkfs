@@ -35,7 +35,6 @@
 #include <string.h>
 
 #include <fcntl.h>
-#include <sys/stat.h>
 #include <unistd.h>
 
 #ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
@@ -2039,9 +2038,6 @@ static int64_t
 timespec_to_usecs (
     struct timespec const *ts
 ) {
-    if (ts->tv_nsec == UTIME_OMIT) {
-        return -1;
-    }
     int64_t microsecs = ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
 
     if (microsecs < 0) {
@@ -3676,12 +3672,14 @@ bookmark_set (
     };
 
     int xattr_id = MOZBM_XATTR_START;
-    if (flags & BOOKMARK_FLAG(SET_TIME)) {
+    if (flags & BOOKMARK_FLAG(SET_ATIME, SET_MTIME)) {
         struct timespec const *times = val;
-        place_cols.last_visit_date = timespec_to_usecs(&times[0]);
-        bm_cols.last_modified      = timespec_to_usecs(&times[1]);
-        if (place_cols.last_visit_date >= 0) {
+        if (flags & BOOKMARK_FLAG(SET_ATIME)) {
+            place_cols.last_visit_date = timespec_to_usecs(&times[0]);
             --xattr_id;
+        }
+        if (flags & BOOKMARK_FLAG(SET_MTIME)) {
+            bm_cols.last_modified = timespec_to_usecs(&times[1]);
         }
     } else {
         xattr_id = get_xattr_id(xattr_name, ctx->flags);
