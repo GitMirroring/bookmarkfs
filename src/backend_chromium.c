@@ -262,7 +262,7 @@ static int  parse_mntopts (struct bookmarkfs_conf_opt const *, uint32_t,
                            struct parsed_mntopts *);
 static int  parse_stats   (struct node_entry const *,
                            struct bookmarkfs_bookmark_stat *);
-static int  parse_ts      (char const *, size_t, struct timespec *);
+static int  parse_ts      (char const *, struct timespec *);
 static void print_help    (uint32_t);
 static void print_version (void);
 static int  store_load    (struct backend_ctx *);
@@ -575,7 +575,7 @@ parse_mkfsopts (
     BACKEND_OPT_KEY("date_added") {
         BACKEND_OPT_VAL_START
         char const *val = BACKEND_OPT_VAL_STR;
-        if (0 != parse_ts(val, strlen(val), &parsed_opts->btime)) {
+        if (0 != parse_ts(val, &parsed_opts->btime)) {
             return BACKEND_OPT_BAD_VAL();
         }
     }
@@ -1496,8 +1496,7 @@ parse_stats (
     if (unlikely(atime == NULL)) {
         return -EIO;
     }
-    size_t atime_len = json_string_length(atime_node);
-    if (unlikely(0 != parse_ts(atime, atime_len, &buf->atime))) {
+    if (unlikely(0 != parse_ts(atime, &buf->atime))) {
         return -EIO;
     }
 
@@ -1510,8 +1509,7 @@ parse_stats (
     if (unlikely(mtime == NULL)) {
         return -EIO;
     }
-    size_t mtime_len = json_string_length(mtime_node);
-    if (unlikely(0 != parse_ts(mtime, mtime_len, &buf->mtime))) {
+    if (unlikely(0 != parse_ts(mtime, &buf->mtime))) {
         return -EIO;
     }
 
@@ -1528,40 +1526,22 @@ parse_stats (
 static int
 parse_ts (
     char const      *str,
-    size_t           str_len,
     struct timespec *buf
 ) {
-    time_t secs = 0;
-    long   microsecs;
-
     char *end;
-    if (likely(str_len > 6)) {
-        str_len -= 6;
-        if (unlikely(str_len > 15)) {
-            return -1;
-        }
-        char tmp[16];
-        memcpy(tmp, str, str_len);
-        tmp[str_len] = '\0';
-        secs = strtoll(tmp, &end, 10);
-
-        if (*end != '\0' || secs < 0 || secs == LLONG_MAX) {
-            return -1;
-        }
-        str += str_len;
-    }
-    microsecs = strtol(str, &end, 10);
-    if (*end != '\0' || microsecs < 0 || microsecs == LONG_MAX) {
+    long long microsecs = strtoll(str, &end, 10);
+    if (*end != '\0' || microsecs < 0 || microsecs == LLONG_MAX) {
         return -1;
     }
 
     if (buf != NULL) {
+        time_t secs = microsecs / 1000000;
         if (unlikely(secs < EPOCH_DIFF)) {
             // Stay away from negative tv_sec
             secs = EPOCH_DIFF;
         }
         buf->tv_sec  = secs - EPOCH_DIFF;
-        buf->tv_nsec = microsecs * 1000;
+        buf->tv_nsec = (microsecs % 1000000) * 1000;
     }
     return 0;
 }
@@ -2630,7 +2610,7 @@ bookmark_set (
     bool nocheck = true;
     switch (key_type) {
       case BM_XATTR_DATE_ADDED:
-        if (0 != parse_ts(val, val_len, NULL)) {
+        if (0 != parse_ts(val, NULL)) {
             return -EINVAL;
         }
         break;
