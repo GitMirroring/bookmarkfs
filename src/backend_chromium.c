@@ -772,13 +772,8 @@ build_tsnode (
         ts = &now;
     }
 
-    // XXX: May overflow if system time is badly wrong,
-    // but don't bother to check.
     time_t  secs      = ts->tv_sec + EPOCH_DIFF;
     int64_t microsecs = secs * 1000000 + ts->tv_nsec / 1000;
-    if (microsecs < 0) {
-        microsecs = 0;
-    }
 
     char buf[32];
     int nbytes = snprintf(buf, sizeof(buf), "%" PRIi64, microsecs);
@@ -1713,6 +1708,13 @@ static int
 backend_init (
     uint32_t flags
 ) {
+    struct timespec now;
+    xgetrealtime(&now);
+    if (!valid_ts_sec(now.tv_sec)) {
+        log_puts("bad system time");
+        return -1;
+    }
+
     if (!(flags & BOOKMARKFS_BACKEND_LIB_READY)) {
         if (0 != bookmarkfs_lib_init()) {
             return -1;
@@ -2517,10 +2519,16 @@ bookmark_set (
         struct timespec const *times = val;
         json_t *ts_node;
         if (flags & BOOKMARK_FLAG(SET_ATIME)) {
+            if (!valid_ts_sec(times[0].tv_sec)) {
+                return -EINVAL;
+            }
             build_tsnode(&times[0], &ts_node);
             json_object_sset_new(node, "date_last_used", ts_node);
         }
         if (flags & BOOKMARK_FLAG(SET_MTIME)) {
+            if (!valid_ts_sec(times[1].tv_sec)) {
+                return -EINVAL;
+            }
             build_tsnode(&times[1], &ts_node);
             json_object_sset_new(node, "date_modified", ts_node);
         }

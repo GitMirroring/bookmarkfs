@@ -58,6 +58,17 @@
 #define FILENAME_DOTDOT   -3
 
 /**
+ * The maximum valid seconds that a signed 64-bit integer can hold
+ * when converted to microseconds.
+ *
+ * Equals to `INT64_MAX / 1000000 - EPOCH_DIFF - 1`:
+ * - See the Chromium backend for `EPOCH_DIFF`.
+ * - Considering `tv_nsec`, subtract another second.
+ */
+#define TIMESPEC_SEC_MAX   INT64_C(9211727563253)
+#define valid_ts_sec(sec)  ((sec) >= 0 && (sec) <= TIMESPEC_SEC_MAX)
+
+/**
  * Opens the parent directory of a file, and stores its basename
  * to `basename_ptr`.
  *

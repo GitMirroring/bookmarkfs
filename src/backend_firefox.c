@@ -2038,12 +2038,7 @@ static int64_t
 timespec_to_usecs (
     struct timespec const *ts
 ) {
-    int64_t microsecs = ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
-
-    if (microsecs < 0) {
-        microsecs = 0;
-    }
-    return microsecs;
+    return ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
 }
 
 static int
@@ -3003,6 +2998,13 @@ static int
 backend_init (
     uint32_t flags
 ) {
+    struct timespec now;
+    xgetrealtime(&now);
+    if (!valid_ts_sec(now.tv_sec)) {
+        log_puts("bad system time");
+        return -1;
+    }
+
     if (!(flags & BOOKMARKFS_BACKEND_LIB_READY)
             && !(flags & BOOKMARKFS_FRONTEND_MKFS)
     ) {
@@ -3675,10 +3677,16 @@ bookmark_set (
     if (flags & BOOKMARK_FLAG(SET_ATIME, SET_MTIME)) {
         struct timespec const *times = val;
         if (flags & BOOKMARK_FLAG(SET_ATIME)) {
+            if (!valid_ts_sec(times[0].tv_sec)) {
+                return -EINVAL;
+            }
             place_cols.last_visit_date = timespec_to_usecs(&times[0]);
             --xattr_id;
         }
         if (flags & BOOKMARK_FLAG(SET_MTIME)) {
+            if (!valid_ts_sec(times[1].tv_sec)) {
+                return -EINVAL;
+            }
             bm_cols.last_modified = timespec_to_usecs(&times[1]);
         }
     } else {
