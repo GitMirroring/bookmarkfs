@@ -2330,6 +2330,7 @@ fs_op_setattr (
     }
     if (status < 0) {
         send_reply(err, req, -status);
+        return;
     }
 
     send_reply(attr, req, stat_buf, FS_ENTRY_TIMEOUT);
