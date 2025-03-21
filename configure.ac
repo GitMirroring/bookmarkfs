@@ -28,7 +28,7 @@ AS_CASE(["${host_os}"], [linux*], [
 ], [freebsd*], [
     AS_VAR_SET([host_os_is_freebsd], [yes])
 ], [
-    AC_MSG_WARN(m4_normalize([Unsupported platform "${host_os}".]))
+    AC_MSG_ERROR(m4_normalize([Unsupported platform "${host_os}".]))
 ])
 
 # -- Checks for programs --
