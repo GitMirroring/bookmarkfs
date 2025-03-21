@@ -22,6 +22,9 @@ Requirements
 
  ### Dependencies
 
+  In addition to the OS kernel and a POSIX-compatible libc,
+  BookmarkFS depends on a few third-party libraries:
+
   | Library Name | Minimal Version |
   | ------------ | --------------- |
   | libfuse      | 3.5             |
@@ -158,7 +161,7 @@ Notes
 
   If a BookmarkFS utility library is already installed, it can be
   specified with `--with-bookmarkfs[=<pkgconfdir>]` during configuration,
-  in the same way like with other dependencies.
+  in the same way as with other dependencies.
 
   In this case, the utility library will not be built from source,
   and other components will link to the specified library instead.

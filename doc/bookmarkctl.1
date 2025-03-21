@@ -26,19 +26,19 @@ bookmarkctl - manage a mounted BookmarkFS filesystem
 .B bookmarkctl
 .B xattr\-get
 .RI [ options ]
-.I name
+.I attrname
 .IR pathname ...
 .PP
 .B bookmarkctl
 .B xattr\-get
 .RI [ options ]
 .B \-m
-.IR name "... " pathname
+.IR attrname "... " pathname
 .PP
 .B bookmarkctl
 .B xattr\-set
 .RI [ options ]
-.I name
+.I attrname
 .I pathname
 .PP
 .B bookmarkctl
@@ -96,7 +96,7 @@ of the file referred to by
 .IR pathname .
 .PP
 The
-.I name
+.I attrname
 argument is the name of the extended attribute,
 without the "user.bookmarkfs." prefix.
 .SS Set extended attribute value
@@ -107,7 +107,7 @@ of the file referred to by
 .IR pathname .
 .PP
 The
-.I name
+.I attrname
 argument is the name of the extended attribute,
 without the "user.bookmarkfs." prefix.
 .
@@ -150,7 +150,7 @@ Switch to multi-name mode, where multiple extended attribute names
 can be specified instead of multiple files.
 .IP
 Also, the corresponding
-.I name
+.I attrname
 is printed alongside with the value, instead of
 .IR pathname .
 .TP

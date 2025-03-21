@@ -33,6 +33,10 @@
 @uref{https://datatracker.ietf.org/doc/html/\path\, \name\}
 @end macro
 
+@macro sqlitedoc {name, path}
+@uref{https://www.sqlite.org/\path\, \name\}
+@end macro
+
 @macro tcldoc {name, path}
 @uref{https://www.tcl.tk/man/tcl8.6.13/\path\, \name\}
 @end macro
@@ -622,12 +626,12 @@ Displays extended attribute values.
 @xref{Extended Attributes}.
 
 @example
-bookmarkctl xattr-get [@var{options}]    @var{name}    @var{pathname}...
-bookmarkctl xattr-get [@var{options}] -m @var{name}... @var{pathname}
+bookmarkctl xattr-get [@var{options}]    @var{attrname}    @var{pathname}...
+bookmarkctl xattr-get [@var{options}] -m @var{attrname}... @var{pathname}
 @end example
 
 @table @var
-@item name
+@item attrname
 Name of the extended attribute, without the @samp{user.bookmarkfs.} prefix.
 
 @item pathname
@@ -647,7 +651,7 @@ If this option is not provided, non-printable characters are replaced with
 Switch to multi-name mode, where multiple extended attribute names
 can be specified instead of multiple files.
 
-Also, the corresponding @var{name} is printed alongside with the value,
+Also, the corresponding @var{attrname} is printed alongside with the value,
 instead of @var{pathname}.
 
 @item -q
@@ -673,11 +677,11 @@ Update the value of an extended attribute.
 @xref{Extended Attributes}.
 
 @example
-bookmarkctl xattr-set [@var{options}] @var{name} @var{pathname}
+bookmarkctl xattr-set [@var{options}] @var{attrname} @var{pathname}
 @end example
 
 @table @var
-@item name
+@item attrname
 Name of the extended attribute to update,
 without the @samp{user.bookmarkfs.} prefix.
 
@@ -1243,17 +1247,18 @@ The Firefox backend provides access to the bookmark data of the web browser
 and its derivatives, notably @uref{https://www.torproject.org/, Tor Browser}
 and @uref{https://librewolf.net/, Librewolf}.
 
-Firefox bookmarks are stored in a SQLite database under the profile directory:
+Backend name (for the @option{-o backend} option): @samp{firefox}.
+
+Firefox bookmarks are stored in a SQLite database under the profile directory.
+When mounting the filesystem, this pathname shall be passed as the @var{src}
+argument (@pxref{mount.bookmarkfs}):
 
 @example
 ~/.mozilla/firefox/@var{$@{profile_name@}}/places.sqlite
 @end example
 
-When mounting the filesystem, this pathname shall be passed as the @var{src}
-argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
-
-Backend name: @samp{firefox}.
+When in doubt, visit @url{about:profiles} in your browser.
 
 Backend-specific options (@command{mount.bookmarkfs} only):
 
@@ -1284,11 +1289,10 @@ The database connection locking mode for the bookmark storage.
 Defaults to @samp{normal} when the filesystem is mounted read-only,
 @samp{exclusive} otherwise.
 
-This option corresponds to the
-@uref{https://www.sqlite.org/pragma.html#pragma_locking_mode,
-@code{locking_mode}} pragma on SQLite.
-With @option{lock=exclusive}, other process cannot access the bookmark storage
-until the filesystem is dismounted.
+This option corresponds to the @sqlitedoc{@code{locking_mode},
+pragma.html#pragma_locking_mode} pragma on SQLite.
+With @option{lock=exclusive}, other processes cannot access
+the bookmark storage until the filesystem is dismounted.
 
 The Firefox browser holds an exclusive lock on the database by default.
 If you wish to mount the bookmarks while keeping the browser session open,
@@ -1351,14 +1355,14 @@ the Unix epoch.
 Notable limitations:
 
 @itemize @bullet{}
-@item Due to the way bookmarks are associated with the URLs,
-if multiple bookmarks share the same URL, changing the last access time
-of a bookmark may affect that of other bookmarks.
+@item If multiple bookmarks share the same URL, changing the last access time
+of a bookmark may affect that of other bookmarks,
+due to the way bookmarks are associated with the URLs.
 
 @item The bookmark storage (SQLite database file) should be writable even if
 the BookmarkFS filesystem is mounted read-only, due to the limitations
 of WAL-mode.
-See @uref{https://www.sqlite.org/wal.html#readonly, Write-Ahead Logging}.
+See @sqlitedoc{Write-Ahead Logging, wal.html#readonly}.
 @end itemize
 
 
@@ -1370,18 +1374,19 @@ The Chromium backend provides access to the bookmark data of the web browser
 notably @uref{https://github.com/ungoogled-software/ungoogled-chromium,
 ungoogled-chromium}.
 
+Backend name (for the @option{-o backend} option): @samp{chromium}.
+
 Chromium bookmarks are stored in a text file (in JSON format)
-under the profile directory:
+under the profile directory.
+When mounting the filesystem, this pathname shall be passed as the @var{src}
+argument (@pxref{mount.bookmarkfs}):
 
 @example
 ~/.config/chromium/@var{$@{profile_name@}}/Bookmarks
 @end example
 
-When mounting the filesystem, this pathname shall be passed as the @var{src}
-argument (@pxref{mount.bookmarkfs}).
 Actual path for the profile directories may differ across distributions.
-
-Backend name: @samp{chromium}.
+When in doubt, visit @url{chrome://profile-internals/} in your browser.
 
 Backend-specific options (@command{mount.bookmarkfs} only):
 
