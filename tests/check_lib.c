@@ -48,6 +48,7 @@ dispatch_subcmds (
     char *argv[]
 ) {
     if (--argc < 1) {
+        log_puts("subcmd not given");
         return -1;
     }
     char const *cmd = *(++argv);

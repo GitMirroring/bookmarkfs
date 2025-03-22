@@ -9,6 +9,11 @@ dnl
 
 AT_INIT
 
+dnl
+dnl  Fail or skip the current test.
+dnl
+dnl  The status codes are defined by Autotest.
+dnl
 m4_define([ATX_FAIL], [exit 99])
 m4_define([ATX_SKIP], [exit 77])
 
@@ -72,16 +77,24 @@ m4_define([ATX_RUN], [
     m4_map([ATX_RUN_ONE], m4_split([$1], m4_newline([+])))
 ])
 
+dnl
+dnl  ATX_CHECK_SIMPLE(script)
+dnl
 m4_define([ATX_CHECK_SIMPLE], [
     AT_CHECK([$1], , [ignore], [ignore])
 ])
 
+dnl
+dnl  ATX_CHECK_LIB(script)
+dnl
 m4_define([ATX_CHECK_LIB], [
     ATX_CHECK_SIMPLE([
         ATX_FEAT_PREREQ([bookmarkfs-util])
         $1
     ])
 ])
+
+dnl  -- Helper functions --
 
 AT_TEST_HELPER_FN([rand_u64_hex], , , [
     echo $(od -vAn -N8 -tx8 /dev/urandom | tr -d ' ')
@@ -101,6 +114,8 @@ AT_TEST_HELPER_FN([prng_seed], , , [
 
     echo $seed_1$seed_2$seed_3$seed_4
 ])
+
+dnl  -- Test groups --
 
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])
