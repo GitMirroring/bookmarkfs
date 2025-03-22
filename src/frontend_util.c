@@ -54,7 +54,7 @@ bookmarkfs_load (
         xasprintf(&sym_name, MODULE_SYM_NAME("%s", "%s"), prefix, name);
     } else {
         xasprintf(&lib_name, "%.*s", (int)(sep - name), name);
-        xasprintf(&sym_name, "%s", ++sep);
+        xasprintf(&sym_name, "%s", sep + 1);
     }
 
     void const *impl   = NULL;
