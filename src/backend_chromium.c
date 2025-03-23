@@ -197,6 +197,7 @@ static int  build_node      (struct backend_ctx *, json_t *, char const **,
 static int  build_node_guid (json_t *, struct hashmap const *, uint8_t *,
                              unsigned long *);
 static int  build_node_id   (json_t *, uint64_t *);
+static void build_tsnode    (struct timespec const *, json_t **);
 static int  chksum_iter_cb  (void *, json_t *, json_t *, void **);
 static int  chksum_root     (struct backend_ctx *, char *);
 static int  chksum_utf16    (struct chksum_iter_ctx *, char const *, size_t);
@@ -217,7 +218,6 @@ static int  assocmap_comp (union hashmap_key, void const *);
 static unsigned long
             assocmap_hash (void const *);
 static int  build_maps    (struct backend_ctx *);
-static void build_tsnode  (struct timespec const *, json_t **);
 static void free_bgcookie (struct bookmark_gcookie *);
 static void free_blcookie (struct bookmark_lcookie *);
 static void free_entry_cb (void *, void *);
@@ -374,6 +374,27 @@ build_node_id (
 
     *max_id_ptr = id_val;
     return 0;
+}
+
+static void
+build_tsnode (
+    struct timespec const  *ts,
+    json_t                **node_ptr
+) {
+    struct timespec now;
+    if (ts == NULL) {
+        xgetrealtime(&now);
+        ts = &now;
+    }
+
+    time_t  secs      = ts->tv_sec + EPOCH_DIFF;
+    int64_t microsecs = secs * 1000000 + ts->tv_nsec / 1000;
+
+    char buf[32];
+    int nbytes = snprintf(buf, sizeof(buf), "%" PRIi64, microsecs);
+    xassert(nbytes > 0 && (size_t)nbytes < sizeof(buf));
+
+    *node_ptr = json_stringn_nocheck(buf, nbytes);
 }
 
 // See Chromium source code: /components/bookmarks/browser/bookmark_codec.cc
@@ -698,9 +719,7 @@ static int
 build_maps (
     struct backend_ctx *ctx
 ) {
-    json_t *ts_node;
-    build_tsnode(NULL, &ts_node);
-
+    json_t *ts_node  = json_sstring("0");
     json_t *root     = json_object();
     json_t *children = json_array();
     json_object_sset_new(root, "children", children);
@@ -759,27 +778,6 @@ build_maps (
     json_decref(root);
     free_maps(id_map, assoc_map, guid_map);
     return -1;
-}
-
-static void
-build_tsnode (
-    struct timespec const  *ts,
-    json_t                **node_ptr
-) {
-    struct timespec now;
-    if (ts == NULL) {
-        xgetrealtime(&now);
-        ts = &now;
-    }
-
-    time_t  secs      = ts->tv_sec + EPOCH_DIFF;
-    int64_t microsecs = secs * 1000000 + ts->tv_nsec / 1000;
-
-    char buf[32];
-    int nbytes = snprintf(buf, sizeof(buf), "%" PRIi64, microsecs);
-    xassert(nbytes > 0 && (size_t)nbytes < sizeof(buf));
-
-    *node_ptr = json_stringn_nocheck(buf, nbytes);
 }
 
 static void
@@ -1594,12 +1592,19 @@ backend_create (
     struct bookmarkfs_backend_conf const  *conf,
     struct bookmarkfs_backend_create_resp *resp
 ) {
-#ifndef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
     if (!(conf->flags & BOOKMARKFS_BACKEND_READONLY)) {
+#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+        struct timespec now;
+        xgetrealtime(&now);
+        if (!valid_ts_sec(now.tv_sec)) {
+            log_puts("bad system time");
+            return -1;
+        }
+#else  /* !defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
         log_puts("write support is not enabled on this build");
         return -1;
+#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
     }
-#endif
 
     struct parsed_mntopts opts = { 0 };
     if (0 != parse_mntopts(conf->opts, conf->flags, &opts)) {
@@ -1708,13 +1713,6 @@ static int
 backend_init (
     uint32_t flags
 ) {
-    struct timespec now;
-    xgetrealtime(&now);
-    if (!valid_ts_sec(now.tv_sec)) {
-        log_puts("bad system time");
-        return -1;
-    }
-
     if (!(flags & BOOKMARKFS_BACKEND_LIB_READY)) {
         if (0 != bookmarkfs_lib_init()) {
             return -1;

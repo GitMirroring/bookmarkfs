@@ -2844,6 +2844,13 @@ backend_create (
     bool readonly = conf->flags & BOOKMARKFS_BACKEND_READONLY;
     if (!readonly) {
 #ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+        struct timespec now;
+        xgetrealtime(&now);
+        if (!valid_ts_sec(now.tv_sec)) {
+            log_puts("bad system time");
+            return -1;
+        }
+
         int minver = 3035000;  // required for the RETURNING clause
         int vernum = sqlite3_libversion_number();
         if (vernum < minver) {
@@ -2998,13 +3005,6 @@ static int
 backend_init (
     uint32_t flags
 ) {
-    struct timespec now;
-    xgetrealtime(&now);
-    if (!valid_ts_sec(now.tv_sec)) {
-        log_puts("bad system time");
-        return -1;
-    }
-
     if (!(flags & BOOKMARKFS_BACKEND_LIB_READY)
             && !(flags & BOOKMARKFS_FRONTEND_MKFS)
     ) {
