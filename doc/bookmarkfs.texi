@@ -562,7 +562,7 @@ bookmarkctl permd [@var{options}] @var{name1} @var{name2} @var{pathname}
 
 @table @var
 @item name1
-@item name2
+@itemx name2
 Filename of entries under the directory.
 
 @item pathname
@@ -648,7 +648,7 @@ If this option is not provided, non-printable characters are replaced with
 @samp{?}.
 
 @item -m
-Switch to multi-name mode, where multiple extended attribute names
+Switch to multi-attrname mode, where multiple extended attribute names
 can be specified instead of multiple files.
 
 Also, the corresponding @var{attrname} is printed alongside with the value,
@@ -873,7 +873,9 @@ For example:
 @itemize @bullet{}
 @item @code{chmod()}, @code{chown()}, and other operations that make no sense
 for web browser bookmarks.
+
 @item Moving a file across subsystems.
+
 @item Creating a bookmark file with a name that is not valid UTF-8
 (on Chromium backend).
 @end itemize
@@ -1110,7 +1112,6 @@ Filesystem-check commands:
 
 @table @code
 @item BOOKMARKFS_IOC_FSCK_NEXT
-
 Find the next bookmark with invalid name under the directory.
 
 @anchor{Filesystem-Check Result Code}
@@ -1427,7 +1428,7 @@ Defaults to @samp{native} when the filesystem is mounted read-only,
 
 @table @samp
 @item native
-@item fallback
+@itemx fallback
 Watch for changes of the bookmark storage,
 either using a ``native'' implementation using platform-specific features,
 or a ``fallback'' one which is less efficient but more portable.
@@ -1652,8 +1653,8 @@ The utility library must not be initialized multiple times,
 otherwise the behavior is undefined.
 
 @item BOOKMARKFS_FRONTEND_FSCK
-@item BOOKMARKFS_FRONTEND_MOUNT
-@item BOOKMARKFS_FRONTEND_MKFS
+@itemx BOOKMARKFS_FRONTEND_MOUNT
+@itemx BOOKMARKFS_FRONTEND_MKFS
 Denotes the frontend program that launches the backend.
 These flags are mutually exclusive.
 @end table
@@ -1703,8 +1704,8 @@ dependency versions, compile-time options, and other information
 that can be used to determine a specific version of the backend.
 
 @item BOOKMARKFS_FRONTEND_FSCK
-@item BOOKMARKFS_FRONTEND_MOUNT
-@item BOOKMARKFS_FRONTEND_MKFS
+@itemx BOOKMARKFS_FRONTEND_MOUNT
+@itemx BOOKMARKFS_FRONTEND_MKFS
 Denotes the frontend program that launches the backend.
 These flags are mutually exclusive.
 @end table
@@ -1808,7 +1809,7 @@ struct bookmarkfs_conf_opt @{
 
 @table @code
 @item key
-@item val
+@itemx val
 Key and value of the current option.
 If the option does not have a value (no @samp{=} character present),
 @code{val} is @code{NULL}.
@@ -1878,6 +1879,7 @@ if one of the following conditions is met:
 @itemize @bullet{}
 @item Sandboxing is requested, and the ID cannot be determined in a safe way
 before entering sandbox.
+
 @item The backend does not support tags for this context.
 @xref{Tags}.
 @end itemize
@@ -2091,7 +2093,7 @@ Length of the object value in bytes.
 @t{-1} if the object refers to a directory.
 
 @item atime
-@item mtime
+@itemx mtime
 Last access and modification time of the object.
 
 Values should be the time elapsed since the Unix epoch.
@@ -2497,7 +2499,7 @@ A bit array of the following flags:
 
 @table @code
 @item BOOKMARKFS_BOOKMARK_SET_ATIME
-@item BOOKMARKFS_BOOKMARK_SET_MTIME
+@itemx BOOKMARKFS_BOOKMARK_SET_MTIME
 Indicates that the function should update the timestamps associated with
 the object, instead of the bookmark content or extended attribute value.
 
@@ -2857,7 +2859,7 @@ Operation to perform on objects represented by @code{name1} and @code{name2}.
 @xref{Rearrange Operations} for the meaning of each value.
 
 @item name1
-@item name2
+@itemx name2
 Names of the objects to be rearranged.
 They could be bookmark names, tag names or keyword names,
 depending on the value of @code{flags}.
@@ -3023,8 +3025,8 @@ indicating why this name is invalid.
 @xref{Filesystem-Check Result Code}.
 
 @item id
-@item extra
-@item name
+@itemx extra
+@itemx name
 Equivalent to the corresponding fields in structure
 @code{bookmarkfs_fsck_data}.
 @xref{Filesystem-Check Data}.
@@ -3226,7 +3228,7 @@ If the name is too long, truncate it to @code{NAME_MAX} bytes.
 If the name is empty, see below:
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_DOTDOT
-@item BOOKMARKFS_FSCK_RESULT_NAME_INVALID
+@itemx BOOKMARKFS_FSCK_RESULT_NAME_INVALID
 Rename to @samp{fsck-@var{$@{id@}}}, where @var{$@{id@}} is the bookmark ID
 in decimal format.
 @end table
@@ -3276,7 +3278,7 @@ to the next entry, after the command completes successfully.
 The @uref{https://www.tcl-lang.org/,, Tcl}-based filesystem-check handler
 allows fsck entries to be handled via Tcl scripting.
 
-Handler name: @samp{tcl}.
+Handler name (for the @option{-o handler} option): @samp{tcl}.
 
 Handler-specific options:
 
@@ -3319,10 +3321,10 @@ this handler call:
 
 @table @code
 @item $::bookmarkfs::fsck::result::nameDuplicate
-@item $::bookmarkfs::fsck::result::nameBadChar
-@item $::bookmarkfs::fsck::result::nameBadLen
-@item $::bookmarkfs::fsck::result::nameDotDot
-@item $::bookmarkfs::fsck::result::nameInvalid
+@itemx $::bookmarkfs::fsck::result::nameBadChar
+@itemx $::bookmarkfs::fsck::result::nameBadLen
+@itemx $::bookmarkfs::fsck::result::nameDotDot
+@itemx $::bookmarkfs::fsck::result::nameInvalid
 @xref{Filesystem-Check Result Code} for the meaning of each value.
 
 The second element is a list of information about the current entry:
@@ -3476,7 +3478,7 @@ A bit array of the following flags:
 
 @table @code
 @item BOOKMARKFS_FSCK_HANDLER_INFO_HELP
-@item BOOKMARKFS_FSCK_HANDLER_INFO_VERSION
+@itemx BOOKMARKFS_FSCK_HANDLER_INFO_VERSION
 Indicates that the function should print a help/version message.
 
 These flags are analogous to the corresponding flags in the
