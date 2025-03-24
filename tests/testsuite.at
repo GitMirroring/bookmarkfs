@@ -10,12 +10,11 @@ dnl
 AT_INIT
 
 dnl
-dnl  Fail or skip the current test.
+dnl  ATX_REPEAT(n, string)
 dnl
-dnl  The status codes are defined by Autotest.
+dnl  Repeat string n times.
 dnl
-m4_define([ATX_FAIL], [exit 99])
-m4_define([ATX_SKIP], [exit 77])
+m4_define([ATX_REPEAT], [m4_for([unused_], [1], [$1], , [$2])])
 
 dnl
 dnl  ATX_FEAT_VAR(feature)
@@ -46,8 +45,8 @@ dnl
 dnl  If any of the given features is not enabled, skip the current test.
 dnl
 m4_define([ATX_FEAT_PREREQ], [
-    if test -z "m4_map([ATX_FEAT_VAR], [$@])"; then
-        ATX_SKIP
+    if test "m4_map([ATX_FEAT_VAR], [$@])" != ATX_REPEAT([$#], [y]); then
+        exit 77
     fi
 ])
 
@@ -58,13 +57,7 @@ dnl  Run a pipeline of shell command(s).
 dnl  If it exits with a non-zero status, fail the current test.
 dnl
 m4_define([ATX_RUN_ONE], [
-    m4_ifnblank([$1], [
-        if $1; then :
-        else
-            echo "exit status: $?"
-            ATX_FAIL
-        fi
-    ])
+    m4_ifnblank([$1], [$1 || exit $?])
 ])
 
 dnl

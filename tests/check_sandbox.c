@@ -24,6 +24,7 @@
 
 #include <errno.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -176,7 +177,7 @@ check_sandbox (
 
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {
-        log_printf("failed to open '%s'", path);
+        log_printf("open: %s: %s", path, strerror(errno));
         return -1;
     }
     int status = sandbox_enter(dirfd, flags);

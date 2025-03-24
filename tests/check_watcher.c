@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 #include <fcntl.h>
@@ -169,7 +170,7 @@ check_watcher (
 
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {
-        log_printf("failed to open '%s'", path);
+        log_printf("open: %s: %s", path, strerror(errno));
         return -1;
     }
 

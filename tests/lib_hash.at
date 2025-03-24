@@ -27,14 +27,14 @@ ATX_CHECK_LIB([
     hash_3=$(calc_digest $seed $input)
     hash_x=$(calc_digest $seed $input+)
 
-    # Given the same seed and input, the digest should be consistent.
     if test "$hash_1" != "$hash_2" -o "$hash_2" != "$hash_3"; then
-        ATX_FAIL
+        echo 'bad hash function: inconsistent digest'
+        exit 1
     fi
 
-    # Bad hash function if we're getting collisions.
     if test "$hash_1" = "$hash_x"; then
-        ATX_FAIL
+        echo 'bad hash function: collision'
+        exit 1
     fi
 ])
 

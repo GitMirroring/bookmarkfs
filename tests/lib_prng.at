@@ -25,15 +25,15 @@ ATX_CHECK_LIB([
     num_2=$(gen_num $seed $count)
     num_3=$(gen_num $seed $count)
 
-    # Given the same seed, the results should be consistent.
     if test "$num_1" != "$num_2" -o "$num_2" != "$num_3"; then
-        ATX_FAIL
+        echo 'bad prng: inconsistent number sequence'
+        exit 1
     fi
 
-    # Bad PRNG if we're getting duplicates too soon.
     uniq_count=$(echo "$num_1" | sort | uniq | wc -l)
     if test $uniq_count -ne $count; then
-        ATX_FAIL
+        echo 'bad prng: getting duplicates too soon'
+        exit 1
     fi
 ])
 
