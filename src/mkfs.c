@@ -92,7 +92,7 @@ parse_opts (
             char *opt = SUBOPT_STR;
             if (opt[0] == '@') {
                 bookmarkfs_opts_add(&ctx->backend_conf.opts, opt + 1);
-            } else {
+            } else if (opt[0] != '\0') {
                 return SUBOPT_ERR_BAD_KEY();
             }
         }

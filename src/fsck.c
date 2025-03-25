@@ -431,6 +431,9 @@ parse_opts (
                 bookmarkfs_opts_add(&info->handler_opts, opt);
                 break;
 
+              case '\0':
+                break;
+
               default:
                 return SUBOPT_ERR_BAD_KEY();
             }

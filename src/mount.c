@@ -459,7 +459,7 @@ parse_opts (
             char *opt = SUBOPT_STR;
             if (opt[0] == '@') {
                 bookmarkfs_opts_add(&info->backend_conf.opts, opt + 1);
-            } else {
+            } else if (opt[0] != '\0') {
                 xassert(0 == fuse_opt_add_opt(&fargs->argv[1], opt));
             }
         }
