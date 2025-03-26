@@ -3422,8 +3422,8 @@ bookmark_delete (
         return status;
     }
 
-    size_t   name_len = strlen(name);
-    bool     is_dir   = flags & BOOKMARK_FLAG(CREATE_DIR);
+    size_t name_len = strlen(name);
+    bool   is_dir   = flags & BOOKMARK_FLAG(DELETE_DIR);
     switch (flags & BOOKMARKFS_BOOKMARK_TYPE_MASK) {
       case BOOKMARKFS_BOOKMARK_TYPE(TAG):
         if (!is_dir) {

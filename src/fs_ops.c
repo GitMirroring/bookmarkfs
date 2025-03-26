@@ -235,7 +235,7 @@ static int  bm_setattr     (uint64_t, int, bool, struct fuse_file_info const *,
 static int  bm_setxattr    (uint64_t, char const *, void const *, size_t, int);
 static int  bm_write       (fuse_req_t, int, char const *, size_t, off_t,
                             struct fs_file_handle *);
-static void do_delete      (fuse_req_t, fuse_ino_t, char const *);
+static void do_delete      (fuse_req_t, fuse_ino_t, char const *, uint32_t);
 static void do_readdir     (fuse_req_t, fuse_ino_t, size_t, off_t, uint32_t,
                             struct fuse_file_info const *);
 static unsigned long
@@ -1206,11 +1206,11 @@ static void
 do_delete (
     fuse_req_t  req,
     fuse_ino_t  parent,
-    char const *name
+    char const *name,
+    uint32_t    flags
 ) {
     int status = -EIO;
 
-    uint32_t flags = 0;
     switch (INODE_SUBSYS_TYPE(parent)) {
       case SUBSYS_TYPE_INTERNAL:
         status = intfs_delete(INODE_SUBSYS_ID(parent), name, flags);
@@ -2306,7 +2306,7 @@ fs_op_rmdir (
     fuse_ino_t  parent,
     char const *name
 ) {
-    do_delete(req, parent, name);
+    do_delete(req, parent, name, BOOKMARK_FLAG(DELETE_DIR));
 }
 
 void
@@ -2367,7 +2367,7 @@ fs_op_unlink (
     fuse_ino_t  parent,
     char const *name
 ) {
-    do_delete(req, parent, name);
+    do_delete(req, parent, name, 0);
 }
 
 void
