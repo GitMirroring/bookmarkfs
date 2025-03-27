@@ -454,7 +454,7 @@ bookmark_do_delete (
         return status;
     }
     if (unlikely((cols.place_id == 0) != is_dir)) {
-        return is_dir ? -ENOTDIR : -EPERM;
+        return is_dir ? -ENOTDIR : -EISDIR;
     }
 
     status = mozbm_delete(ctx, cols.id, is_dir);

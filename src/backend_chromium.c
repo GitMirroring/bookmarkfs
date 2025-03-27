@@ -2194,7 +2194,7 @@ bookmark_delete (
     void       *backend_ctx,
     uint64_t    parent_id,
     char const *name,
-    uint32_t    UNUSED_VAR(flags)
+    uint32_t    flags
 ) {
     struct backend_ctx *ctx = backend_ctx;
     debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
@@ -2223,14 +2223,18 @@ bookmark_delete (
     if (0 != lookup_name(ctx, parent_id, name, strlen(name), &lctx, &entry)) {
         return -ENOENT;
     };
-    json_t *siblings   = parent_entry->children;
-    json_t const *node = entry->node;
 
     // Check if entry can be deleted
-    json_t const *children = json_object_sget(node, "children");
-    if (children != NULL) {
-        if (0 != json_array_size(children)) {
+    if (flags & BOOKMARK_FLAG(DELETE_DIR)) {
+        if (unlikely(entry->children == NULL)) {
+            return -ENOTDIR;
+        }
+        if (0 != json_array_size(entry->children)) {
             return -ENOTEMPTY;
+        }
+    } else {
+        if (unlikely(entry->children != NULL)) {
+            return -EISDIR;
         }
     }
 
@@ -2245,7 +2249,8 @@ bookmark_delete (
     free(entry);
 
     // Remove from store
-    json_array_remove(siblings, json_array_search(siblings, node));
+    json_t *siblings = parent_entry->children;
+    json_array_remove(siblings, json_array_search(siblings, entry->node));
 
     ctx->dirty = DIRTY_LEVEL_DATA;
 

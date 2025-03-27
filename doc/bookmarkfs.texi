@@ -2808,6 +2808,13 @@ depending on the value of @code{flags}.
 A bit array of the following flags:
 
 @table @code
+@item BOOKMARKFS_BOOKMARK_DELETE_DIR
+Indicates that the object to be removed is a directory.
+
+If the current backend context is not in exclusive mode
+(@pxref{Exclusive Mode}), this information may be incorrect.
+If so, the function should fail with @code{ENOTDIR} or @code{EISDIR}.
+
 @item BOOKMARKFS_BOOKMARK_TYPE_MASK
 The subsystem to operate on.
 
