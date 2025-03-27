@@ -899,6 +899,7 @@ The error may occur when the underlying bookmark storage has been modified by
 another process (e.g., a web browser) after opening a file.
 
 If the filesystem is mounted in exclusive mode, this error should not occur.
+@xref{Exclusive Mode}.
 @end table
 
 Other BookmarkFS-specific errors may occur.
@@ -1300,6 +1301,9 @@ If you wish to mount the bookmarks while keeping the browser session open,
 set the @samp{storage.sqlite.exclusiveLock.enabled} browser preference
 to @samp{false}.
 
+The @option{lock=exclusive} option also enables exclusive mode
+(@pxref{Exclusive Mode}).
+
 @item assume_title_distinct
 If this options is provided, the backend assumes that bookmark names are
 distinct under the same bookmark folder.
@@ -1438,8 +1442,10 @@ or a ``fallback'' one which is less efficient but more portable.
 @item none
 Do not watch for changes of the bookmark storage.
 
-With @option{watcher=none}, external changes to the bookmark storage are not
-visible to the BookmarkFS filesystem.
+External changes are not visible to the BookmarkFS filesystem,
+and will be lost if the backend writes to the bookmark storage.
+
+This option also enables exclusive mode (@pxref{Exclusive Mode}).
 @end table
 @end table
 
@@ -1592,6 +1598,21 @@ argument, usually named @code{callback}, to be invoked by the backend.
 
 It is guaranteed that backend functions are never called from within
 a callback function.
+
+@anchor{Exclusive Mode}
+@cindex Exclusive Mode
+@item Exclusive Mode
+If exclusive mode is enabled for a backend context,
+modifications to the corresponding bookmark storage should only be performed
+by calling backend functions on the current context.
+If the bookmark storage is modified by other means, filesystem and backend
+behavior is undefined.
+
+Frontend programs may perform optimizations based on this assumption.
+
+The backend decides whether exclusive mode should be enabled for a context
+during @code{backend_create} (@pxref{Create Backend Context}),
+by setting the @code{BOOKMARKFS_BACKEND_EXCLUSIVE} response flag.
 
 @item Error Codes
 Some backend functions return an error code on failure instead of
@@ -1778,9 +1799,9 @@ Indicates that the @option{-o no_landlock} option is given to
 @item BOOKMARKFS_BACKEND_FSCK_ONLY
 Indicates that the backend is launched from @command{fsck.bookmarkfs}.
 
-The backend must claim exclusive access to the bookmark storage, and only
-the @code{bookmark_lookup}, @code{bookmark_list}, @code{bookmark_check}
-and @code{bookmark_sync} functions will be called on the bookmarks.
+Exclusive mode must be enabled for this context (@pxref{Exclusive Mode}), and
+only the @code{bookmark_lookup}, @code{bookmark_list}, @code{bookmark_check}
+and @code{bookmark_sync} functions will be called on the bookmark objects.
 @end table
 
 @item store_path
@@ -1898,10 +1919,7 @@ A bit array of the following flags:
 @table @code
 @item BOOKMARKFS_BACKEND_EXCLUSIVE
 Indicates that the backend claims exclusive access to the bookmark storage.
-
-In exclusive mode, modifications to the bookmark storage only come from
-the frontend, and the caller may perform optimizations based on
-this assumption.
+@xref{Exclusive Mode}.
 
 @item BOOKMARKFS_BACKEND_HAS_KEYWORD
 Indicates that the backend supports keywords for this context.
@@ -2405,6 +2423,7 @@ If this error code is returned, @code{callback} must not be called.
 which has access to the bookmark storage.
 In exclusive mode, this is not expected to happen, and @code{bookmark_list}
 is always called with a @code{cookie_ptr} of @code{NULL} value.
+@xref{Exclusive Mode}.
 
 If changes cannot be detected in an efficient way, false positives are
 acceptable.
