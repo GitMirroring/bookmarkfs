@@ -16,7 +16,7 @@ ATX_CHECK_LIB([
     mkdir $tmpdir
 
     ATX_RUN([
-        check-util-lib watcher -d $tmpdir
+        check-util-lib watcher $tmpdir
     ])
 ])
 

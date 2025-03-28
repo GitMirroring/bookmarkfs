@@ -19,23 +19,26 @@ ATX_CHECK_LIB([
         echo "$2" | check-util-lib hash -s$1
     }
 
-    seed=$(ath_fn_rand_u64_hex)
-    input=$(ath_fn_rand_base64 300)
+    ATX_RUN_REPEAT([16], [
+        seed=$(ath_fn_rand_u64_hex)
+        input=$(ath_fn_rand_base64 300)
+        echo "hash seed: $seed; input: $input"
 
-    hash_1=$(calc_digest $seed $input)
-    hash_2=$(calc_digest $seed $input)
-    hash_3=$(calc_digest $seed $input)
-    hash_x=$(calc_digest $seed $input+)
+        hash_1=$(calc_digest $seed $input)
+        hash_2=$(calc_digest $seed $input)
+        hash_3=$(calc_digest $seed $input)
+        hash_x=$(calc_digest $seed $input+)
 
-    if test "$hash_1" != "$hash_2" -o "$hash_2" != "$hash_3"; then
-        echo 'bad hash function: inconsistent digest'
-        exit 1
-    fi
+        if test "$hash_1" != "$hash_2" -o "$hash_2" != "$hash_3"; then
+            echo 'bad hash function: inconsistent digest'
+            exit 1
+        fi
 
-    if test "$hash_1" = "$hash_x"; then
-        echo 'bad hash function: collision'
-        exit 1
-    fi
+        if test "$hash_1" = "$hash_x"; then
+            echo 'bad hash function: collision'
+            exit 1
+        fi
+    ])
 ])
 
 AT_CLEANUP

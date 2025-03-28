@@ -154,19 +154,11 @@ check_watcher (
     int   argc,
     char *argv[]
 ) {
-    char const *path = NULL;
-
-    OPT_START(argc, argv, "d:")
-    OPT_OPT('d') {
-        path = optarg;
-        break;
-    }
-    OPT_END
-
-    if (path == NULL) {
+    if (--argc < 1) {
         log_puts("path not specified");
         return -1;
     }
+    char const *path = *(++argv);
 
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);
     if (dirfd < 0) {

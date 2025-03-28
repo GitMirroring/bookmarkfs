@@ -51,6 +51,19 @@ m4_define([ATX_FEAT_PREREQ], [
 ])
 
 dnl
+dnl  ATX_RUN_REPEAT(n, script)
+dnl
+dnl  Run script n times.  Cannot be nested.
+dnl
+m4_define([ATX_RUN_REPEAT], [
+    atx_counter_=$1
+    while test $atx_counter_ -gt 0; do
+        $2
+        atx_counter_=$(($atx_counter_ - 1))
+    done
+])
+
+dnl
 dnl  ATX_RUN_ONE(cmd)
 dnl
 dnl  Run a pipeline of shell command(s).
@@ -71,10 +84,10 @@ m4_define([ATX_RUN], [
 ])
 
 dnl
-dnl  ATX_CHECK_SIMPLE(script)
+dnl  ATX_CHECK_SIMPLE(script, [cleanup])
 dnl
 m4_define([ATX_CHECK_SIMPLE], [
-    AT_CHECK([$1], , [ignore], [ignore])
+    AT_CHECK([$1], , [ignore], [ignore], [$2], [$2])
 ])
 
 dnl

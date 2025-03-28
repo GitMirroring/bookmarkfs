@@ -18,23 +18,26 @@ ATX_CHECK_LIB([
         check-util-lib prng -s$1 -n$2
     }
 
-    seed=$(ath_fn_prng_seed)
-    count=32
+    ATX_RUN_REPEAT([16], [
+        seed=$(ath_fn_prng_seed)
+        count=32
+        echo "prng seed: $seed"
 
-    num_1=$(gen_num $seed $count)
-    num_2=$(gen_num $seed $count)
-    num_3=$(gen_num $seed $count)
+        num_1=$(gen_num $seed $count)
+        num_2=$(gen_num $seed $count)
+        num_3=$(gen_num $seed $count)
 
-    if test "$num_1" != "$num_2" -o "$num_2" != "$num_3"; then
-        echo 'bad prng: inconsistent number sequence'
-        exit 1
-    fi
+        if test "$num_1" != "$num_2" -o "$num_2" != "$num_3"; then
+            echo 'bad prng: inconsistent number sequence'
+            exit 1
+        fi
 
-    uniq_count=$(echo "$num_1" | sort | uniq | wc -l)
-    if test $uniq_count -ne $count; then
-        echo 'bad prng: getting duplicates too soon'
-        exit 1
-    fi
+        uniq_count=$(echo "$num_1" | sort | uniq | wc -l)
+        if test $uniq_count -ne $count; then
+            echo 'bad prng: getting duplicates too soon'
+            exit 1
+        fi
+    ])
 ])
 
 AT_CLEANUP
