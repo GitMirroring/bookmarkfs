@@ -25,6 +25,13 @@ if BOOKMARKFS_UTIL
                             check_hashmap.c
 endif  # BOOKMARKFS_UTIL
 
+if BOOKMARKFS_MOUNT
+  check_PROGRAMS += check-fs
+
+  check_fs_CPPFLAGS = -I$(top_srcdir)/src
+  check_fs_SOURCES  = check_fs.c
+endif  # BOOKMARKFS_MOUNT
+
 # Autotest setup
 
 AUTOTEST  = $(AUTOM4TE) --language=autotest

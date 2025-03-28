@@ -6,6 +6,11 @@
 # this notice are preserved.  This file is offered as-is, without any warranty.
 #
 
+# -- Paths --
+top_builddir="@abs_top_builddir@"
+buildsrcdir="$top_builddir/src"
+
+# -- Features --
 @BOOKMARKFS_UTIL_TRUE@        feat_bookmarkfs_util=y
 @BOOKMARKCTL_TRUE@            feat_bookmarkctl=y
 @BOOKMARKFS_FSCK_TRUE@        feat_bookmarkfs_fsck=y

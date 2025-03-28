@@ -17,6 +17,14 @@ dnl
 m4_define([ATX_REPEAT], [m4_for([unused_], [1], [$1], , [$2])])
 
 dnl
+dnl  ATX_OPT_MODULE(name)
+dnl
+dnl  Expands to a string which can be used for `-o backend=NAME`
+dnl  or `-o handler=NAME` options of a BookmarkFS program.
+dnl
+m4_define([ATX_OPT_MODULE], [$buildsrcdir/.libs/$1.so:bookmarkfs_$1])
+
+dnl
 dnl  ATX_FEAT_VAR(feature)
 dnl
 dnl  Expands to the shell variable indicating whether the given feature
@@ -64,6 +72,16 @@ m4_define([ATX_RUN_REPEAT], [
 ])
 
 dnl
+dnl  ATX_RUN_IN_DIR(pathname, script)
+dnl
+m4_define([ATX_RUN_IN_DIR], [
+    atx_pwd=$(pwd)
+    cd "$1" || exit 1
+    $2
+    cd "$atx_pwd"
+])
+
+dnl
 dnl  ATX_RUN_ONE(cmd)
 dnl
 dnl  Run a pipeline of shell command(s).
@@ -97,6 +115,60 @@ m4_define([ATX_CHECK_LIB], [
     ATX_CHECK_SIMPLE([
         ATX_FEAT_PREREQ([bookmarkfs-util])
         $1
+    ])
+])
+
+dnl
+dnl  ATX_CHECK_FS(backend, [options], src, target, [prepare], [check])
+dnl
+dnl  Check for a BookmarkFS filesystem.
+dnl
+m4_define([ATX_CHECK_FS], [
+    ATX_CHECK_SIMPLE([
+        ATX_FEAT_PREREQ([bookmarkfs-mount], [backend-$1])
+        $5
+        "$buildsrcdir/mount.bookmarkfs" -F  \
+                -o "backend=ATX_OPT_MODULE([backend_$1])"  \
+                -o "fsname=check-$1,no_sandbox,$2"  \
+                "$3" "$4" 2>mount.bookmarkfs.stderr &
+        while ! check-fs ismount "$4"; do
+            check-fs sleep 100
+            if ! jobs %%; then
+                echo 'fs daemon terminated unexpectedly'
+                exit 1
+            fi
+        done
+        $6
+    ], [
+        umount "$4"
+    ])
+])
+
+dnl
+dnl  ATX_CHECK_FS_NEW(backend, [options], target, [check])
+dnl
+dnl  Perform filesystem checks using a new bookmark storage
+dnl  created with mkfs.bookmarkfs.
+dnl
+m4_define([ATX_CHECK_FS_NEW], [
+    ATX_CHECK_FS([$1], [rw,$2], [bookmarks-$1], [$3], [
+        ATX_FEAT_PREREQ([bookmarkfs-mkfs], [backend-$1-write])
+        "$buildsrcdir/mkfs.bookmarkfs"  \
+                -o "backend=ATX_OPT_MODULE([backend_$1]),force"  \
+                "bookmarks-$1" || exit 1
+        mkdir -p "$3"
+    ], [$4])
+])
+
+dnl
+dnl  ATX_CHECK_FS_NEW_ANY([options], [check])
+dnl
+m4_define([ATX_CHECK_FS_NEW_ANY], [
+    ATX_CHECK_FS_NEW([firefox], [$1], [mnt.tmp], [
+        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/unfiled], [$2])
+    ])
+    ATX_CHECK_FS_NEW([chromium], [$1], [mnt.tmp], [
+        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/Other bookmarks], [$2])
     ])
 ])
 
