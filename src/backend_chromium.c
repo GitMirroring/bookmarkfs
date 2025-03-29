@@ -2238,6 +2238,10 @@ bookmark_delete (
         }
     }
 
+    // Remove from store
+    json_t *siblings = parent_entry->children;
+    json_array_remove(siblings, json_array_search(siblings, entry->node));
+
     // Remove from maps
     long guidmap_entry_id = lctx.entry_id;
     if (!(ctx->flags & BACKEND_FILENAME_GUID)) {
@@ -2247,10 +2251,6 @@ bookmark_delete (
     hashmap_delete(ctx->guid_map, entry, guidmap_entry_id);
     hashmap_delete(ctx->id_map, entry, -1);
     free(entry);
-
-    // Remove from store
-    json_t *siblings = parent_entry->children;
-    json_array_remove(siblings, json_array_search(siblings, entry->node));
 
     ctx->dirty = DIRTY_LEVEL_DATA;
 
