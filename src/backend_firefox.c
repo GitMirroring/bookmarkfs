@@ -2146,7 +2146,7 @@ bookmark_do_list (
 // Type: 1 -> bookmark; 2 -> folder; 3 -> separator.
 #define BOOKMARK_LIST_NOJOIN_(col)  BOOKMARK_LIST_(col ", 1 - `b`.`type` ", )
 #define BOOKMARK_LIST_EX_COLS_  \
-    "ifnull(octet_length(`p`.`url`), -1), `b`.`lastModified`, "  \
+    "ifnull(length(CAST(`p`.`url` AS BLOB)), -1), `b`.`lastModified`, "  \
         "`p`.`last_visit_date`"
 #define BOOKMARK_LIST_EX_(col)  \
     BOOKMARK_LIST_(col ", " BOOKMARK_LIST_EX_COLS_ " ",  \
@@ -2237,7 +2237,7 @@ bookmark_do_lookup (
 ) {
 #define BOOKMARK_LOOKUP_(join, where)  \
     "SELECT `b`.`id`, `b`.`lastModified`, "  \
-        "`p`.`last_visit_date`, octet_length(`p`.`url`) "  \
+        "`p`.`last_visit_date`, length(CAST(`p`.`url` AS BLOB)) "  \
     "FROM `moz_bookmarks` `b` "  \
     join "JOIN `moz_places` `p` ON `b`.`fk` = `p`.`id` WHERE " where
 #define BOOKMARK_LOOKUP_ASSOC_(col)  \
