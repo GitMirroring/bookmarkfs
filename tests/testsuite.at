@@ -201,3 +201,6 @@ m4_include([lib_prng.at])
 m4_include([lib_watcher.at])
 m4_include([lib_sandbox.at])
 m4_include([lib_hashmap.at])
+
+AT_BANNER([The Filesystem])
+m4_include([fs_basic.at])

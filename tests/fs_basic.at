@@ -1,0 +1,69 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([fs: basic operations])
+AT_KEYWORDS([fs basic])
+
+# Tests for basic filesystem operations (e.g., create, rename, delete)
+# which are backend-agnostic.
+ATX_CHECK_FS_NEW_ANY([eol], [
+    ATX_RUN_REPEAT([8], [
+        ATX_RUN([
+            name=$(ath_fn_rand_u64_hex)
+            name_1=${name}_1
+            name_2=${name}_2
+
+            content=foo:$(ath_fn_rand_u64_hex)
+            content_1=${content}/1
+            content_2=${content}/2
+
+            echo "$content_1" > $name_1
+            test "$(cat $name_1)" = "$content_1"
+            echo "$content_2" > $name_2
+            test "$(cat $name_2)" = "$content_2"
+
+            mv $name_1 $name_2
+            test ! -e $name_1
+            test "$(cat $name_2)" = "$content_1"
+
+            mv $name_2 $name_1
+            test ! -e $name_2
+            test "$(cat $name_1)" = "$content_1"
+
+            mkdir $name_2
+            mv $name_1 $name_2/$name_2
+            test ! -e $name_1
+            test "$(cat $name_2/$name_2)" = "$content_1"
+
+            ! mkdir $name_2/$name_2
+            mkdir $name_2/$name_1
+            mv $name_2/$name_2 $name_2/$name_1/$name_1
+            test "$(cat $name_2/$name_1/$name_1)" = "$content_1"
+
+            mkdir $name_1
+            ! mv $name_1 $name_2/$name_1/$name_1
+            ! mv $name_1 $name_2
+
+            ! mv $name_2/$name_1/$name_1 $name_2
+            rm $name_2/$name_1/$name_1
+            test ! -e $name_2/$name_1/$name_1
+
+            mv $name_1 $name_2
+            test ! -e $name_1
+            test -d $name_2/$name_1
+
+            ! rmdir $name_2
+            rmdir $name_2/$name_1
+            rmdir $name_2
+            test ! -e $name_2
+        ])
+    ])
+])
+
+AT_CLEANUP
