@@ -15,8 +15,8 @@ packages: [
   # lib
   fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev, nettle-dev,
   readline-dev, tcl-dev, uriparser-dev, xxhash-dev,
-  # for fusermount3(1)
-  fuse3,
+  # for managing FUSE mounts
+  busybox-mdev-openrc, fuse-openrc, fuse3, umount,
 ]
 sources:
   - https://git.sr.ht/~cismonx/bookmarkfs
@@ -43,6 +43,8 @@ tasks:
       pdpmake
       pdpmake info
   - test: |
+      sudo rc-service fuse start
+      sudo rc-service mdev start
       cd bookmarkfs
       pdpmake check
 
