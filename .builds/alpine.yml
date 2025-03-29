@@ -11,7 +11,7 @@ image: alpine/edge
 packages: [
   # build
   autoconf, automake, libtool, autoconf-archive, pkgconf, pdpmake, tcc,
-  texinfo, musl-dev, tcc-dev, tcc-libs-static,
+  texinfo, musl-dev, tcc-libs-static,
   # lib
   fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev, nettle-dev,
   readline-dev, tcl-dev, uriparser-dev, xxhash-dev,
@@ -21,7 +21,7 @@ packages: [
 sources:
   - https://git.sr.ht/~cismonx/bookmarkfs
 environment:
-  BUILD_CFLAGS: -g -b -Wall -Wunsupported -Werror=unsupported
+  BUILD_CFLAGS: -g -Wall -Wunsupported -Werror=unsupported
   # While musl does support _GNU_SOURCE,
   # here is a good place to see how well BookmarkFS works with a non-GNU libc.
   BUILD_CPPFLAGS: -D_DEFAULT_SOURCE
@@ -36,7 +36,8 @@ tasks:
           --enable-bookmarkfs-fsck  --enable-bookmarkfs-mkfs   \
           --enable-bookmarkctl      --enable-fsck-handler-tcl  \
           --enable-backend-firefox  --enable-backend-chromium  \
-          CC=tcc CFLAGS="$BUILD_CFLAGS" CPPFLAGS="$BUILD_CPPFLAGS"
+          CFLAGS="$BUILD_CFLAGS" CPPFLAGS="$BUILD_CPPFLAGS"    \
+          CC=tcc LD=tcc MAKE=pdpmake
   - build: |
       cd bookmarkfs
       pdpmake

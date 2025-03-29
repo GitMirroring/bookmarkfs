@@ -19,7 +19,8 @@ environment:
   BUILD_CFLAGS: >-
     -std=c99 -O0 -g -Wall -Wextra -Wpedantic -Wshadow
     -fsanitize=address,undefined -fno-sanitize-recover
-  BUILD_CPPFLAGS: ""
+  # Workaround for libiconv.  See INSTALL.md for details.
+  BUILD_CPPFLAGS: -D_LIBICONV_H -include /usr/include/iconv.h
 tasks:
   # Unlike Debian, FreeBSD Ports does not have a "dependency package" concept,
   # and we have to manually create a symlink for Tcl's pkg-config file.
