@@ -28,7 +28,7 @@
 #include "common.h"
 
 int
-explain_fsck_result (
+print_fsck_result (
     enum bookmarkfs_fsck_result        result,
     struct bookmarkfs_fsck_data const *data
 );

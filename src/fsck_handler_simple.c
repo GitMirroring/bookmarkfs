@@ -282,7 +282,7 @@ handle_entry (
     }
 
     struct bookmarkfs_fsck_data *entry_data = &entry->data;
-    if (0 != explain_fsck_result(why, entry_data)) {
+    if (0 != print_fsck_result(why, entry_data)) {
         return -1;
     }
 

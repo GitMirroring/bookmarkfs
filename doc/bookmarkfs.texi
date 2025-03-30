@@ -603,6 +603,9 @@ bookmarkctl fsck @var{pathname}
 Path to the directory to perform checks on.
 @end table
 
+The output shares the same format with the built-in fsck handler.
+@xref{Filesystem-Check Output Format}.
+
 For the full fsck functionalities, @pxref{fsck.bookmarkfs}.
 
 @item xattr-list
@@ -3234,6 +3237,30 @@ Defaults to @samp{_}.
 
 For each bookmark entry, the built-in handler prints a message
 to standard output explaining why the bookmark name is invalid.
+
+@anchor{Filesystem-Check Output Format}
+@cindex Filesystem-Check Output Format
+Output format (with an ASCII HT character separating each item):
+
+@example
+@var{id} @var{why} @var{extra} @var{name}
+@end example
+
+@table @var
+@item why
+Name of the result code, without the @samp{BOOKMARKFS_FSCK_RESULT_} prefix.
+
+@xref{Filesystem-Check Result Code}.
+
+@item id
+@itemx extra
+@itemx name
+Information of this entry.
+@xref{Filesystem-Check Data}.
+
+Integers are printed in decimal format.
+ASCII control characters in @var{name} are replaced with @samp{?}.
+@end table
 
 When the @option{-o repair} option is given, the handler renames the bookmark
 according to the following rules:

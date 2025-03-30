@@ -157,7 +157,7 @@ subcmd_fsck (
             log_printf("ioctl(): %s", strerror(errno));
             break;
         }
-        if (0 != explain_fsck_result(status, &fsck_data)) {
+        if (0 != print_fsck_result(status, &fsck_data)) {
             break;
         }
     } while (status != BOOKMARKFS_FSCK_RESULT_END);
