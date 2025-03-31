@@ -198,7 +198,7 @@ mount.bookmarkfs [@var{options}] @var{src} @var{target}
 The bookmark storage, presumably the pathname of a regular file
 that contains bookmark data.
 
-The exact interpretation of this option is backend-defined.
+The exact interpretation of this argument is backend-defined.
 
 @item target
 Pathname of the directory to mount the filesystem.
@@ -664,7 +664,7 @@ If provided twice, do not print the suffix character after each value.
 
 @item -s @var{char}
 The character separating each name and value.
-Defaults to the ASCII LT character.
+Defaults to the ASCII HT character.
 
 @item -n @var{char}
 The character suffixing each value.
@@ -1036,7 +1036,7 @@ Otherwise, it returns @t{-1} and sets @code{errno}:
 Write or search permission is denied for the directory.
 
 @item EINVAL
-@code{op} is not one of the values defined in enum @code{bookmarkfs_permd_op}.
+@code{op} is not one of the values defined in @code{enum bookmarkfs_permd_op}.
 
 @item EINVAL
 @code{name1} or @code{name2} is not a valid filename
@@ -1121,7 +1121,7 @@ Find the next bookmark with invalid name under the directory.
 @anchor{Filesystem-Check Result Code}
 @cindex Filesystem-Check Result Code
 On success, @code{ioctl()} updates @var{argp}, and returns
-one of the values defined in enum @code{bookmarkfs_fsck_result}:
+one of the values defined in @code{enum bookmarkfs_fsck_result}:
 
 @table @code
 @item BOOKMARKFS_FSCK_RESULT_END
@@ -1167,7 +1167,7 @@ The @code{name} field should be set to the new name for the bookmark.
 The @code{extra} field is unused.
 
 On success, @code{ioctl()} updates @var{argp}, and returns
-one of the values defined in enum @code{bookmarkfs_fsck_result},
+one of the values defined in @code{enum bookmarkfs_fsck_result},
 like with @code{BOOKMARKFS_IOC_FSCK_NEXT}.
 Additionally, it may also return:
 
@@ -1994,8 +1994,8 @@ Function arguments:
 The pointer referring to the backend context.
 
 @item resp
-@xref{Backend-Create Response} for the definition of the
-@code{bookmarkfs_backend_create_resp} structure.
+@xref{Backend-Create Response} for the definition of
+@code{struct bookmarkfs_backend_create_resp}.
 
 Fields in this argument should be left as-is, except for:
 
@@ -2251,8 +2251,8 @@ Position of the current entry, to be used for subsequent calls to
 @item stat
 Attributes of the object entry.
 
-@xref{Bookmark Attributes} for the definition of the
-@code{bookmarkfs_bookmark_stat} structure.
+@xref{Bookmark Attributes} for the definition of
+@code{struct bookmarkfs_bookmark_stat}.
 
 If the @code{BOOKMARKFS_BOOKMARK_LIST_WITHSTAT} flag is @emph{not} given,
 the caller ignores @code{atime} and @code{mtime}, and only use @code{value_len}
@@ -2466,7 +2466,7 @@ Cookie to be freed.
 
 @item cookie_type
 Type of the cookie.
-It must be one of the values defined in enum @code{bookmarkfs_cookie_type}:
+It must be one of the values defined in @code{enum bookmarkfs_cookie_type}:
 
 @table @code
 @item BOOKMARKFS_COOKIE_TYPE_WATCH
@@ -2637,8 +2637,8 @@ The value of @code{parent_id} is unspecified.
 @item stat_buf
 Attributes of the new object.
 
-@xref{Bookmark Attributes} for the definition of the
-@code{bookmarkfs_bookmark_stat} structure.
+@xref{Bookmark Attributes} for the definition of
+@code{struct bookmarkfs_bookmark_stat}.
 
 Except for the @code{id} field, the initial content of this argument
 is unspecified.
@@ -2961,8 +2961,8 @@ Always @code{NULL} if the filesystem is mounted read-only.
 Otherwise, a non-@code{NULL} value indicates @code{BOOKMARKFS_IOC_FSCK_APPLY}.
 @xref{Repair Bookmark}.
 
-@xref{Filesystem-Check Data} for the definition of the
-@code{bookmarkfs_fsck_data} structure.
+@xref{Filesystem-Check Data} for the definition of
+@code{struct bookmarkfs_fsck_data}.
 
 Value of each field:
 
@@ -3049,15 +3049,14 @@ Must be equal to the @code{user_data} argument for the current
 @code{bookmark_check} call.
 
 @item result
-Should be one of the values defined in enum @code{bookmarkfs_fsck_result}
+Should be one of the values defined in @code{enum bookmarkfs_fsck_result}
 indicating why this name is invalid.
 @xref{Filesystem-Check Result Code}.
 
 @item id
 @itemx extra
 @itemx name
-Equivalent to the corresponding fields in structure
-@code{bookmarkfs_fsck_data}.
+Equivalent to the corresponding fields in @code{struct bookmarkfs_fsck_data}.
 @xref{Filesystem-Check Data}.
 @end table
 
@@ -3157,8 +3156,8 @@ Function arguments:
 
 @table @code
 @item conf
-@xref{Backend Configuration} for the definition of the
-@code{bookmarkfs_backend_conf} structure.
+@xref{Backend Configuration} for the definition of
+@code{struct bookmarkfs_backend_conf}.
 
 Some fields should be handled differently from @code{backend_create}:
 
@@ -3235,7 +3234,7 @@ Transliterate bad (@samp{/}) characters into @var{char}
 Defaults to @samp{_}.
 @end table
 
-For each bookmark entry, the built-in handler prints a message
+For each bookmark entry, the built-in handler prints a line
 to standard output explaining why the bookmark name is invalid.
 
 @anchor{Filesystem-Check Output Format}
@@ -3385,7 +3384,7 @@ The second element is a list of information about the current entry:
 @enumerate 0
 @item The bookmark ID
 @item Extra information regarding the invalid name, equivalent to the
-@code{extra} field in structure @code{bookmarkfs_fsck_data}.
+@code{extra} field in @code{struct bookmarkfs_fsck_data}.
 @item Name of the bookmark
 @item ID of the parent directory
 @end enumerate
@@ -3692,8 +3691,8 @@ struct bookmarkfs_fsck_handler_entry @{
 ID of the bookmark folder that contains this bookmark entry.
 
 @item data
-@xref{Online Filesystem Check} for the definition of the
-@code{bookmarkfs_fsck_data} structure.
+@xref{Online Filesystem Check} for the definition of
+@code{struct bookmarkfs_fsck_data}.
 @end table
 
 @item str
