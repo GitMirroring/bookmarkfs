@@ -160,7 +160,7 @@ Notes
  ### Linking to an Existing BookmarkFS Utility Library
 
   If a BookmarkFS utility library is already installed, it can be
-  specified with `--with-bookmarkfs[=<pkgconfdir>]` during configuration,
+  specified with `--with-bookmarkfs-util[=<pkgconfdir>]` during configuration,
   in the same way as with other dependencies.
 
   In this case, the utility library will not be built from source,

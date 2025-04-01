@@ -9,4 +9,4 @@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS         = doc src tests
 
-pkgconfig_DATA = bookmarkfs.pc
+pkgconfig_DATA = bookmarkfs_util.pc

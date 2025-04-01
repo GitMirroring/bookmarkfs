@@ -9,7 +9,7 @@ dnl
 
 AC_PREREQ([2.70])
 AC_INIT([bookmarkfs], [0.1.0], [bug-bookmarkfs@nongnu.org])
-AC_CONFIG_SRCDIR([bookmarkfs.pc.in])
+AC_CONFIG_SRCDIR([bookmarkfs_util.pc.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_TESTDIR([tests])
@@ -120,7 +120,7 @@ EX_FEAT([fsck-handler-tcl], [no], [Tcl-based fsck handler])
 
 AX_PTHREAD
 
-EX_DEP([bookmarkfs], [>= 0.1], [BookmarkFS utility library], [
+EX_DEP([bookmarkfs_util], [>= 0.1], [BookmarkFS utility library], [
     AS_VAR_SET([enable_bookmarkfs_util], [no])
 ])
 
@@ -219,6 +219,6 @@ AC_CONFIG_FILES([
     doc/Makefile
     src/Makefile
     tests/Makefile tests/atlocal
-    bookmarkfs.pc
+    bookmarkfs_util.pc
 ])
 AC_OUTPUT

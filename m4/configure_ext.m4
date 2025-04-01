@@ -42,19 +42,18 @@ dnl  Check whether a package exists with `pkg-config`,
 dnl  and provide an option to specify the package's custom install location.
 dnl
 AC_DEFUN([EX_DEP], [
-    m4_pushdef([with_var_], [with_]m4_translit([$1], [-], [_]))
     AC_ARG_WITH([$1], m4_normalize([
-        AS_HELP_STRING([--with-$1[[=PKGCONFIGDIR]]],
+        AS_HELP_STRING([--with-m4_translit([$1], [_], [-])[[=PKGCONFIGDIR]]],
                 [pkg-config search path for $3])
     ]), , [
-        AS_VAR_SET([with_var_], [no])
+        AS_VAR_SET([with_$1], [no])
         m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
             AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
-                AS_VAR_SET([with_var_], [yes])
+                AS_VAR_SET([with_$1], [yes])
             ])
         ])
     ])
-    AS_VAR_IF([with_var_], [no], [
+    AS_VAR_IF([with_$1], [no], [
         m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
             AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
                 AC_MSG_ERROR(m4_normalize([
@@ -65,14 +64,13 @@ AC_DEFUN([EX_DEP], [
         ])
     ], [
         AS_VAR_SET([old_pkg_config_path_], ["${PKG_CONFIG_PATH}"])
-        AS_VAR_IF([with_var_], [yes], , [
-            AS_VAR_SET([PKG_CONFIG_PATH], ["${with_var_}:${PKG_CONFIG_PATH}"])
+        AS_VAR_IF([with_$1], [yes], , [
+            AS_VAR_SET([PKG_CONFIG_PATH], ["${with_$1}:${PKG_CONFIG_PATH}"])
             export PKG_CONFIG_PATH
         ])
         PKG_CHECK_MODULES(m4_toupper([$1]), [$1 $2], [$4])
         AS_VAR_SET([PKG_CONFIG_PATH], ["${old_pkg_config_path_}"])
     ])
-    m4_popdef([with_var_])
 ])
 
 dnl

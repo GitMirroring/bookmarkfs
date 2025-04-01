@@ -14,8 +14,8 @@ exec_prefix=@exec_prefix@
 includedir=@includedir@
 libdir=@libdir@
 
-Name: ${package}
-Description: BookmarkFS
+Name: ${package}_util
+Description: BookmarkFS Utility Library
 Version: ${version}
 URL: https://www.nongnu.org/bookmarkfs/
 Cflags: -I${includedir}
