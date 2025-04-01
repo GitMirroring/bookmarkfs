@@ -12,17 +12,17 @@ AT_KEYWORDS([fs basic])
 
 # Tests for basic filesystem operations (e.g., create, rename, delete)
 # which are backend-agnostic.
-ATX_CHECK_FS_NEW_ANY([eol], [
+ATX_CHECK_FS_NEW_ANY([eol], , [
     ATX_RUN_REPEAT([8], [
+        name=$(ath_fn_rand_u64_hex)
+        name_1=${name}_1
+        name_2=${name}_2
+
+        content=foo:$(ath_fn_rand_u64_hex)
+        content_1=${content}/1
+        content_2=${content}/2
+
         ATX_RUN([
-            name=$(ath_fn_rand_u64_hex)
-            name_1=${name}_1
-            name_2=${name}_2
-
-            content=foo:$(ath_fn_rand_u64_hex)
-            content_1=${content}/1
-            content_2=${content}/2
-
             echo "$content_1" > $name_1
             test "$(cat $name_1)" = "$content_1"
             echo "$content_2" > $name_2

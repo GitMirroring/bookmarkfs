@@ -31,7 +31,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "check_lib.h"
+#include "check_util.h"
 #include "frontend_util.h"
 #include "sandbox.h"
 #include "watcher.h"

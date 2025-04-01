@@ -1,5 +1,5 @@
 /**
- * bookmarkfs/tests/check_lib.h
+ * bookmarkfs/tests/check_util.h
  * ----
  *
  * Copyright (C) 2025  CismonX <admin@cismon.net>
@@ -18,21 +18,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef BOOKMARKFS_CHECK_LIB_H_
-#define BOOKMARKFS_CHECK_LIB_H_
+#ifndef BOOKMARKFS_CHECK_UTIL_H_
+#define BOOKMARKFS_CHECK_UTIL_H_
 
 #include <stdint.h>
 
 #include "xstd.h"
 
-#define ASSERT_EXPR_INT(expr, r, cond, action_if_false)        \
-    do {                                                       \
-        int r = (expr);                                        \
-        if (cond) {                                            \
-            break;                                             \
-        }                                                      \
-        log_printf("assertion failed: (%d == %s)", r, #expr);  \
-        action_if_false                                        \
+#define ASSERT_EXPR_INT(expr, r, cond, action_if_false)         \
+    do {                                                        \
+        long r = (expr);                                        \
+        if (cond) {                                             \
+            break;                                              \
+        }                                                       \
+        log_printf("assertion failed: (%ld == %s)", r, #expr);  \
+        action_if_false                                         \
     } while (0)
 
 int
@@ -59,4 +59,4 @@ prng_seed_from_hex (
     char const *str
 );
 
-#endif  /* !defined(BOOKMARKFS_CHECK_LIB_H_) */
+#endif  /* !defined(BOOKMARKFS_CHECK_UTIL_H_) */

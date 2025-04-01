@@ -22,8 +22,6 @@
 #  include "config.h"
 #endif
 
-#include "check_lib.h"
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +29,7 @@
 
 #include <unistd.h>
 
+#include "check_util.h"
 #include "frontend_util.h"
 #include "hash.h"
 #include "prng.h"
@@ -127,21 +126,6 @@ subcmd_prng (
     }
     for (; n > 0; --n) {
         printf("%016" PRIx64 "\n", prng_rand());
-    }
-    return 0;
-}
-
-int
-prng_seed_from_hex (
-    uint64_t   *buf,
-    char const *str
-) {
-    int cnt = sscanf(str,
-            "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
-            &buf[0], &buf[1], &buf[2], &buf[3]);
-    if (cnt != 4) {
-        log_printf("bad seed '%s'", optarg);
-        return -1;
     }
     return 0;
 }

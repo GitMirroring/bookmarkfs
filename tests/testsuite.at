@@ -145,7 +145,7 @@ m4_define([ATX_CHECK_FS], [
 ])
 
 dnl
-dnl  ATX_CHECK_FS_NEW(backend, [options], target, [check])
+dnl  ATX_CHECK_FS_NEW(backend, [options], target, [prepare], [check])
 dnl
 dnl  Perform filesystem checks using a new bookmark storage
 dnl  created with mkfs.bookmarkfs.
@@ -153,22 +153,23 @@ dnl
 m4_define([ATX_CHECK_FS_NEW], [
     ATX_CHECK_FS([$1], [rw,$2], [bookmarks-$1], [$3], [
         ATX_FEAT_PREREQ([bookmarkfs-mkfs], [backend-$1-write])
+        $4
         "$buildsrcdir/mkfs.bookmarkfs"  \
                 -o "backend=ATX_OPT_MODULE([backend_$1]),force"  \
                 "bookmarks-$1" || exit 1
         mkdir -p "$3"
-    ], [$4])
+    ], [$5])
 ])
 
 dnl
-dnl  ATX_CHECK_FS_NEW_ANY([options], [check])
+dnl  ATX_CHECK_FS_NEW_ANY([options], [prepare], [check])
 dnl
 m4_define([ATX_CHECK_FS_NEW_ANY], [
-    ATX_CHECK_FS_NEW([firefox], [$1], [mnt.tmp], [
-        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/unfiled], [$2])
+    ATX_CHECK_FS_NEW([firefox], [$1], [mnt.tmp], [$2], [
+        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/unfiled], [$3])
     ])
-    ATX_CHECK_FS_NEW([chromium], [$1], [mnt.tmp], [
-        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/Other bookmarks], [$2])
+    ATX_CHECK_FS_NEW([chromium], [$1], [mnt.tmp], [$2], [
+        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/Other bookmarks], [$3])
     ])
 ])
 

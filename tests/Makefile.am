@@ -13,7 +13,7 @@ TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at  \
 
 # Helper programs for testing
 
-check_HEADERS  = check_lib.h
+check_HEADERS  = check_util.h
 check_PROGRAMS =
 
 if BOOKMARKFS_UTIL
@@ -22,7 +22,7 @@ if BOOKMARKFS_UTIL
   check_util_lib_CPPFLAGS = -I$(top_srcdir)/src
   check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
   check_util_lib_SOURCES  = check_lib.c check_watcher.c check_sandbox.c  \
-                            check_hashmap.c
+                            check_hashmap.c check_util.c
 endif  # BOOKMARKFS_UTIL
 
 if BOOKMARKFS_MOUNT

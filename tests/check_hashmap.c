@@ -25,7 +25,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "check_lib.h"
+#include "check_util.h"
 #include "frontend_util.h"
 #include "hashmap.h"
 #include "prng.h"
@@ -169,8 +169,8 @@ check_hashmap (
     char *argv[]
 ) {
     uint64_t seed_buf[4], *seed = NULL;
-    int n = -1;
-    int r = -1;
+    int size_exp = -1;
+    int rounds   = -1;
 
     OPT_START(argc, argv, "s:n:r:")
     OPT_OPT('s') {
@@ -181,26 +181,26 @@ check_hashmap (
         break;
     }
     OPT_OPT('n') {
-        n = atoi(optarg);
+        size_exp = atoi(optarg);
         break;
     }
     OPT_OPT('r') {
-        r = atoi(optarg);
+        rounds = atoi(optarg);
         break;
     }
     OPT_END
 
-    if (n < 10 || n > 30) {
-        log_printf("bad size %d", n);
+    if (size_exp < 10 || size_exp > 30) {
+        log_printf("bad size %d", size_exp);
         return -1;
     }
-    if (r < 0) {
-        log_printf("bad rounds cnt %d", r);
+    if (rounds < 0) {
+        log_printf("bad rounds cnt %d", rounds);
         return -1;
     }
 
     if (0 != prng_seed(seed)) {
         return -1;
     }
-    return do_check_hashmap(1u << n, r);
+    return do_check_hashmap(1u << size_exp, rounds);
 }
