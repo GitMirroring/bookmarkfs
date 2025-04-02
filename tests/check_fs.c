@@ -29,6 +29,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#include "check_util.h"
 #include "frontend_util.h"
 
 // Forward declaration start
@@ -53,6 +54,10 @@ dispatch_subcmds (
         status = subcmd_ismount(argc, argv);
     } else if (0 == strcmp("sleep", cmd)) {
         status = subcmd_sleep(argc, argv);
+#ifdef HAVE_BOOKMARKFS_UTIL
+    } else if (0 == strcmp("regrw", cmd)) {
+        status = check_fs_regrw(argc, argv);
+#endif
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }

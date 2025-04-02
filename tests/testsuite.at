@@ -205,3 +205,4 @@ m4_include([lib_hashmap.at])
 
 AT_BANNER([The Filesystem])
 m4_include([fs_basic.at])
+m4_include([fs_regrw.at])
