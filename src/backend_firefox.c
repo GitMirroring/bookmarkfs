@@ -2394,6 +2394,7 @@ bookmark_check_cb (
     if (dentry == NULL) {
         dentry = xmalloc(sizeof(*dentry) + name_len);
         dentry->id       = id;
+        dentry->hashcode = hashcode;
         dentry->name_len = name_len;
         memcpy(dentry->name, name, name_len);
 
