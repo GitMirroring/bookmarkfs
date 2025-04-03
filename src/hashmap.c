@@ -33,7 +33,6 @@
 #include "hashmap.h"
 
 #include <limits.h>
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -110,7 +109,7 @@ struct hashmap {
 static int count_tz   (unsigned long);
 static int find_entry (struct hashmap const *, void const *, struct bucket **);
 static int make_room  (struct bucket *, struct bucket const *, unsigned);
-static int rehash     (struct hashmap *, bool);
+static int rehash     (struct hashmap *, unsigned);
 // Forward declaration end
 
 static int
@@ -240,16 +239,11 @@ make_room (
 static int
 rehash (
     struct hashmap *map,
-    bool            grow
+    unsigned        new_exp
 ) {
-    unsigned new_exp = map->exp;
-    if (grow) {
-        if (unlikely(++new_exp > EXP_MAX)) {
-            log_puts("hashmap size exceeds max limit");
-            return -1;
-        }
-    } else {
-        --new_exp;
+    if (unlikely(new_exp > EXP_MAX)) {
+        log_printf("%p: new size exceeds max limit", (void *)map);
+        return -1;
     }
 
     size_t new_nbuckets = BUCKET_CNT(new_exp);
@@ -271,8 +265,9 @@ rehash (
 
         int hop_idx = make_room(new_home, new_buckets + new_nbuckets, new_exp);
         if (unlikely(hop_idx < 0)) {
-            log_puts("collision attack or poor hash function");
-            goto fail;
+            log_printf("%p: rehash failed", (void *)map);
+            free(new_buckets);
+            return -1;
         }
         BIT_SET(new_home->bits, hop_idx);
 
@@ -286,10 +281,6 @@ rehash (
     map->num_buckets = new_nbuckets;
     map->exp         = new_exp;
     return 0;
-
-  fail:
-    free(new_buckets);
-    return -1;
 }
 
 struct hashmap *
@@ -378,7 +369,7 @@ hashmap_delete (
     if (buckets_used < (map->num_buckets >> 3)) {
         debug_printf("%p: rehashing: %zu / %zu", (void *)map,
                 buckets_used, map->num_buckets - (map->exp - 1));
-        xassert(0 == rehash(map, false));
+        rehash(map, map->exp - 1);
     }
 }
 
@@ -396,7 +387,9 @@ hashmap_insert (
     if (unlikely(hop_idx < 0)) {
         debug_printf("%p: rehashing: %zu / %zu", (void *)map,
                 map->num_used, map->num_buckets - (exp - 1));
-        xassert(0 == rehash(map, true));
+        if (unlikely(0 != rehash(map, ++exp))) {
+            xassert(0 == rehash(map, ++exp));
+        }
         hashmap_insert(map, hashcode, entry);
         return;
     }
