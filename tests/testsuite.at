@@ -139,6 +139,7 @@ m4_define([ATX_CHECK_FS], [
             fi
         done
         $6
+        ATX_RUN_ONE([check-fs ismount "$4"])
     ], [
         umount "$4"
     ])

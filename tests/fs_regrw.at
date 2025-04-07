@@ -19,7 +19,6 @@ ATX_CHECK_FS_NEW_ANY([file_max=524288], [
     echo "prng seed: $seed"
 
     ATX_RUN([
-        touch $name
         check-fs regrw -n 524288 -s "$seed" $name
     ])
 ])
