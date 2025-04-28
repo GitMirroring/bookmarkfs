@@ -1086,7 +1086,7 @@ mozkw_delete (
     char const         *name,
     size_t              name_len
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_RENAME];
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_DELETE];
     char const *sql = "DELETE FROM `moz_keywords` "
         "WHERE `keyword` = ? RETURNING `place_id`";
 
