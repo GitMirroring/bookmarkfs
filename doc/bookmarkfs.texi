@@ -1358,6 +1358,12 @@ The bookmark creation time.
 
 Value is a decimal integer representing number of microseconds since
 the Unix epoch.
+
+@item keyword
+The keyword associated with the bookmark.
+@xref{Keywords}.
+
+This attribute is read-only.
 @end table
 
 Notable limitations:

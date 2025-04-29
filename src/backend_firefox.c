@@ -59,6 +59,7 @@
 #define BM_XATTR_TITLE       2
 #define BM_XATTR_GUID        3
 #define BM_XATTR_DATE_ADDED  4
+#define BM_XATTR_KEYWORD     5
 #define MOZBM_XATTR_START    BM_XATTR_TITLE
 
 #define BACKEND_EXCLUSIVE_LOCK         ( 1u << 16 )
@@ -2092,7 +2093,10 @@ bookmark_do_get (
 #define BOOKMARK_GET_(cols, join)  "SELECT CASE ? " cols "END "  \
     "FROM `moz_bookmarks` `b` " join "WHERE `b`.`id` = ?"
 #define BOOKMARK_GET(cols)  BOOKMARK_GET_(cols  \
-    "WHEN " STRINGIFY(BM_XATTR_DATE_ADDED) " THEN `b`.`dateAdded` ", )
+    "WHEN " STRINGIFY(BM_XATTR_DATE_ADDED) " THEN `b`.`dateAdded` "  \
+    "WHEN " STRINGIFY(BM_XATTR_KEYWORD)    " THEN "   \
+        "(SELECT `keyword` FROM `moz_keywords` `k` "  \
+            "WHERE `k`.`place_id` = `b`.`fk`) ", )
 #define BOOKMARK_GET_EX  BOOKMARK_GET_(  \
         "WHEN " STRINGIFY(BM_XATTR_NULL) " THEN `p`.`url` "          \
         "WHEN " STRINGIFY(BM_XATTR_DESC) " THEN `p`.`description` "  \
@@ -2637,6 +2641,9 @@ get_xattr_id (
             return BM_XATTR_GUID;
         }
     }
+    if (0 == strcmp("keyword", name)) {
+        return BM_XATTR_KEYWORD;
+    }
     return -1;
 }
 
@@ -2942,9 +2949,9 @@ backend_create (
         resp_flags |= BOOKMARKFS_BACKEND_EXCLUSIVE;
     }
 
-    char const *xattr_names = "guid\0date_added\0description\0";
+    char const *xattr_names = "guid\0date_added\0description\0keyword\0";
     if (opts.flags & BACKEND_FILENAME_GUID) {
-        xattr_names = "title\0date_added\0description\0";
+        xattr_names = "title\0date_added\0description\0keyword\0";
     }
 
     resp->name              = "firefox";
@@ -3723,6 +3730,9 @@ bookmark_set (
                 return -EINVAL;
             }
             break;
+
+          case BM_XATTR_KEYWORD:
+            return -EPERM;
 
           default:
             return -ENOATTR;
