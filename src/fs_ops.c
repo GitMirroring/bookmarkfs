@@ -409,6 +409,12 @@ bm_create (
         }
     }
 
+    if (flags & O_TRUNC) {
+        // See bm_open() for comments on O_RDONLY|O_TRUNC.
+        if ((flags & O_ACCMODE) != O_RDONLY) {
+            stat.value_len = 0;
+        }
+    }
     bm_fillstat(&stat, SUBSYS_TYPE_BOOKMARK, false, stat_buf);
     return 0;
 }

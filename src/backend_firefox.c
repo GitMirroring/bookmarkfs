@@ -398,9 +398,8 @@ bookmark_do_create (
     stat_buf->value_len = -1;
     int64_t place_id = 0;
     if (!is_dir) {
-        char const *url = "about:blank";
-        stat_buf->value_len = strlen(url);
-        status = mozplace_addref(ctx, url, stat_buf->value_len, &place_id,
+        stat_buf->value_len = 0;
+        status = mozplace_addref(ctx, STR_WITHLEN("about:blank"), &place_id,
                 &stat_buf->atime);
         if (status < 0) {
             return status;
