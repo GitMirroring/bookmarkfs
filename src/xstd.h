@@ -26,6 +26,9 @@
 #include <stdio.h>
 #include <time.h>
 
+#include <dirent.h>
+#include <sys/syscall.h>
+
 #include "defs.h"
 
 #ifdef HAVE___BUILTIN_EXPECT
@@ -82,6 +85,12 @@
         *(strp) = xmalloc(len_ + 1);                     \
         xassert(len_ == sprintf(*(strp), __VA_ARGS__));  \
     } while (0)
+#endif
+
+#if defined(__linux__)
+#  define xgetdents(fd, buf, bufsz)  syscall(SYS_getdents64, fd, buf, bufsz)
+#elif defined(__FreeBSD__)
+#  define xgetdents(fd, buf, bufsz)  getdents(fd, buf, bufsz)
 #endif
 
 /**

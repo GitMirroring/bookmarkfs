@@ -28,10 +28,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <dirent.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/syscall.h>
 #include <unistd.h>
 
 #include "backend.h"
@@ -67,10 +65,6 @@ struct fsck_dir {
 #define FSCK_DIR_DONE  ( 1u << 0 )
 
 // Forward declaration start
-#ifdef __linux__
-static ssize_t getdents_ (int, void *, size_t);
-#endif
-
 static int  next_subdir   (struct fsck_ctx *, struct fsck_dir *,
                            struct dirent const **);
 static int  open_subdir   (int, char const *, uint64_t *);
@@ -78,22 +72,6 @@ static int  reset_top     (struct fsck_ctx *);
 static void print_help    (void);
 static void print_version (void);
 // Forward declaration end
-
-#ifdef __linux__
-
-// Some libc (e.g., musl) may declare a getdents() function
-// in dirent.h with conflicting types.
-#define getdents getdents_
-static ssize_t
-getdents_ (
-    int     dirfd,
-    void   *buf,
-    size_t  bufsize
-) {
-    return syscall(SYS_getdents64, dirfd, buf, bufsize);
-}
-
-#endif  /* defined(__linux__) */
 
 static int
 next_subdir (
@@ -112,7 +90,7 @@ next_subdir (
                 ctx->dent_buf = xrealloc(ctx->dent_buf, ctx->dent_buf_size);
             }
             ssize_t nbytes
-                = getdents(dir->fd, ctx->dent_buf + start, DIRENT_BUFSIZE);
+                = xgetdents(dir->fd, ctx->dent_buf + start, DIRENT_BUFSIZE);
             if (nbytes < 0) {
                 log_printf("getdents(): %s", xstrerror(errno));
                 return -1;
