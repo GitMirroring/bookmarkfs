@@ -57,6 +57,8 @@ dispatch_subcmds (
 #ifdef HAVE_BOOKMARKFS_UTIL
     } else if (0 == strcmp("regrw", cmd)) {
         status = check_fs_regrw(argc, argv);
+    } else if (0 == strcmp("dents", cmd)) {
+        status = check_fs_dents(argc, argv);
 #endif
     } else {
         log_printf("bad subcmd '%s'", cmd);

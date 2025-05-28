@@ -36,6 +36,12 @@
     } while (0)
 
 int
+check_fs_dents (
+    int   argc,
+    char *argv[]
+);
+
+int
 check_fs_regrw (
     int   argc,
     char *argv[]
