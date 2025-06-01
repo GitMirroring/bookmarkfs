@@ -15,53 +15,48 @@ AT_KEYWORDS([fs basic])
 ATX_CHECK_FS_NEW_ANY([eol], , [
     ATX_RUN_REPEAT([8], [
         name=$(ath_fn_rand_u64_hex)
-        name_1=${name}_1
-        name_2=${name}_2
-
         content=foo:$(ath_fn_rand_u64_hex)
-        content_1=${content}/1
-        content_2=${content}/2
 
         ATX_RUN([
-            echo "$content_1" > $name_1
-            test "$(cat $name_1)" = "$content_1"
-            echo "$content_2" > $name_2
-            test "$(cat $name_2)" = "$content_2"
+            echo "$content/1" > $name-1
+            test "$(cat $name-1)" = "$content/1"
+            echo "$content/2" > $name-2
+            test "$(cat $name-2)" = "$content/2"
 
-            mv $name_1 $name_2
-            test ! -e $name_1
-            test "$(cat $name_2)" = "$content_1"
+            mv $name-1 $name-2
+            test ! -e $name-1
+            test "$(cat $name-2)" = "$content/1"
 
-            mv $name_2 $name_1
-            test ! -e $name_2
-            test "$(cat $name_1)" = "$content_1"
+            mv $name-2 $name-1
+            test ! -e $name-2
+            test "$(cat $name-1)" = "$content/1"
 
-            mkdir $name_2
-            mv $name_1 $name_2/$name_2
-            test ! -e $name_1
-            test "$(cat $name_2/$name_2)" = "$content_1"
+            mkdir $name-2
+            mv $name-1 $name-2/$name-2
+            test ! -e $name-1
+            test "$(cat $name-2/$name-2)" = "$content/1"
 
-            ! mkdir $name_2/$name_2
-            mkdir $name_2/$name_1
-            mv $name_2/$name_2 $name_2/$name_1/$name_1
-            test "$(cat $name_2/$name_1/$name_1)" = "$content_1"
+            ! mkdir $name-2/$name-2
+            mkdir $name-2/$name-1
+            mv $name-2/$name-2 $name-2/$name-1/$name-1
+            test "$(cat $name-2/$name-1/$name-1)" = "$content/1"
 
-            mkdir $name_1
-            ! mv $name_1 $name_2/$name_1/$name_1
-            ! mv $name_1 $name_2
+            mkdir $name-1
+            ! mv $name-1 $name-2/$name-1/$name-1
+            ! mv $name-1 $name-2
 
-            ! mv $name_2/$name_1/$name_1 $name_2
-            rm $name_2/$name_1/$name_1
-            test ! -e $name_2/$name_1/$name_1
+            ! mv $name-2/$name-1/$name-1 $name-2
+            rm $name-2/$name-1/$name-1
+            test ! -e $name-2/$name-1/$name-1
 
-            mv $name_1 $name_2
-            test ! -e $name_1
-            test -d $name_2/$name_1
+            mv $name-1 $name-2
+            test ! -e $name-1
+            test -d $name-2/$name-1
 
-            ! rmdir $name_2
-            rmdir $name_2/$name_1
-            rmdir $name_2
-            test ! -e $name_2
+            ! rmdir $name-2
+            rmdir $name-2/$name-1
+            rmdir $name-2
+            test ! -e $name-2
         ])
     ])
 ])
