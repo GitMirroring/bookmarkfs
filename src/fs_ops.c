@@ -1352,12 +1352,14 @@ intfs_delete (
 ) {
     int status = -EPERM;
 
+    int64_t bm_parent_id = BOOKMARKS_ROOT_ID;
     switch (parent_id) {
       case INTFS_ID_TAGS:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
+        bm_parent_id = TAGS_ROOT_ID;
         // fallthrough
       case INTFS_ID_BOOKMARKS:
-        status = bm_delete(BOOKMARKS_ROOT_ID, name, flags);
+        status = bm_delete(bm_parent_id, name, flags);
         break;
 
       case INTFS_ID_KEYWORDS:
