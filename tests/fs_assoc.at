@@ -1,0 +1,64 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([fs: tags and keywords])
+AT_KEYWORDS([fs assoc tag keyword])
+
+ATX_CHECK_FS_NEW_ASSOC([eol], , [
+    ATX_RUN_REPEAT([8], [
+        name=$(ath_fn_rand_u64_hex)
+        tag=$(ath_fn_rand_u64_hex)
+        keyword=$(ath_fn_rand_u64_hex)
+        content=foo:$(ath_fn_rand_u64_hex)
+
+        ATX_RUN([
+            echo "$content/1" > $name-1
+            echo "$content/2" > $name-2
+            echo "$content/3" > $name-3
+            mkdir "$atx_tags/$tag-1" "$atx_tags/$tag-2" "$atx_tags/$tag-3"
+
+            ln $name-1 $name-2 "$atx_tags/$tag-1"
+            ln $name-2 $name-3 "$atx_tags/$tag-2"
+            ln $name-3 $name-1 "$atx_tags/$tag-3"
+            test $name-1 -ef "$atx_tags/$tag-1/$name-1"
+            test $name-1 -ef "$atx_tags/$tag-3/$name-1"
+            test $name-2 -ef "$atx_tags/$tag-1/$name-2"
+            test $name-2 -ef "$atx_tags/$tag-2/$name-2"
+            test $name-3 -ef "$atx_tags/$tag-3/$name-3"
+            test $name-3 -ef "$atx_tags/$tag-2/$name-3"
+
+            ln $name-1 "$atx_keywords/$keyword-2"
+            ln $name-2 "$atx_keywords/$keyword-3"
+            ln $name-3 "$atx_keywords/$keyword-1"
+            test $name-1 -ef "$atx_keywords/$keyword-2"
+            test $name-2 -ef "$atx_keywords/$keyword-3"
+            test $name-3 -ef "$atx_keywords/$keyword-1"
+
+            rm "$atx_tags/$tag-1/$name-1"
+            rm "$atx_tags/$tag-2/$name-2"
+            rm "$atx_tags/$tag-3/$name-3"
+            test ! -e "$atx_tags/$tag-1/$name-1"
+            test ! -e "$atx_tags/$tag-2/$name-2"
+            test ! -e "$atx_tags/$tag-3/$name-3"
+
+            rm "$atx_keywords/$keyword-1"
+            rm "$atx_keywords/$keyword-2"
+            test ! -e "$atx_keywords/$keyword-1"
+            test ! -e "$atx_keywords/$keyword-2"
+
+            rm $name-1 $name-2 $name-3
+            test ! -e "$atx_tags/$tag-1/$name-2"
+            test ! -e "$atx_tags/$tag-2/$name-3"
+            test ! -e "$atx_tags/$tag-3/$name-1"
+            test ! -e "$atx_keywords/$keyword-3"
+        ])
+    ])
+])
+
+AT_CLEANUP

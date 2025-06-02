@@ -9,7 +9,7 @@
 EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTS_)
 
 TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at  \
-         lib_hashmap.at fs_basic.at fs_regrw.at fs_dents.at
+         lib_hashmap.at fs_basic.at fs_regrw.at fs_dents.at fs_assoc.at
 
 # Helper programs for testing
 
