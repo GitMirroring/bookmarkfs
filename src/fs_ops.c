@@ -1532,25 +1532,25 @@ intfs_opendir (
     fuse_ino_t             ino,
     struct fuse_file_info *fi
 ) {
-    int status = 0;
-
+    uint64_t bm_id = BOOKMARKS_ROOT_ID;
     uint32_t flags = 0;
     switch (id) {
       case INTFS_ID_ROOT:
         fi->cache_readdir = 1;
         fi->keep_cache    = 1;
-        break;
-
-      case INTFS_ID_BOOKMARKS:
-        status = bm_opendir(BOOKMARKS_ROOT_ID, ino, flags, fi);
-        break;
+        return 0;
 
       case INTFS_ID_TAGS:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
-        status = bm_opendir(TAGS_ROOT_ID, ino, flags, fi);
+        bm_id = TAGS_ROOT_ID;
+        break;
+
+      case INTFS_ID_KEYWORDS:
+        flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
+        bm_id = 0;
         break;
     }
-    return status;
+    return bm_opendir(bm_id, ino, flags, fi);
 }
 
 static int
