@@ -2175,7 +2175,8 @@ bookmark_do_list (
     "SELECT min(`b`.`id`), `k`.`id`, `k`.`keyword`" cols " " \
     "FROM `moz_keywords` `k` " join  \
     "JOIN `moz_bookmarks` `b` ON `k`.`place_id` = `b`.`fk` "  \
-    "WHERE `k`.`id` >= ?2 GROUP BY `k`.`place_id` ORDER BY `k`.`id`"
+    "WHERE `k`.`id` >= ?2 AND `b`.`title` IS NOT NULL "  \
+    "GROUP BY `k`.`place_id` ORDER BY `k`.`id`"
 #define BOOKMARK_LIST_KEYWORD     BOOKMARK_LIST_KEYWORD_(,)
 #define BOOKMARK_LIST_KEYWORD_EX  \
     BOOKMARK_LIST_KEYWORD_(", " BOOKMARK_LIST_EX_COLS_,  \
@@ -2267,7 +2268,8 @@ bookmark_do_lookup (
 #define PLACE_ID_BY_KEYWORD(val)  \
     "SELECT `place_id` FROM `moz_keywords` WHERE `keyword` = " val
 #define BOOKMARK_LOOKUP_PLACE_ID_(val)  \
-    BOOKMARK_LOOKUP_(, "`b`.`fk` = " val " ORDER BY `b`.`id` LIMIT 1")
+    BOOKMARK_LOOKUP_(, "`b`.`fk` = " val " AND `b`.`title` IS NOT NULL "  \
+        "ORDER BY `b`.`id` LIMIT 1")
 #define BOOKMARK_LOOKUP_KEYWORD_(val)  \
     BOOKMARK_LOOKUP_PLACE_ID_("(" PLACE_ID_BY_KEYWORD(val) ")")
 #define BOOKMARK_LOOKUP_KEYWORD  BOOKMARK_LOOKUP_KEYWORD_("?2")
