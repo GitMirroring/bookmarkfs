@@ -630,7 +630,7 @@ Displays extended attribute values.
 
 @example
 bookmarkctl xattr-get [@var{options}]    @var{attrname}    @var{pathname}...
-bookmarkctl xattr-get [@var{options}] -m @var{attrname}... @var{pathname}
+bookmarkctl xattr-get [@var{options}] -a @var{attrname}... @var{pathname}
 @end example
 
 @table @var
@@ -650,7 +650,7 @@ Treat the value as binary, and print it verbatim.
 If this option is not provided, non-printable characters are replaced with
 @samp{?}.
 
-@item -m
+@item -a
 Switch to multi-attrname mode, where multiple extended attribute names
 can be specified instead of multiple files.
 

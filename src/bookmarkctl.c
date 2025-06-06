@@ -48,7 +48,7 @@ struct xattr_get_ctx {
     char        eol;
 
     unsigned binary     : 1;
-    unsigned multi_name : 1;
+    unsigned multi_attr : 1;
 };
 
 // Forward declaration start
@@ -249,8 +249,8 @@ subcmd_xattr_get (
         ctx.binary = 1;
         break;
     }
-    OPT_OPT('m') {
-        ctx.multi_name = 1;
+    OPT_OPT('a') {
+        ctx.multi_attr = 1;
         break;
     }
     OPT_OPT('q') {
@@ -269,7 +269,7 @@ subcmd_xattr_get (
         return -1;
     }
 
-    if (ctx.multi_name) {
+    if (ctx.multi_attr) {
         return xattr_get_one(argv[argc - 1], argv, argc - 1, &ctx);
     }
     for (int i = 1; i < argc; ++i) {
@@ -416,7 +416,7 @@ xattr_get_one (
     for (int i = 0; i < names_cnt; ++i) {
         char const *name = names[i];
 
-        ctx->prefix = ctx->multi_name ? name : path;
+        ctx->prefix = ctx->multi_attr ? name : path;
         status = bookmarkfs_xattr_get(fd, name, xattr_get_cb, ctx);
         if (status < 0) {
             goto end;
