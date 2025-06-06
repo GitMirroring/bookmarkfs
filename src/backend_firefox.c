@@ -133,11 +133,14 @@ enum {
     STMT_MOZBM_MTIME_UPDATE,
     STMT_MOZBM_POS_SHIFT,
     STMT_MOZBM_POS_UPDATE,
+    STMT_MOZBM_PURGE,
+    STMT_MOZBM_PURGE_CHECK,
     STMT_MOZBM_UPDATE,
     STMT_MOZBMDEL_INSERT,
     STMT_MOZKW_DELETE,
     STMT_MOZKW_INSERT,
     STMT_MOZKW_LOOKUP,
+    STMT_MOZKW_PURGE,
     STMT_MOZKW_RENAME,
     STMT_TAG_ENTRY_LOOKUP,
 #endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
@@ -288,7 +291,7 @@ static bool    is_valid_guid      (char const *, size_t);
 static int     keyword_create     (struct backend_ctx *, char const *, size_t,
                                    struct bookmarkfs_bookmark_stat *);
 static int     mozbm_check_cb     (void *, sqlite3_stmt *);
-static int     mozbm_delete       (struct backend_ctx *, int64_t, bool);
+static int     mozbm_delete       (struct backend_ctx *, int64_t, bool, bool);
 static int     mozbm_delete_cb    (void *, sqlite3_stmt *);
 static int     mozbm_get_title    (struct backend_ctx *, int64_t, int64_t,
                                    db_query_row_func *, void *);
@@ -302,11 +305,14 @@ static int     mozbm_mtime_update (struct backend_ctx *, int64_t, int64_t *);
 static int     mozbm_pos_shift    (struct backend_ctx *, int64_t, int64_t,
                                    int64_t *, enum bookmarkfs_permd_op);
 static int     mozbm_pos_update   (struct backend_ctx *, int64_t, int64_t);
+static int     mozbm_purge        (struct backend_ctx *, int64_t);
+static int     mozbm_purge_check  (struct backend_ctx *, int64_t);
 static int     mozbm_update       (struct backend_ctx *, struct mozbm *);
 static int     mozbmdel_insert    (struct backend_ctx *, char const *);
 static int     mozkw_delete       (struct backend_ctx *, char const *, size_t);
 static int     mozkw_insert       (struct backend_ctx *, struct mozkw *);
 static int     mozkw_lookup       (struct backend_ctx *, struct mozkw *);
+static int     mozkw_purge        (struct backend_ctx *, int64_t);
 static int     mozkw_rename       (struct backend_ctx *, char const *,
                                    char const *, uint32_t);
 static int     mozorigin_delete   (struct backend_ctx *, int64_t);
@@ -318,8 +324,9 @@ static int     mozplace_addref    (struct backend_ctx *, char const *, size_t,
 static int     mozplace_addref_cb (void *, sqlite3_stmt *);
 static int     mozplace_addref_id (struct backend_ctx *, int64_t);
 static int     mozplace_delete    (struct backend_ctx *, int64_t, int64_t);
-static int     mozplace_delref    (struct backend_ctx *, int64_t);
+static int     mozplace_delref    (struct backend_ctx *, int64_t, int);
 static int     mozplace_insert    (struct backend_ctx *, struct mozplace *);
+static int     mozplace_purge     (struct backend_ctx *, int64_t);
 static int     mozplace_update    (struct backend_ctx *, struct mozplace *);
 static int64_t mozplace_url_hash  (char const *, size_t);
 static int     parse_mkfsopts     (struct bookmarkfs_conf_opt const *,
@@ -457,7 +464,7 @@ bookmark_do_delete (
         return is_dir ? -ENOTDIR : -EISDIR;
     }
 
-    status = mozbm_delete(ctx, cols.id, is_dir);
+    status = mozbm_delete(ctx, cols.id, is_dir, true);
     if (status < 0) {
         return status;
     }
@@ -675,7 +682,8 @@ static int
 mozbm_delete (
     struct backend_ctx *ctx,
     int64_t             id,
-    bool                is_dir
+    bool                is_dir,
+    bool                purge
 ) {
 #define MOZBM_DELETE_(cond)  \
     "DELETE FROM `moz_bookmarks` WHERE `id` = ? " cond  \
@@ -707,7 +715,7 @@ mozbm_delete (
         // The ID is alwayed obtained from a previous query in
         // the same transaction.  This shall not happen.
         xassert(nrows > 0);
-        int status = mozplace_delref(ctx, qctx.place_id);
+        int status = mozplace_delref(ctx, qctx.place_id, purge ? 0 : 1);
         if (status < 0) {
             return status;
         }
@@ -1021,6 +1029,45 @@ mozbm_pos_update (
 }
 
 static int
+mozbm_purge (
+    struct backend_ctx *ctx,
+    int64_t             place_id
+) {
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_PURGE];
+    char const *sql = "DELETE FROM `moz_bookmarks` WHERE `fk` = ?";
+
+    int status;
+    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+        DB_QUERY_BIND_INT64(place_id),
+    );
+    if (status < 0) {
+        return status;
+    }
+    return sqlite3_changes(ctx->db);
+}
+
+static int
+mozbm_purge_check (
+    struct backend_ctx *ctx,
+    int64_t             place_id
+) {
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_PURGE_CHECK];
+    char const *sql = "SELECT COUNT(*) FROM `moz_bookmarks` "
+        "WHERE `fk` = ? AND `title` IS NOT NULL";
+
+    int64_t result;
+    ssize_t nrows;
+    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &result, nrows, , ,
+        DB_QUERY_BIND_INT64(place_id),
+    );
+    if (nrows < 0) {
+        return nrows;
+    }
+    debug_assert(nrows == 1);
+    return result == 0;
+}
+
+static int
 mozbm_update (
     struct backend_ctx *ctx,
     struct mozbm       *cols
@@ -1098,7 +1145,7 @@ mozkw_delete (
     if (status < 0) {
         return status;
     }
-    status = mozplace_delref(ctx, place_id);
+    status = mozplace_delref(ctx, place_id, 1);
     if (status < 0) {
         return status;
     }
@@ -1154,6 +1201,24 @@ mozkw_lookup (
 }
 
 static int
+mozkw_purge (
+    struct backend_ctx *ctx,
+    int64_t             place_id
+) {
+    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_PURGE];
+    char const *sql = "DELETE FROM `moz_keywords` WHERE `place_id` = ?";
+
+    int status;
+    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+        DB_QUERY_BIND_INT64(place_id),
+    );
+    if (status < 0) {
+        return status;
+    }
+    return sqlite3_changes(ctx->db);
+}
+
+static int
 mozkw_rename (
     struct backend_ctx *ctx,
     char const         *old_name,
@@ -1173,7 +1238,7 @@ mozkw_rename (
         if (flags & BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE) {
             return -EEXIST;
         }
-        status = mozplace_delref(ctx, old_cols.place_id);
+        status = mozplace_delref(ctx, old_cols.place_id, 1);
         if (status < 0) {
             return status;
         }
@@ -1412,16 +1477,18 @@ mozplace_delete (
 static int
 mozplace_delref (
     struct backend_ctx *ctx,
-    int64_t             id
+    int64_t             id,
+    int                 purge
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_DELREF];
     char const *sql =
-        "UPDATE `moz_places` SET `foreign_count` = `foreign_count` - 1 "
+        "UPDATE `moz_places` SET `foreign_count` = `foreign_count` - ? "
         "WHERE `id` = ? RETURNING `foreign_count`, `origin_id`";
 
     ssize_t nrows;
     int64_t result[2];  // `foreign_count`, `origin_id`
     DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, result, nrows, , ,
+        DB_QUERY_BIND_INT64(purge == 0 ? 1 : purge),
         DB_QUERY_BIND_INT64(id),
     );
     if (nrows < 0) {
@@ -1430,11 +1497,14 @@ mozplace_delref (
     if (unlikely(nrows == 0)) {
         return -EIO;
     }
-    if (result[0] > 0) {
+    if (result[0] == 0) {
+        // `foreign_count` reaches 0, delete row.
+        return mozplace_delete(ctx, id, result[1]);
+    }
+    if (purge > 0) {
         return 0;
     }
-    // `foreign_count` reaches 0, delete row.
-    return mozplace_delete(ctx, id, result[1]);
+    return mozplace_purge(ctx, id);
 }
 
 static int
@@ -1470,6 +1540,33 @@ mozplace_insert (
 }
 
 static int
+mozplace_purge (
+    struct backend_ctx *ctx,
+    int64_t             id
+) {
+    int status = mozbm_purge_check(ctx, id);
+    if (status <= 0) {
+        return status;
+    }
+    status = mozbm_purge(ctx, id);
+    if (status < 0) {
+        return status;
+    }
+    int changes = status;
+
+    status = mozkw_purge(ctx, id);
+    if (status < 0) {
+        return status;
+    }
+    changes += status;
+
+    if (changes == 0) {
+        return 0;
+    }
+    return mozplace_delref(ctx, id, changes);
+}
+
+static int
 mozplace_update (
     struct backend_ctx *ctx,
     struct mozplace    *cols
@@ -1482,7 +1579,7 @@ mozplace_update (
     if (status < 0) {
         return status;
     }
-    status = mozplace_delref(ctx, cols->id);
+    status = mozplace_delref(ctx, cols->id, 1);
     if (status < 0) {
         return status;
     }
@@ -2000,7 +2097,7 @@ tag_entry_delete (
         return status;
     }
 
-    status = mozbm_delete(ctx, cols.id, false);
+    status = mozbm_delete(ctx, cols.id, false, false);
     if (status < 0) {
         return status;
     }
@@ -2175,8 +2272,7 @@ bookmark_do_list (
     "SELECT min(`b`.`id`), `k`.`id`, `k`.`keyword`" cols " " \
     "FROM `moz_keywords` `k` " join  \
     "JOIN `moz_bookmarks` `b` ON `k`.`place_id` = `b`.`fk` "  \
-    "WHERE `k`.`id` >= ?2 AND `b`.`title` IS NOT NULL "  \
-    "GROUP BY `k`.`place_id` ORDER BY `k`.`id`"
+    "WHERE `k`.`id` >= ?2 GROUP BY `k`.`place_id` ORDER BY `k`.`id`"
 #define BOOKMARK_LIST_KEYWORD     BOOKMARK_LIST_KEYWORD_(,)
 #define BOOKMARK_LIST_KEYWORD_EX  \
     BOOKMARK_LIST_KEYWORD_(", " BOOKMARK_LIST_EX_COLS_,  \
@@ -2268,8 +2364,7 @@ bookmark_do_lookup (
 #define PLACE_ID_BY_KEYWORD(val)  \
     "SELECT `place_id` FROM `moz_keywords` WHERE `keyword` = " val
 #define BOOKMARK_LOOKUP_PLACE_ID_(val)  \
-    BOOKMARK_LOOKUP_(, "`b`.`fk` = " val " AND `b`.`title` IS NOT NULL "  \
-        "ORDER BY `b`.`id` LIMIT 1")
+    BOOKMARK_LOOKUP_(, "`b`.`fk` = " val " ORDER BY `b`.`id` LIMIT 1")
 #define BOOKMARK_LOOKUP_KEYWORD_(val)  \
     BOOKMARK_LOOKUP_PLACE_ID_("(" PLACE_ID_BY_KEYWORD(val) ")")
 #define BOOKMARK_LOOKUP_KEYWORD  BOOKMARK_LOOKUP_KEYWORD_("?2")
@@ -3619,7 +3714,7 @@ bookmark_rename (
             status = (old_cols.place_id == 0) ? -ENOTDIR : -EISDIR;
             goto fail;
         }
-        status = mozbm_delete(ctx, new_cols.id, old_cols.place_id == 0);
+        status = mozbm_delete(ctx, new_cols.id, old_cols.place_id == 0, true);
         if (status < 0) {
             goto fail;
         }

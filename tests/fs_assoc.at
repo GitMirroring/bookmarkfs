@@ -57,6 +57,7 @@ ATX_CHECK_FS_NEW_ASSOC([eol], , [
             test ! -e "$atx_tags/$tag-2/$name-3"
             test ! -e "$atx_tags/$tag-3/$name-1"
             test ! -e "$atx_keywords/$keyword-3"
+            rmdir "$atx_tags/$tag-1" "$atx_tags/$tag-2" "$atx_tags/$tag-3"
         ])
     ])
 ])
