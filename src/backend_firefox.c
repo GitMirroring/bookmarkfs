@@ -3849,13 +3849,13 @@ bookmark_set (
     if (status < 0) {
         goto fail;
     }
+    if (xattr_id >= MOZBM_XATTR_START) {
+        goto end;
+    }
     if (bm_cols.place_id == 0) {
         // Attempting to update moz_places fields on a directory.
         status = -EPERM;
         goto fail;
-    }
-    if (xattr_id >= MOZBM_XATTR_START) {
-        goto end;
     }
 
     place_cols.id = bm_cols.place_id;
