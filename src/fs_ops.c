@@ -68,6 +68,8 @@
 
 #define FH_FLAG_DIRTY  ( 1u << 0 )
 #define FH_FLAG_FSCK   ( 1u << 1 )
+#define FH_FLAG_ISDIR  ( 1u << 2 )
+#define FH_FLAG_MTIME  ( 1u << 3 )
 
 #define SUBSYS_ID_BITS          ( 64 - BOOKMARKFS_BOOKMARK_TYPE_BITS )
 #define SUBSYS_ID_MASK          ( ((fuse_ino_t)1 << SUBSYS_ID_BITS) - 1 )
@@ -313,6 +315,7 @@ inval_dir (
     if (ctx.flags.readonly || !ctx.flags.exclusive) {
         return 0;
     }
+    debug_assert(fh->flags & FH_FLAG_ISDIR);
     if (fh->flags & FH_FLAG_DIRTY) {
         if (0 != inval_inode(ino)) {
             return -EIO;
@@ -436,6 +439,7 @@ bm_do_write (
     if (fh == NULL || !(fh->flags & FH_FLAG_DIRTY)) {
         return 0;
     }
+    debug_assert(!(fh->flags & FH_FLAG_ISDIR));
 
     size_t data_len = fh->data_len;
     if (ctx.flags.eol && fh->buf[data_len - 1] == '\n') {
@@ -447,16 +451,17 @@ bm_do_write (
         return status;
     }
 
-    struct timespec const times[2] = {
-        [1] = fh->mtime,
-    };
-    uint32_t set_flags = BOOKMARK_FLAG(SET_MTIME);
-    status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
-    if (status < 0) {
-        return status;
+    if (fh->flags & FH_FLAG_MTIME) {
+        struct timespec const times[2] = {
+            [1] = fh->mtime,
+        };
+        uint32_t set_flags = BOOKMARK_FLAG(SET_MTIME);
+        status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
+        if (status < 0) {
+            return status;
+        }
     }
-
-    fh->flags &= ~FH_FLAG_DIRTY;
+    fh->flags &= ~(FH_FLAG_DIRTY | FH_FLAG_MTIME);
     return 0;
 }
 
@@ -530,7 +535,7 @@ bm_fillstat (
         return;
     }
     struct fs_file_handle *fh = bm_fh_get(ino, NULL, NULL);
-    if (fh == NULL || !(fh->flags & FH_FLAG_DIRTY)) {
+    if (fh == NULL || !(fh->flags & FH_FLAG_MTIME)) {
         return;
     }
     // If file content changes locally, remote mtime no longer matters,
@@ -803,7 +808,7 @@ bm_open (
         if ((flags & O_ACCMODE) != O_RDONLY) {
             fh->data_len = 0;
             xgetrealtime(&fh->mtime);
-            fh->flags |= FH_FLAG_DIRTY;
+            fh->flags |= (FH_FLAG_DIRTY | FH_FLAG_MTIME);
         }
     }
 
@@ -836,7 +841,9 @@ bm_opendir (
         return status;
     }
 
-    bm_fh_new(ino);
+    struct fs_file_handle *fh = bm_fh_new(ino);
+    fh->flags |= FH_FLAG_ISDIR;
+
     // Do not cache tag and keyword dents, since a bookmark
     // delete or rename may have a side effect of changing them.
     switch (flags & BOOKMARKFS_BOOKMARK_TYPE_MASK) {
@@ -1076,6 +1083,7 @@ bm_setattr (
 
         struct fs_file_handle *fh = uint2ptr(fi->fh);
         debug_assert(fh == bm_fh_get(ino, NULL, NULL));
+        debug_assert(!(fh->flags & FH_FLAG_ISDIR));
 
         size_t new_len = stat_buf->st_size;
         if (new_len > ctx.file_max) {
@@ -1090,7 +1098,7 @@ bm_setattr (
         }
         fh->data_len = new_len;
         xgetrealtime(&fh->mtime);
-        fh->flags |= FH_FLAG_DIRTY;
+        fh->flags |= (FH_FLAG_DIRTY | FH_FLAG_MTIME);
     }
 
     if (mask & (TO_SET(ATIME, MTIME))) {
@@ -1119,6 +1127,11 @@ bm_setattr (
                 times[1] = stat_buf->st_mtim;
             }
             set_flags |= BOOKMARK_FLAG(SET_MTIME);
+
+            struct fs_file_handle *fh = bm_fh_get(ino, NULL, NULL);
+            if (fh != NULL && !(fh->flags & FH_FLAG_ISDIR)) {
+                fh->flags &= ~FH_FLAG_MTIME;
+            }
         }
         int status = BACKEND_CALL(bookmark_set, INODE_SUBSYS_ID(ino), NULL,
                 set_flags, times, 0);
@@ -1199,7 +1212,7 @@ bm_write (
     xgetrealtime(&fh->mtime);
     // We're tempted to free the cookie here, however,
     // that would make a read following a writeback always realloc the buffer.
-    fh->flags |= FH_FLAG_DIRTY;
+    fh->flags |= (FH_FLAG_DIRTY | FH_FLAG_MTIME);
 
     return send_reply(write, req, req_buf_len);
 }
