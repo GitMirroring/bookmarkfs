@@ -126,7 +126,7 @@ enum {
 };
 
 struct fs_file_handle {
-    uint64_t      id;
+    fuse_ino_t    ino;
     unsigned long hashcode;
 
     uint32_t refcount;
@@ -176,9 +176,8 @@ struct bm_read_ctx {
 };
 
 struct bm_readdir_ctx {
-    fuse_req_t  req;
-    uint64_t    id;
-    uint32_t    flags;
+    fuse_req_t req;
+    uint32_t   flags;
 
     size_t buf_len;
     size_t reply_len;
@@ -186,53 +185,54 @@ struct bm_readdir_ctx {
 
 // Forward declaration start
 #ifndef __FreeBSD__
-static int  bm_syncdir    (uint64_t, fuse_ino_t);
-static int  intfs_syncdir (unsigned, fuse_ino_t);
+static int  bm_syncdir    (fuse_ino_t);
+static int  intfs_syncdir (fuse_ino_t);
 static int  inval_dir     (fuse_ino_t, struct fs_file_handle *);
 static int  inval_inode   (fuse_ino_t);
 #endif  /* !defined(__FreeBSD__) */
 
-static int  bm_check       (uint64_t, struct bookmarkfs_fsck_data const *,
+static int  bm_check       (fuse_ino_t, struct bookmarkfs_fsck_data const *,
                             uint32_t, struct bm_check_ctx *, void *);
 static int  bm_check_cb    (void *, int, uint64_t, uint64_t, char const *);
-static int  bm_create      (uint64_t, char const *, int, struct stat *);
-static int  bm_delete      (uint64_t, char const *, uint32_t);
-static int  bm_do_write    (uint64_t, struct fs_file_handle *);
+static int  bm_create      (fuse_ino_t, char const *, int, struct stat *);
+static int  bm_delete      (fuse_ino_t, char const *, uint32_t);
+static int  bm_do_write    (fuse_ino_t, struct fs_file_handle *);
 static void bm_fh_free     (struct fs_file_handle *, long);
 static struct fs_file_handle * FUNCATTR_PURE
-            bm_fh_get      (uint64_t, unsigned long *, unsigned long *);
+            bm_fh_get      (fuse_ino_t, unsigned long *, unsigned long *);
 static struct fs_file_handle *
-            bm_fh_new      (uint64_t);
+            bm_fh_new      (fuse_ino_t);
 static void bm_fillstat    (struct bookmarkfs_bookmark_stat const *, int, bool,
                             struct stat *);
-static int  bm_free        (uint64_t, struct fuse_file_info const *);
-static int  bm_freedir     (uint64_t, fuse_ino_t, void *);
-static int  bm_getxattr    (fuse_req_t, uint64_t, char const *, size_t);
+static int  bm_free        (fuse_ino_t, struct fuse_file_info const *);
+static int  bm_freedir     (fuse_ino_t, void *);
+static int  bm_getxattr    (fuse_req_t, fuse_ino_t, char const *, size_t);
 static int  bm_getxattr_cb (void *, void const *, size_t);
-static int  bm_ioctl       (fuse_req_t, uint64_t, fuse_ino_t, unsigned,
-                            uint32_t, void const *, size_t, size_t, void *);
-static int  bm_lookup      (uint64_t, char const *, uint32_t, struct stat *);
-static int  bm_lsxattr     (uint64_t, char *, size_t, size_t *);
-static int  bm_mkdir       (uint64_t, char const *, int, struct stat *);
-static int  bm_open        (uint64_t, struct fuse_file_info *);
-static int  bm_opendir     (uint64_t, fuse_ino_t, uint32_t,
-                            struct fuse_file_info *);
-static int  bm_permute     (uint64_t, struct bookmarkfs_permd_data const *,
+static int  bm_ioctl       (fuse_req_t, fuse_ino_t, unsigned, uint32_t,
+                            void const *, size_t, size_t, void *);
+static int  bm_lookup      (fuse_ino_t, char const *, uint32_t, struct stat *);
+static int  bm_lsxattr     (fuse_ino_t, char *, size_t, size_t *);
+static int  bm_mkdir       (fuse_ino_t, char const *, int, struct stat *);
+static int  bm_open        (fuse_ino_t, struct fuse_file_info *);
+static int  bm_opendir     (fuse_ino_t, uint32_t, struct fuse_file_info *);
+static int  bm_permute     (fuse_ino_t, struct bookmarkfs_permd_data const *,
                             uint32_t);
-static int  bm_read        (fuse_req_t, uint64_t, size_t, off_t,
+static int  bm_read        (fuse_req_t, fuse_ino_t, size_t, off_t,
                             struct fs_file_handle *);
 static int  bm_read_cb     (void *, void const *, size_t);
-static int  bm_readdir     (fuse_req_t, uint64_t, size_t, off_t, uint32_t,
+static int  bm_readdir     (fuse_req_t, fuse_ino_t, size_t, off_t, uint32_t,
                             void *);
 static int  bm_readdir_cb  (void *, struct bookmarkfs_bookmark_entry const *);
-static int  bm_rename      (uint64_t, char const *, uint64_t, char const *,
+static int  bm_rename      (fuse_ino_t, char const *, fuse_ino_t, char const *,
                             uint32_t);
-static int  bm_rmxattr     (uint64_t, char const *);
-static int  bm_set_keyword (uint64_t, char const *, struct stat *);
-static int  bm_set_tag     (uint64_t, uint64_t, char const *, struct stat *);
-static int  bm_setattr     (uint64_t, int, bool, struct fuse_file_info const *,
+static int  bm_rmxattr     (fuse_ino_t, char const *);
+static int  bm_set_keyword (fuse_ino_t, char const *, struct stat *);
+static int  bm_set_tag     (fuse_ino_t, fuse_ino_t, char const *,
                             struct stat *);
-static int  bm_setxattr    (uint64_t, char const *, void const *, size_t, int);
+static int  bm_setattr     (fuse_ino_t, int, bool,
+                            struct fuse_file_info const *, struct stat *);
+static int  bm_setxattr    (fuse_ino_t, char const *, void const *, size_t,
+                            int);
 static int  bm_write       (fuse_req_t, int, char const *, size_t, off_t,
                             struct fs_file_handle *);
 static void do_delete      (fuse_req_t, fuse_ino_t, char const *, uint32_t);
@@ -242,22 +242,23 @@ static unsigned long
             fh_entry_hash  (void const *);
 static int  fh_entry_comp  (union hashmap_key, void const *);
 static bool has_access     (fuse_req_t, int);
-static int  intfs_create   (unsigned, char const *, int, struct stat *,
+static int  intfs_create   (fuse_ino_t, char const *, int, struct stat *,
                             struct fuse_file_info *);
-static int  intfs_delete   (unsigned, char const *, uint32_t);
-static int  intfs_freedir  (unsigned, fuse_ino_t, void *);
-static int  intfs_ioctl    (fuse_req_t, unsigned, fuse_ino_t, unsigned,
-                            void const *, size_t, size_t, void *);
-static int  intfs_link     (uint64_t, unsigned, char const *, struct stat *);
-static int  intfs_lookup   (unsigned, char const *, struct stat *);
-static int  intfs_lsxattr  (unsigned, char *, size_t, size_t *);
-static int  intfs_mkdir    (unsigned, char const *, struct stat *);
-static int  intfs_opendir  (unsigned, fuse_ino_t, struct fuse_file_info *);
-static int  intfs_readdir  (fuse_req_t, unsigned, size_t, off_t, uint32_t,
+static int  intfs_delete   (fuse_ino_t, char const *, uint32_t);
+static int  intfs_freedir  (fuse_ino_t, void *);
+static int  intfs_ioctl    (fuse_req_t, fuse_ino_t, unsigned, void const *,
+                            size_t, size_t, void *);
+static int  intfs_link     (fuse_ino_t, fuse_ino_t, char const *,
+                            struct stat *);
+static int  intfs_lookup   (fuse_ino_t, char const *, struct stat *);
+static int  intfs_lsxattr  (fuse_ino_t, char *, size_t, size_t *);
+static int  intfs_mkdir    (fuse_ino_t, char const *, struct stat *);
+static int  intfs_opendir  (fuse_ino_t, struct fuse_file_info *);
+static int  intfs_readdir  (fuse_req_t, fuse_ino_t, size_t, off_t, uint32_t,
                             void *);
+static int  intfs_rename   (fuse_ino_t, char const *, char const *, uint32_t);
 static bool is_xattr_name  (char const *);
 static int  reply_errcheck (int, char const *, int);
-static int  subsys_type    (fuse_ino_t, uint64_t *);
 static int  timespec_cmp   (struct timespec const *, struct timespec const *);
 // Forward declaration end
 
@@ -269,7 +270,6 @@ static struct fs_ctx ctx = {
 
 static int
 bm_syncdir (
-    uint64_t   UNUSED_VAR(id),
     fuse_ino_t ino
 ) {
     struct fs_file_handle *fh = bm_fh_get(ino, NULL, NULL);
@@ -278,26 +278,25 @@ bm_syncdir (
 
 static int
 intfs_syncdir (
-    unsigned   id,
     fuse_ino_t ino
 ) {
-    int64_t bm_id = 0;
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_BOOKMARKS:
-        bm_id = BOOKMARKS_ROOT_ID;
+        ino = BOOKMARKS_ROOT_ID;
         break;
 
       case INTFS_ID_TAGS:
-        bm_id = TAGS_ROOT_ID;
+        ino = TAGS_ROOT_ID;
         break;
 
       case INTFS_ID_KEYWORDS:
+        ino = 0;
         break;
 
       default:
         return 0;
     }
-    return bm_syncdir(bm_id, ino);
+    return bm_syncdir(ino);
 }
 
 /**
@@ -350,7 +349,7 @@ inval_inode (
 
 static int
 bm_check (
-    uint64_t                           parent_id,
+    fuse_ino_t                         parent,
     struct bookmarkfs_fsck_data const *data,
     uint32_t                           flags,
     struct bm_check_ctx               *ckctx,
@@ -364,8 +363,8 @@ bm_check (
         callback = bm_check_cb;
         ckctx->result = BOOKMARKFS_FSCK_RESULT_END;
     }
-    int status = BACKEND_CALL(bookmark_check, parent_id, data, flags, callback,
-            ckctx, &cookie);
+    int status = BACKEND_CALL(bookmark_check, INODE_SUBSYS_ID(parent), data,
+            flags, callback, ckctx, &cookie);
     if (status < 0) {
         return status;
     }
@@ -396,13 +395,14 @@ bm_check_cb (
 
 static int
 bm_create (
-    uint64_t     parent_id,
+    fuse_ino_t   parent,
     char const  *name,
     int          flags,
     struct stat *stat_buf
 ) {
     struct bookmarkfs_bookmark_stat stat;
-    int status = BACKEND_CALL(bookmark_create, parent_id, name, 0, &stat);
+    int status = BACKEND_CALL(bookmark_create, INODE_SUBSYS_ID(parent), name,
+            0, &stat);
     if (status < 0) {
         if (status != -EEXIST || (flags & O_EXCL)) {
             return status;
@@ -421,16 +421,16 @@ bm_create (
 
 static int
 bm_delete (
-    uint64_t    parent_id,
+    fuse_ino_t  parent,
     char const *name,
     uint32_t    flags
 ) {
-    return BACKEND_CALL(bookmark_delete, parent_id, name, flags);
+    return BACKEND_CALL(bookmark_delete, INODE_SUBSYS_ID(parent), name, flags);
 }
 
 static int
 bm_do_write (
-    uint64_t               id,
+    fuse_ino_t             ino,
     struct fs_file_handle *fh
 ) {
     if (fh == NULL || !(fh->flags & FH_FLAG_DIRTY)) {
@@ -441,6 +441,7 @@ bm_do_write (
     if (ctx.flags.eol && fh->buf[data_len - 1] == '\n') {
         --data_len;
     }
+    uint64_t id = INODE_SUBSYS_ID(ino);
     int status = BACKEND_CALL(bookmark_set, id, NULL, 0, fh->buf, data_len);
     if (status < 0) {
         return status;
@@ -470,25 +471,25 @@ bm_fh_free (
 
 static struct fs_file_handle *
 bm_fh_get (
-    uint64_t       id,
+    fuse_ino_t     ino,
     unsigned long *hashcode_ptr,
     unsigned long *entry_id_ptr
 ) {
-    unsigned long hashcode = hash_digest(&id, sizeof(id));
+    unsigned long hashcode = hash_digest(&ino, sizeof(ino));
     if (hashcode_ptr != NULL) {
         *hashcode_ptr = hashcode;
     }
 
-    union hashmap_key key = { .u64 = id };
+    union hashmap_key key = { .u64 = ino };
     return hashmap_search(ctx.fh_map, key, hashcode, entry_id_ptr);
 }
 
 static struct fs_file_handle *
 bm_fh_new (
-    uint64_t id
+    fuse_ino_t ino
 ) {
     unsigned long hashcode;
-    struct fs_file_handle *fh = bm_fh_get(id, &hashcode, NULL);
+    struct fs_file_handle *fh = bm_fh_get(ino, &hashcode, NULL);
     if (fh != NULL) {
         ++fh->refcount;
         return fh;
@@ -496,7 +497,7 @@ bm_fh_new (
 
     fh = xmalloc(sizeof(*fh));
     *fh = (struct fs_file_handle) {
-        .id       = id,
+        .ino      = ino,
         .hashcode = hashcode,
         .refcount = 1,
     };
@@ -528,7 +529,7 @@ bm_fillstat (
     if (!with_local) {
         return;
     }
-    struct fs_file_handle *fh = bm_fh_get(src->id, NULL, NULL);
+    struct fs_file_handle *fh = bm_fh_get(ino, NULL, NULL);
     if (fh == NULL || !(fh->flags & FH_FLAG_DIRTY)) {
         return;
     }
@@ -543,7 +544,7 @@ bm_fillstat (
 
 static int
 bm_free (
-    uint64_t                     id,
+    fuse_ino_t                   ino,
     struct fuse_file_info const *fi
 ) {
     struct fs_file_handle *fh = uint2ptr(fi->fh);
@@ -551,12 +552,12 @@ bm_free (
         return 0;
     }
 
-    int status = bm_do_write(id, fh);
+    int status = bm_do_write(ino, fh);
 #ifndef __FreeBSD__
     if (status != 0) {
         // When writeback fails, bookmark retains original data.
         // The kernel should re-fetch it from the server.
-        if (0 != inval_inode(SUBSYS_NODEID(id, SUBSYS_TYPE_BOOKMARK))) {
+        if (0 != inval_inode(ino)) {
             status = -EIO;
         }
     }
@@ -573,7 +574,6 @@ bm_free (
 
 static int
 bm_freedir (
-    uint64_t    UNUSED_VAR(id),
     fuse_ino_t  ino,
     void       *cookie
 ) {
@@ -599,7 +599,7 @@ bm_freedir (
 static int
 bm_getxattr (
     fuse_req_t   req,
-    uint64_t     id,
+    fuse_ino_t   ino,
     char const  *name,
     size_t       buf_max
 ) {
@@ -612,7 +612,8 @@ bm_getxattr (
         .req     = req,
         .buf_max = buf_max,
     };
-    return BACKEND_CALL(bookmark_get, id, name, bm_getxattr_cb, &gctx, NULL);
+    return BACKEND_CALL(bookmark_get, INODE_SUBSYS_ID(ino), name,
+            bm_getxattr_cb, &gctx, NULL);
 }
 
 static int
@@ -638,7 +639,6 @@ bm_getxattr_cb (
 static int
 bm_ioctl (
     fuse_req_t  req,
-    uint64_t    id,
     fuse_ino_t  ino,
     unsigned    cmd,
     uint32_t    flags,
@@ -653,7 +653,7 @@ bm_ioctl (
 
     switch (cmd) {
       case BOOKMARKFS_IOC_FSCK_REWIND:
-        result = bm_check(id, NULL, flags, NULL, cookie);
+        result = bm_check(ino, NULL, flags, NULL, cookie);
         if (result == 0) {
             fh->flags &= ~FH_FLAG_FSCK;
         }
@@ -667,7 +667,7 @@ bm_ioctl (
         if ((fh->flags & FH_FLAG_FSCK) && fh->cookie != cookie) {
             return -EBUSY;
         }
-        result = bm_check(id, NULL, flags, obuf, cookie);
+        result = bm_check(ino, NULL, flags, obuf, cookie);
         if (result < 0) {
             break;
         }
@@ -689,7 +689,7 @@ bm_ioctl (
         if (!has_access(req, W_OK | X_OK)) {
             return -EACCES;
         }
-        result = bm_check(id, ibuf, flags, obuf, cookie);
+        result = bm_check(ino, ibuf, flags, obuf, cookie);
         if (result == BOOKMARKFS_FSCK_RESULT_END) {
             fh->flags |= FH_FLAG_DIRTY;
             obuf_len = 0;
@@ -704,7 +704,7 @@ bm_ioctl (
         if (!has_access(req, W_OK | X_OK)) {
             return -EACCES;
         }
-        result = bm_permute(id, ibuf, flags);
+        result = bm_permute(ino, ibuf, flags);
         if (result < 0) {
             return result;
         }
@@ -719,11 +719,12 @@ bm_ioctl (
 
 static int
 bm_lookup (
-    uint64_t     parent_id,
+    fuse_ino_t   parent,
     char const  *name,
     uint32_t     flags,
     struct stat *stat_buf
 ) {
+    uint64_t parent_id = INODE_SUBSYS_ID(parent);
     struct bookmarkfs_bookmark_stat stat;
     int status = BACKEND_CALL(bookmark_lookup, parent_id, name, flags, &stat);
     if (status < 0) {
@@ -731,9 +732,7 @@ bm_lookup (
     }
 
     int subsys_type = SUBSYS_TYPE_BOOKMARK;
-    if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, TAG)
-            && parent_id == ctx.tags_root_id
-    ) {
+    if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, TAG) && parent_id == TAGS_ROOT_ID) {
         subsys_type = SUBSYS_TYPE_TAG;
     }
     bm_fillstat(&stat, subsys_type, true, stat_buf);
@@ -742,10 +741,10 @@ bm_lookup (
 
 static int
 bm_lsxattr (
-    uint64_t  UNUSED_VAR(id),
-    char     *buf,
-    size_t    buf_max,
-    size_t   *buf_len_ptr
+    fuse_ino_t  UNUSED_VAR(ino),
+    char       *buf,
+    size_t      buf_max,
+    size_t     *buf_len_ptr
 ) {
     size_t buf_len    = 0;
     size_t prefix_len = strlen(BOOKMARKFS_XATTR_PREFIX);
@@ -770,7 +769,7 @@ bm_lsxattr (
 
 static int
 bm_mkdir (
-    uint64_t     parent_id,
+    fuse_ino_t   parent,
     char const  *name,
     int          subsys_type,
     struct stat *stat_buf
@@ -780,7 +779,8 @@ bm_mkdir (
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
     }
     struct bookmarkfs_bookmark_stat stat;
-    int status = BACKEND_CALL(bookmark_create, parent_id, name, flags, &stat);
+    int status = BACKEND_CALL(bookmark_create, INODE_SUBSYS_ID(parent), name,
+            flags, &stat);
     if (status < 0) {
         return status;
     }
@@ -791,10 +791,10 @@ bm_mkdir (
 
 static int
 bm_open (
-    uint64_t               id,
+    fuse_ino_t             ino,
     struct fuse_file_info *fi
 ) {
-    struct fs_file_handle *fh = bm_fh_new(id);
+    struct fs_file_handle *fh = bm_fh_new(ino);
 
     int flags = fi->flags;
     if (flags & O_TRUNC) {
@@ -824,11 +824,11 @@ bm_open (
 
 static int
 bm_opendir (
-    uint64_t               id,
     fuse_ino_t             ino,
     uint32_t               flags,
     struct fuse_file_info *fi
 ) {
+    uint64_t id = INODE_SUBSYS_ID(ino);
     void *cookie = NULL;
     int status = BACKEND_CALL(bookmark_list, id, 0, flags, NULL, NULL,
             &cookie);
@@ -841,7 +841,7 @@ bm_opendir (
     // delete or rename may have a side effect of changing them.
     switch (flags & BOOKMARKFS_BOOKMARK_TYPE_MASK) {
       case BOOKMARKFS_BOOKMARK_TYPE(TAG):
-        if (id != ctx.tags_root_id) {
+        if (id != TAGS_ROOT_ID) {
             break;
         }
         // fallthrough
@@ -856,18 +856,18 @@ bm_opendir (
 
 static int
 bm_permute (
-    uint64_t                            id,
+    fuse_ino_t                          ino,
     struct bookmarkfs_permd_data const *permd_data,
     uint32_t                            flags
 ) {
-    return BACKEND_CALL(bookmark_permute, id, permd_data->op,
+    return BACKEND_CALL(bookmark_permute, INODE_SUBSYS_ID(ino), permd_data->op,
             permd_data->name1, permd_data->name2, flags);
 }
 
 static int
 bm_read (
     fuse_req_t             req,
-    uint64_t               id,
+    fuse_ino_t             ino,
     size_t                 buf_max,
     off_t                  off,
     struct fs_file_handle *fh
@@ -884,8 +884,8 @@ bm_read (
         cookie_ptr = NULL;
     }
     struct bm_read_ctx rctx = { .fh = fh };
-    int result = BACKEND_CALL(bookmark_get, id, NULL, bm_read_cb, &rctx,
-            cookie_ptr);
+    int result = BACKEND_CALL(bookmark_get, INODE_SUBSYS_ID(ino), NULL,
+            bm_read_cb, &rctx, cookie_ptr);
     if (result < 0) {
         if (result != -EAGAIN && result != -ESTALE) {
             return result;
@@ -938,7 +938,7 @@ bm_read_cb (
 static int
 bm_readdir (
     fuse_req_t  req,
-    uint64_t    id,
+    fuse_ino_t  ino,
     size_t      buf_max,
     off_t       off,
     uint32_t    flags,
@@ -946,10 +946,13 @@ bm_readdir (
 ) {
     struct bm_readdir_ctx rctx = {
         .req     = req,
-        .id      = id,
         .flags   = flags,
         .buf_len = buf_max,
     };
+    uint64_t id = INODE_SUBSYS_ID(ino);
+    if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, TAG) && id != TAGS_ROOT_ID) {
+        rctx.flags &= ~BOOKMARKFS_BOOKMARK_TYPE(TAG);
+    }
     int status = BACKEND_CALL(bookmark_list, id, off, flags, bm_readdir_cb,
             &rctx, &cookie);
     if (status < 0) {
@@ -966,21 +969,18 @@ bm_readdir_cb (
 ) {
     struct bm_readdir_ctx *rctx = user_data;
 
-    bool is_readdirplus = rctx->flags & BOOKMARK_FLAG(LIST_WITHSTAT);
-    bool is_tag         = BOOKMARKFS_BOOKMARK_IS_TYPE(rctx->flags, TAG);
-
-    char   *buf     = ctx.buf       + rctx->reply_len;
-    size_t  buf_len = rctx->buf_len - rctx->reply_len;
-
-    struct fuse_entry_param ep = STRUCT_FUSE_ENTRY_PARAM_INIT;
     int subsys_type = SUBSYS_TYPE_BOOKMARK;
-    if (is_tag && rctx->id == ctx.tags_root_id) {
+    if (BOOKMARKFS_BOOKMARK_IS_TYPE(rctx->flags, TAG)) {
         subsys_type = SUBSYS_TYPE_TAG;
     }
+    bool is_readdirplus = rctx->flags & BOOKMARK_FLAG(LIST_WITHSTAT);
+    struct fuse_entry_param ep = STRUCT_FUSE_ENTRY_PARAM_INIT;
     bm_fillstat(&entry->stat, subsys_type, is_readdirplus, &ep.attr);
     ep.ino = ep.attr.st_ino;
 
     size_t entry_size;
+    char   *buf     = ctx.buf       + rctx->reply_len;
+    size_t  buf_len = rctx->buf_len - rctx->reply_len;
     if (is_readdirplus) {
         entry_size = fuse_add_direntry_plus(rctx->req, buf, buf_len,
                 entry->name, &ep, entry->off);
@@ -997,25 +997,19 @@ bm_readdir_cb (
 
 static int
 bm_rename (
-    uint64_t    parent_id,
+    fuse_ino_t  parent,
     char const *name,
-    uint64_t    new_parent_id,
+    fuse_ino_t  new_parent,
     char const *new_name,
     uint32_t    flags
 ) {
-    if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, TAG)) {
-        // Only allow renaming tag directories.
-        if (parent_id != TAGS_ROOT_ID || parent_id != new_parent_id) {
-            return -EPERM;
-        }
-    }
-    return BACKEND_CALL(bookmark_rename, parent_id, name, new_parent_id,
-            new_name, flags);
+    return BACKEND_CALL(bookmark_rename, INODE_SUBSYS_ID(parent), name,
+            INODE_SUBSYS_ID(new_parent), new_name, flags);
 }
 
 static int
 bm_rmxattr (
-    uint64_t    UNUSED_VAR(id),
+    fuse_ino_t  UNUSED_VAR(ino),
     char const *name
 ) {
     if (!is_xattr_name(name)) {
@@ -1026,12 +1020,12 @@ bm_rmxattr (
 
 static int
 bm_set_keyword (
-    uint64_t     id,
+    fuse_ino_t   ino,
     char const  *keyword,
     struct stat *stat_buf
 ) {
     struct bookmarkfs_bookmark_stat stat;
-    stat.id = id;
+    stat.id = INODE_SUBSYS_ID(ino);
     int status = BACKEND_CALL(bookmark_create, 0, keyword,
             BOOKMARKFS_BOOKMARK_TYPE(KEYWORD), &stat);
     if (status < 0) {
@@ -1044,15 +1038,15 @@ bm_set_keyword (
 
 static int
 bm_set_tag (
-    uint64_t     id,
-    uint64_t     new_parent_id,
+    fuse_ino_t   ino,
+    fuse_ino_t   new_parent,
     char const  *new_name,
     struct stat *stat_buf
 ) {
     struct bookmarkfs_bookmark_stat stat;
-    stat.id = id;
-    int status = BACKEND_CALL(bookmark_create, new_parent_id, new_name,
-            BOOKMARKFS_BOOKMARK_TYPE(TAG), &stat);
+    stat.id = INODE_SUBSYS_ID(ino);
+    int status = BACKEND_CALL(bookmark_create, INODE_SUBSYS_ID(new_parent),
+            new_name, BOOKMARKFS_BOOKMARK_TYPE(TAG), &stat);
     if (status < 0) {
         return status;
     }
@@ -1063,7 +1057,7 @@ bm_set_tag (
 
 static int
 bm_setattr (
-    uint64_t                     id,
+    fuse_ino_t                   ino,
     int                          mask,
     bool                         is_tag,
     struct fuse_file_info const *fi,
@@ -1081,7 +1075,7 @@ bm_setattr (
         debug_assert(!is_tag);
 
         struct fs_file_handle *fh = uint2ptr(fi->fh);
-        debug_assert(fh == bm_fh_get(id, NULL, NULL));
+        debug_assert(fh == bm_fh_get(ino, NULL, NULL));
 
         size_t new_len = stat_buf->st_size;
         if (new_len > ctx.file_max) {
@@ -1126,7 +1120,8 @@ bm_setattr (
             }
             set_flags |= BOOKMARK_FLAG(SET_MTIME);
         }
-        int status = BACKEND_CALL(bookmark_set, id, NULL, set_flags, times, 0);
+        int status = BACKEND_CALL(bookmark_set, INODE_SUBSYS_ID(ino), NULL,
+                set_flags, times, 0);
         if (status < 0) {
             return status;
         }
@@ -1138,12 +1133,12 @@ bm_setattr (
         lookup_flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
     }
     *stat_buf = (struct stat) STRUCT_STAT_INIT;
-    return bm_lookup(id, NULL, lookup_flags, stat_buf);
+    return bm_lookup(ino, NULL, lookup_flags, stat_buf);
 }
 
 static int
 bm_setxattr (
-    uint64_t    id,
+    fuse_ino_t  ino,
     char const *name,
     void const *val,
     size_t      val_len,
@@ -1161,7 +1156,8 @@ bm_setxattr (
 #endif
 
     name += strlen(BOOKMARKFS_XATTR_PREFIX);
-    return BACKEND_CALL(bookmark_set, id, name, 0, val, val_len);
+    return BACKEND_CALL(bookmark_set, INODE_SUBSYS_ID(ino), name, 0, val,
+            val_len);
 }
 
 static int
@@ -1219,14 +1215,14 @@ do_delete (
 
     switch (INODE_SUBSYS_TYPE(parent)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_delete(INODE_SUBSYS_ID(parent), name, flags);
+        status = intfs_delete(parent, name, flags);
         break;
 
       case SUBSYS_TYPE_TAG:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_delete(INODE_SUBSYS_ID(parent), name, flags);
+        status = bm_delete(parent, name, flags);
         break;
     }
 
@@ -1256,16 +1252,14 @@ do_readdir (
     void *cookie = uint2ptr(fi->fh);
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_readdir(req, INODE_SUBSYS_ID(ino), buf_max, off, flags,
-                cookie);
+        status = intfs_readdir(req, ino, buf_max, off, flags, cookie);
         break;
 
       case SUBSYS_TYPE_TAG:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_readdir(req, INODE_SUBSYS_ID(ino), buf_max, off, flags,
-                cookie);
+        status = bm_readdir(req, ino, buf_max, off, flags, cookie);
         break;
     }
     if (status < 0) {
@@ -1290,10 +1284,7 @@ fh_entry_comp (
 ) {
     struct fs_file_handle const *fh = entry;
 
-    if (key.u64 != fh->id) {
-        return -1;
-    }
-    return 0;
+    return key.u64 == fh->ino ? 0 : -1;
 }
 
 static bool
@@ -1324,7 +1315,7 @@ has_access (
 
 static int
 intfs_create (
-    unsigned               parent_id,
+    fuse_ino_t             parent,
     char const            *name,
     int                    flags,
     struct stat           *stat_buf,
@@ -1332,13 +1323,14 @@ intfs_create (
 ) {
     int status = -EPERM;
 
-    switch (parent_id) {
+    switch (parent) {
       case INTFS_ID_BOOKMARKS:
         status = bm_create(BOOKMARKS_ROOT_ID, name, flags, stat_buf);
         if (status < 0) {
             break;
         }
-        status = bm_open(INODE_SUBSYS_ID(stat_buf->st_ino), fi);
+        status = bm_open(SUBSYS_NODEID(stat_buf->st_ino, SUBSYS_TYPE_BOOKMARK),
+                fi);
         break;
     }
     return status;
@@ -1346,58 +1338,58 @@ intfs_create (
 
 static int
 intfs_delete (
-    unsigned    parent_id,
+    fuse_ino_t  parent,
     char const *name,
     uint32_t    flags
 ) {
-    int status = -EPERM;
-
-    int64_t bm_parent_id = BOOKMARKS_ROOT_ID;
-    switch (parent_id) {
-      case INTFS_ID_TAGS:
-        flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
-        bm_parent_id = TAGS_ROOT_ID;
-        // fallthrough
+    switch (parent) {
       case INTFS_ID_BOOKMARKS:
-        status = bm_delete(bm_parent_id, name, flags);
+        parent = BOOKMARKS_ROOT_ID;
+        break;
+
+      case INTFS_ID_TAGS:
+        parent = TAGS_ROOT_ID;
+        flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         break;
 
       case INTFS_ID_KEYWORDS:
-        status = bm_delete(0, name, BOOKMARKFS_BOOKMARK_TYPE(KEYWORD));
+        parent = 0;
+        flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
         break;
+
+      default:
+        return -EPERM;
     }
-    return status;
+    return bm_delete(parent, name, flags);
 }
 
 static int
 intfs_freedir (
-    unsigned    id,
     fuse_ino_t  ino,
     void       *cookie
 ) {
-    int64_t bm_id = 0;
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_BOOKMARKS:
-        bm_id = BOOKMARKS_ROOT_ID;
+        ino = BOOKMARKS_ROOT_ID;
         break;
 
       case INTFS_ID_TAGS:
-        bm_id = TAGS_ROOT_ID;
+        ino = TAGS_ROOT_ID;
         break;
 
       case INTFS_ID_KEYWORDS:
+        ino = 0;
         break;
 
       default:
         return 0;
     }
-    return bm_freedir(bm_id, ino, cookie);
+    return bm_freedir(ino, cookie);
 }
 
 static int
 intfs_ioctl (
     fuse_req_t  req,
-    unsigned    id,
     fuse_ino_t  ino,
     unsigned    cmd,
     void const *ibuf,
@@ -1405,41 +1397,40 @@ intfs_ioctl (
     size_t      obuf_len,
     void       *cookie
 ) {
-    uint64_t bm_id = 0;
     uint32_t flags = 0;
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_BOOKMARKS:
-        bm_id = BOOKMARKS_ROOT_ID;
+        ino = BOOKMARKS_ROOT_ID;
         break;
 
       case INTFS_ID_TAGS:
-        bm_id = TAGS_ROOT_ID;
+        ino = TAGS_ROOT_ID;
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         break;
 
       case INTFS_ID_KEYWORDS:
+        ino = 0;
         flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
         break;
 
       default:
         return -ENOTTY;
     }
-    return bm_ioctl(req, bm_id, ino, cmd, flags, ibuf, ibuf_len, obuf_len,
-            cookie);
+    return bm_ioctl(req, ino, cmd, flags, ibuf, ibuf_len, obuf_len, cookie);
 }
 
 static int
 intfs_link (
-    uint64_t     id,
-    unsigned     new_parent_id,
+    fuse_ino_t   ino,
+    fuse_ino_t   new_parent,
     char const  *new_name,
     struct stat *stat_buf
 ) {
     int status = -EPERM;
 
-    switch (new_parent_id) {
+    switch (new_parent) {
       case INTFS_ID_KEYWORDS:
-        status = bm_set_keyword(id, new_name, stat_buf);
+        status = bm_set_keyword(ino, new_name, stat_buf);
         break;
     }
     return status;
@@ -1447,13 +1438,13 @@ intfs_link (
 
 static int
 intfs_lookup (
-    unsigned     parent_id,
+    fuse_ino_t   parent,
     char const  *name,
     struct stat *stat_buf
 ) {
     int status = -ENOENT;
 
-    switch (parent_id) {
+    switch (parent) {
       case INTFS_ID_ROOT:
         if (name == NULL) {
             stat_buf->st_mode = FS_FILEMODE_ROOT;
@@ -1461,8 +1452,8 @@ intfs_lookup (
         }
 #define INTFS_ENTRY(which, id, flags, cond)                 \
         else if (0 == strcmp(name, INTFS_NAME_##which)) {   \
-            parent_id = INTFS_ID_##which;                   \
-            name      = NULL;                               \
+            parent = INTFS_ID_##which;                      \
+            name   = NULL;                                  \
             /* fallthrough */                               \
       case INTFS_ID_##which:                                \
             if (!(cond)) {                                  \
@@ -1482,87 +1473,90 @@ intfs_lookup (
         return status;
     }
     if (name == NULL) {
-        stat_buf->st_ino = parent_id;
+        stat_buf->st_ino = parent;
     }
     return 0;
 }
 
 static int
 intfs_lsxattr (
-    unsigned  id,
-    char     *buf,
-    size_t    buf_max,
-    size_t   *buf_len_ptr
+    fuse_ino_t  ino,
+    char       *buf,
+    size_t      buf_max,
+    size_t     *buf_len_ptr
 ) {
     int status = 0;
 
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_BOOKMARKS:
         status = bm_lsxattr(BOOKMARKS_ROOT_ID, buf, buf_max, buf_len_ptr);
         break;
     }
-
     return status;
 }
 
 static int
 intfs_mkdir (
-    unsigned     parent_id,
+    fuse_ino_t   parent,
     char const  *name,
     struct stat *stat_buf
 ) {
-    int status = -EACCES;
-
-    switch (parent_id) {
+    int subsys_type = SUBSYS_TYPE_BOOKMARK;
+    switch (parent) {
       case INTFS_ID_BOOKMARKS:
-        status = bm_mkdir(BOOKMARKS_ROOT_ID, name, SUBSYS_TYPE_BOOKMARK,
-                stat_buf);
+        parent = BOOKMARKS_ROOT_ID;
         break;
 
       case INTFS_ID_TAGS:
-        status = bm_mkdir(TAGS_ROOT_ID, name, SUBSYS_TYPE_TAG, stat_buf);
+        parent      = TAGS_ROOT_ID;
+        subsys_type = SUBSYS_TYPE_TAG;
         break;
+
+      default:
+        return -EACCES;
     }
-    return status;
+    return bm_mkdir(parent, name, subsys_type, stat_buf);
 }
 
 static int
 intfs_opendir (
-    unsigned               id,
     fuse_ino_t             ino,
     struct fuse_file_info *fi
 ) {
-    uint64_t bm_id = BOOKMARKS_ROOT_ID;
     uint32_t flags = 0;
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_ROOT:
         fi->cache_readdir = 1;
         fi->keep_cache    = 1;
         return 0;
 
+      case INTFS_ID_BOOKMARKS:
+        ino = BOOKMARKS_ROOT_ID;
+        break;
+
       case INTFS_ID_TAGS:
+        ino = TAGS_ROOT_ID;
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
-        bm_id = TAGS_ROOT_ID;
         break;
 
       case INTFS_ID_KEYWORDS:
+        ino = 0;
         flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
-        bm_id = 0;
         break;
     }
-    return bm_opendir(bm_id, ino, flags, fi);
+    return bm_opendir(ino, flags, fi);
 }
 
 static int
 intfs_readdir (
     fuse_req_t  req,
-    unsigned    id,
+    fuse_ino_t  ino,
     size_t      buf_max,
     off_t       off,
     uint32_t    flags,
     void       *cookie
 ) {
-    switch (id) {
+    switch (ino) {
       case INTFS_ID_BOOKMARKS:
         return bm_readdir(req, BOOKMARKS_ROOT_ID, buf_max, off, flags, cookie);
 
@@ -1574,7 +1568,7 @@ intfs_readdir (
         flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
         return bm_readdir(req, 0, buf_max, off, flags, cookie);
     }
-    debug_assert(id == INTFS_ID_ROOT);
+    debug_assert(ino == INTFS_ID_ROOT);
 
     bool    is_readdirplus = flags & BOOKMARK_FLAG(LIST_WITHSTAT);
     char   *reply_buf      = ctx.buf;
@@ -1633,6 +1627,34 @@ intfs_readdir (
     return send_reply(buf, req, reply_buf - reply_size, reply_size);
 }
 
+static int
+intfs_rename (
+    fuse_ino_t  parent,
+    char const *name,
+    char const *new_name,
+    uint32_t    flags
+) {
+    switch (parent) {
+      case INTFS_ID_BOOKMARKS:
+        parent = BOOKMARKS_ROOT_ID;
+        break;
+
+      case INTFS_ID_TAGS:
+        parent = TAGS_ROOT_ID;
+        flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
+        break;
+
+      case INTFS_ID_KEYWORDS:
+        parent = 0;
+        flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
+        break;
+
+      default:
+        return -EPERM;
+    }
+    return bm_rename(parent, name, parent, new_name, flags);
+}
+
 static bool
 is_xattr_name (
     char const *name
@@ -1666,32 +1688,6 @@ reply_errcheck (
         log_printf("%d: fuse_reply_%s(): %s", line, name, xstrerror(-err));
     }
     return 0;
-}
-
-static int
-subsys_type (
-    fuse_ino_t  ino,
-    uint64_t   *subsys_id_ptr
-) {
-    int      subsys_type = INODE_SUBSYS_TYPE(ino);
-    uint64_t subsys_id   = INODE_SUBSYS_ID(ino);
-    if (subsys_type != SUBSYS_TYPE_INTERNAL) {
-        *subsys_id_ptr = subsys_id;
-        return subsys_type;
-    }
-
-    switch (subsys_id) {
-      case INTFS_ID_BOOKMARKS:
-        *subsys_id_ptr = BOOKMARKS_ROOT_ID;
-        return SUBSYS_TYPE_BOOKMARK;
-
-      case INTFS_ID_TAGS:
-        *subsys_id_ptr = TAGS_ROOT_ID;
-        return SUBSYS_TYPE_TAG;
-
-      default:
-        return -1;
-    }
 }
 
 static int
@@ -1737,10 +1733,10 @@ fs_init_metadata (
     char const *xattr_names
 ) {
     if (bookmarks_root_id != UINT64_MAX) {
-        ctx.bookmarks_root_id = bookmarks_root_id;
+        BOOKMARKS_ROOT_ID = bookmarks_root_id;
     }
     if (tags_root_id != UINT64_MAX) {
-        ctx.tags_root_id = tags_root_id;
+        TAGS_ROOT_ID = tags_root_id;
     }
     if (xattr_names != NULL) {
         ctx.xattr_names = xattr_names;
@@ -1769,16 +1765,15 @@ fs_op_create (
     struct fuse_entry_param ep = STRUCT_FUSE_ENTRY_PARAM_INIT;
     switch (INODE_SUBSYS_TYPE(parent)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_create(INODE_SUBSYS_ID(parent), name, fi->flags,
-                &ep.attr, fi);
+        status = intfs_create(parent, name, fi->flags, &ep.attr, fi);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_create(INODE_SUBSYS_ID(parent), name, fi->flags, &ep.attr);
+        status = bm_create(parent, name, fi->flags, &ep.attr);
         if (status < 0) {
             break;
         }
-        status = bm_open(INODE_SUBSYS_ID(ep.attr.st_ino), fi);
+        status = bm_open(ep.attr.st_ino, fi);
         break;
     }
     if (status < 0) {
@@ -1813,7 +1808,7 @@ fs_op_fsync (
     struct fs_file_handle *fh = uint2ptr(fi->fh);
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_do_write(INODE_SUBSYS_ID(ino), fh);
+        status = bm_do_write(ino, fh);
         break;
     }
     if (status < 0) {
@@ -1841,11 +1836,11 @@ fs_op_fsyncdir (
     switch (INODE_SUBSYS_TYPE(ino)) {
 #ifndef __FreeBSD__
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_syncdir(INODE_SUBSYS_ID(ino), ino);
+        status = intfs_syncdir(ino);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_syncdir(INODE_SUBSYS_ID(ino), ino);
+        status = bm_syncdir(ino);
         break;
 #endif
     }
@@ -1871,14 +1866,14 @@ fs_op_getattr (
     struct stat stat_buf = STRUCT_STAT_INIT;
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_lookup(INODE_SUBSYS_ID(ino), NULL, &stat_buf);
+        status = intfs_lookup(ino, NULL, &stat_buf);
         break;
 
       case SUBSYS_TYPE_TAG:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_lookup(INODE_SUBSYS_ID(ino), NULL, flags, &stat_buf);
+        status = bm_lookup(ino, NULL, flags, &stat_buf);
         break;
     }
     if (status < 0) {
@@ -1900,7 +1895,7 @@ fs_op_getxattr (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_getxattr(req, INODE_SUBSYS_ID(ino), name, buf_max);
+        status = bm_getxattr(req, ino, name, buf_max);
         break;
     }
     if (status < 0) {
@@ -1962,13 +1957,11 @@ fs_op_ioctl (
     void *cookie = uint2ptr(fi->fh);
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_ioctl(req, INODE_SUBSYS_ID(ino), ino, cmd, ibuf,
-                ibuf_len, obuf_len, cookie);
+        status = intfs_ioctl(req, ino, cmd, ibuf, ibuf_len, obuf_len, cookie);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_ioctl(req, INODE_SUBSYS_ID(ino), ino, cmd, 0, ibuf,
-                ibuf_len, obuf_len, cookie);
+        status = bm_ioctl(req, ino, cmd, 0, ibuf, ibuf_len, obuf_len, cookie);
         break;
     }
     if (status < 0) {
@@ -1993,13 +1986,11 @@ fs_op_link (
     struct fuse_entry_param ep = STRUCT_FUSE_ENTRY_PARAM_INIT;
     switch (INODE_SUBSYS_TYPE(new_parent)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_link(INODE_SUBSYS_ID(ino), INODE_SUBSYS_ID(new_parent),
-                new_name, &ep.attr);
+        status = intfs_link(ino, new_parent, new_name, &ep.attr);
         break;
 
       case SUBSYS_TYPE_TAG:
-        status = bm_set_tag(INODE_SUBSYS_ID(ino), INODE_SUBSYS_ID(new_parent),
-                new_name, &ep.attr);
+        status = bm_set_tag(ino, new_parent, new_name, &ep.attr);
         break;
     }
     if (status < 0) {
@@ -2028,11 +2019,11 @@ fs_op_listxattr (
     size_t  buf_len = 0;
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_lsxattr(INODE_SUBSYS_ID(ino), buf, buf_max, &buf_len);
+        status = intfs_lsxattr(ino, buf, buf_max, &buf_len);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_lsxattr(INODE_SUBSYS_ID(ino), buf, buf_max, &buf_len);
+        status = bm_lsxattr(ino, buf, buf_max, &buf_len);
         break;
     }
     if (status < 0) {
@@ -2061,14 +2052,14 @@ fs_op_lookup (
     switch (INODE_SUBSYS_TYPE(parent)) {
       case SUBSYS_TYPE_INTERNAL:
         ep.entry_timeout = FS_ENTRY_TIMEOUT_MAX;
-        status = intfs_lookup(INODE_SUBSYS_ID(parent), name, &ep.attr);
+        status = intfs_lookup(parent, name, &ep.attr);
         break;
 
       case SUBSYS_TYPE_TAG:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_lookup(INODE_SUBSYS_ID(parent), name, flags, &ep.attr);
+        status = bm_lookup(parent, name, flags, &ep.attr);
         break;
     }
     if (status < 0) {
@@ -2092,12 +2083,11 @@ fs_op_mkdir (
     struct fuse_entry_param ep = STRUCT_FUSE_ENTRY_PARAM_INIT;
     switch (INODE_SUBSYS_TYPE(parent)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_mkdir(INODE_SUBSYS_ID(parent), name, &ep.attr);
+        status = intfs_mkdir(parent, name, &ep.attr);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_mkdir(INODE_SUBSYS_ID(parent), name, SUBSYS_TYPE_BOOKMARK,
-                &ep.attr);
+        status = bm_mkdir(parent, name, SUBSYS_TYPE_BOOKMARK, &ep.attr);
         break;
     }
     if (status < 0) {
@@ -2119,7 +2109,7 @@ fs_op_open (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_open(INODE_SUBSYS_ID(ino), fi);
+        status = bm_open(ino, fi);
         break;
     }
     if (status < 0) {
@@ -2141,14 +2131,14 @@ fs_op_opendir (
     uint32_t flags = 0;
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_opendir(INODE_SUBSYS_ID(ino), ino, fi);
+        status = intfs_opendir(ino, fi);
         break;
 
       case SUBSYS_TYPE_TAG:
         flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_opendir(INODE_SUBSYS_ID(ino), ino, flags, fi);
+        status = bm_opendir(ino, flags, fi);
         break;
     }
     if (status < 0) {
@@ -2173,7 +2163,7 @@ fs_op_read (
     struct fs_file_handle *fh = uint2ptr(fi->fh);
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_read(req, INODE_SUBSYS_ID(ino), buf_max, off, fh);
+        status = bm_read(req, ino, buf_max, off, fh);
         break;
     }
     if (status < 0) {
@@ -2214,7 +2204,7 @@ fs_op_release (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_free(INODE_SUBSYS_ID(ino), fi);
+        status = bm_free(ino, fi);
         break;
     }
 
@@ -2232,12 +2222,12 @@ fs_op_releasedir (
     void *cookie = uint2ptr(fi->fh);
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_INTERNAL:
-        status = intfs_freedir(INODE_SUBSYS_ID(ino), ino, cookie);
+        status = intfs_freedir(ino, cookie);
         break;
 
       case SUBSYS_TYPE_BOOKMARK:
       case SUBSYS_TYPE_TAG:
-        status = bm_freedir(INODE_SUBSYS_ID(ino), ino, cookie);
+        status = bm_freedir(ino, cookie);
         break;
     }
 
@@ -2255,11 +2245,11 @@ fs_op_rename (
 ) {
     int status = -EINVAL;
 
-    uint32_t rename_flags = 0;
+    uint32_t rflags = 0;
 #if defined(__linux__) && defined(_GNU_SOURCE)
     if (flags & RENAME_NOREPLACE) {
-        rename_flags |=  BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE;
-        flags        &= ~RENAME_NOREPLACE;
+        rflags |=  BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE;
+        flags  &= ~RENAME_NOREPLACE;
     }
 #endif
     if (flags != 0) {
@@ -2267,23 +2257,20 @@ fs_op_rename (
     }
     status = -EPERM;
 
-    uint64_t parent_id, new_parent_id;
-    int subsys = subsys_type(parent, &parent_id);
-    if (subsys != subsys_type(new_parent, &new_parent_id)) {
+    unsigned subsys_type = INODE_SUBSYS_TYPE(parent);
+    if (subsys_type != INODE_SUBSYS_TYPE(new_parent)) {
         goto end;
     }
-    switch (subsys) {
-      case SUBSYS_TYPE_TAG:
-        rename_flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
-        // fallthrough
-      case SUBSYS_TYPE_BOOKMARK:
-        status = bm_rename(parent_id, name, new_parent_id, new_name,
-                rename_flags);
+    switch (subsys_type) {
+      case SUBSYS_TYPE_INTERNAL:
+        if (parent != new_parent) {
+            break;
+        }
+        status = intfs_rename(parent, name, new_name, rflags);
         break;
 
-      case SUBSYS_TYPE_KEYWORD:
-        rename_flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
-        status = bm_rename(0, name, 0, new_name, rename_flags);
+      case SUBSYS_TYPE_BOOKMARK:
+        status = bm_rename(parent, name, new_parent, new_name, rflags);
         break;
     }
 
@@ -2301,7 +2288,7 @@ fs_op_removexattr (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_rmxattr(INODE_SUBSYS_ID(ino), name);
+        status = bm_rmxattr(ino, name);
         break;
     }
 
@@ -2333,7 +2320,7 @@ fs_op_setattr (
         is_tag = true;
         // fallthrough
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_setattr(INODE_SUBSYS_ID(ino), mask, is_tag, fi, stat_buf);
+        status = bm_setattr(ino, mask, is_tag, fi, stat_buf);
         break;
     }
     if (status < 0) {
@@ -2361,7 +2348,7 @@ fs_op_setxattr (
 
     switch (INODE_SUBSYS_TYPE(ino)) {
       case SUBSYS_TYPE_BOOKMARK:
-        status = bm_setxattr(INODE_SUBSYS_ID(ino), name, val, val_len, flags);
+        status = bm_setxattr(ino, name, val, val_len, flags);
         break;
     }
 
