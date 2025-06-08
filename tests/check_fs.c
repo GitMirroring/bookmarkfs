@@ -60,6 +60,8 @@ dispatch_subcmds (
     } else if (0 == strcmp("dents", cmd)) {
         status = check_fs_dents(argc, argv);
 #endif
+    } else if (0 == strcmp("times", cmd)) {
+        status = check_fs_times(argc, argv);
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }

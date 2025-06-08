@@ -1,0 +1,27 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([fs: last access/modification times])
+AT_KEYWORDS([fs times])
+
+ATX_CHECK_FS_NEW_ANY(, [
+    # requires PRNG
+    ATX_FEAT_PREREQ([bookmarkfs-util])
+], [
+    name=$(ath_fn_rand_u64_hex)
+    seed=$(ath_fn_prng_seed)
+    echo "prng seed: $seed"
+
+    mkdir $name
+    ATX_RUN([
+        check-fs times -s "$seed" -r 512 $name
+    ])
+])
+
+AT_CLEANUP

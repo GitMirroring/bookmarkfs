@@ -9,7 +9,8 @@
 EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTS_)
 
 TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at  \
-         lib_hashmap.at fs_basic.at fs_regrw.at fs_dents.at fs_assoc.at
+         lib_hashmap.at fs_basic.at fs_regrw.at fs_dents.at fs_assoc.at  \
+         fs_times.at
 
 # Helper programs for testing
 
@@ -35,7 +36,8 @@ if BOOKMARKFS_MOUNT
 if BOOKMARKFS_UTIL
   check_fs_CPPFLAGS += -DHAVE_BOOKMARKFS_UTIL
   check_fs_LDADD    += $(top_builddir)/src/libbookmarkfs_util.la
-  check_fs_SOURCES  += check_fs_regrw.c check_fs_dents.c check_util.c
+  check_fs_SOURCES  += check_fs_regrw.c check_fs_dents.c check_util.c  \
+                       check_fs_times.c
 endif  # BOOKMARKFS_UTIL
 endif  # BOOKMARKFS_MOUNT
 

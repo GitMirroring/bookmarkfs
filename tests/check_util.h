@@ -42,6 +42,12 @@ check_fs_dents (
 );
 
 int
+check_fs_times (
+    int   argc,
+    char *argv[]
+);
+
+int
 check_fs_regrw (
     int   argc,
     char *argv[]
