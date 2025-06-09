@@ -1073,11 +1073,6 @@ bm_setattr (
 #define FUSE_SET_ATTR_NAME_(name)  FUSE_SET_ATTR_##name
 #define TO_SET(...)  BITWISE_OR(FUSE_SET_ATTR_NAME_, __VA_ARGS__)
 
-    int flags_unsupported = TO_SET(MODE, UID, GID);
-    if (mask & flags_unsupported) {
-        return -EPERM;
-    }
-
     if (mask & TO_SET(SIZE)) {
         debug_assert(!is_tag);
 
@@ -1099,9 +1094,8 @@ bm_setattr (
         fh->data_len = new_len;
         xgetrealtime(&fh->mtime);
         fh->flags |= (FH_FLAG_DIRTY | FH_FLAG_MTIME);
-    }
 
-    if (mask & (TO_SET(ATIME, MTIME))) {
+    } else if (mask & TO_SET(ATIME, MTIME)) {
         if (ctx.flags.ctime) {
             mask |= TO_SET(MTIME, MTIME_NOW);
         }
@@ -1138,6 +1132,10 @@ bm_setattr (
         if (status < 0) {
             return status;
         }
+
+    } else {
+        log_printf("unsupported setattr flags: %d", mask);
+        return -EPERM;
     }
 #undef TO_SET
 
