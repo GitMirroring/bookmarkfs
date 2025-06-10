@@ -38,7 +38,7 @@
 @end macro
 
 @macro tcldoc {name, path}
-@uref{https://www.tcl.tk/man/tcl8.6.13/\path\, \name\}
+@uref{https://www.tcl.tk/man/tcl8.6.16/\path\, \name\}
 @end macro
 
 @copying
@@ -106,22 +106,22 @@ for CI build logs.
 
 Currently, BookmarkFS only runs on GNU/Linux and FreeBSD.
 
-Although BookmarkFS sticks hard to POSIX and avoids using platform-specific
+Although BookmarkFS sticks hard to POSIX and avoids platform-specific
 features, porting it to other operating systems is not trivial.
 
 The major pitfall is the @linuxdoc{FUSE, filesystems/fuse.html} dependency.
-Generally speaking, FUSE is Linux-only.
-FreeBSD partially implements the FUSE protocol in its kernel,
-to the extent that BookmarkFS is mostly usable.
-However, that's not the case for other operating systems.
+FUSE was originally Linux-only.
+Recent versions of the FreeBSD kernel partially implements the FUSE protocol,
+however, that's not the case for other operating systems.
 
 For example, OpenBSD implements its own FUSE protocol,
 which is incompatible with the Linux one.
 OpenBSD does provide a libfuse-compatible library, however,
 it only covers the high-level API, while BookmarkFS uses the
 @uref{https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html, low-level API}.
+
 For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
-won't work if you're trying to port BookmarkFS to Microsoft Windows.
+won't help much if you're trying to port BookmarkFS to Microsoft Windows.
 
 Other notable portability issues:
 
@@ -129,13 +129,10 @@ Other notable portability issues:
 @item Sandboxing
 Not all operating system kernels provide sandboxing mechanisms similar to
 Linux and FreeBSD.
+@xref{Sandboxing}.
 
-If not supported, operations that require sandboxing should fail.
-Users should not be provided with a false sense of security.
-If they wish, they could pass a @option{-o no_sandbox} option to
-explicitly disable sandboxing.
-
-Also @pxref{Sandboxing}.
+If unsupported, operations that require sandboxing should fail,
+unless sandboxing is explicitly disabled by the caller.
 @end table
 
 
@@ -255,31 +252,31 @@ access the files.
 @item -o ctime
 Maintain last status change time instead of last modification time.
 
-Usually, a bookmark's ``modification time'' attribute behaves differently
-from both mtime and ctime.
+From a browser's perspective, the ``modification time'' attribute
+of a bookmark behaves differently from both mtime and ctime.
 In Chromium, for instance, when a bookmark is renamed, neither itself
 nor the parent directory changes timestamp accordingly.
 
-BookmarkFS do not follow browser behavior here, and instead try to stay
-compatible with POSIX.
+In BookmarkFS, mtime behavior mostly stays compatible with POSIX,
+with a few caveats.
 Since a bookmark has only one ``modification time'' attribute instead of two,
 the user has to choose which one to maintain:
 
 @table @asis
-@item Last modification time
-ctime only updates when mtime does.
+@item Last modification time (default)
+mtime updates normally; ctime value always follow mtime.
+
+The kernel may automatically update and cache ctime,
+making it appear more ``correct'' than what we expect.
+However, this behavior should not be relied upon.
 
 @item Last status change time
-ctime updates normally; mtime always updates when ctime does,
+ctime updates normally; mtime value always follow ctime,
 even if the file content is not modified.
 
 This behavior may be inefficient, but makes applications that depend on ctime
 less fragile.
 @end table
-
-The kernel may automatically update and cache ctime,
-making it more ``correct'' than what we expect.
-However, this behavior should not be relied upon.
 
 @item -o eol
 Add a newline (ASCII LF character) to the end of each file.
@@ -302,8 +299,8 @@ Do not use Landlock for sandboxing.
 This option is ignored on non-Linux platforms.
 
 Without Landlock, sandboxing offers less security.
-However, Landlock is a rather new feature (requires kernel version 5.13
-or later), thus we provide an option to disable it separately.
+Nonetheless, we provide an option to disable it separately,
+since Landlock is a rather new feature (requires kernel version 5.13 or later).
 
 @item -F
 Stay in the foreground, do not daemonize.
@@ -364,7 +361,7 @@ so that the user don't have to manually dismount the inactive filesystem.
 See @linuxmanpage{mount.fuse3, 8} for details.
 
 This option is helpful when sandboxing is enabled, especially when
-the @option{-F} option is given, since a sandboxed process itself can neither
+given the @option{-F} option, since a sandboxed process itself can neither
 @linuxmanpage{umount, 2} nor fork-exec.
 
 Currently, this option is not available on FreeBSD.
@@ -822,8 +819,8 @@ However, consecutive lookups and @code{readdir()}s should produce consistent
 results for that file, provided that it is not renamed or deleted.
 
 Tag files behave differently from traditional hard links.
-If the original bookmark file is renamed or deleted,
-it may also change accordingly.
+If the associated bookmark file of a tag is renamed or deleted,
+it may change accordingly.
 It may even link to another file that was previously shadowed.
 Applications should tread lightly if they wish to cache tag directory entries.
 
@@ -887,13 +884,12 @@ for web browser bookmarks.
 An unexpected internal error occurred, likely due to a bug in BookmarkFS,
 or a corruption in the bookmark storage.
 
-When this error occurs, a log message describing the situation may be printed
-to the standard error of the filesystem daemon.
-Sometimes this error comes from the kernel-side FUSE implementation,
-and there's no error message.
-
 Once this error occurs, behavior of any further operations on the filesystem
 is undefined.
+
+A log message describing the situation may be printed to the standard error
+of the filesystem daemon.
+Sometimes the error comes from the kernel, and there's no error message.
 
 @item ESTALE
 The file associated with the file descriptor no longer exists.
@@ -1373,6 +1369,9 @@ Notable limitations:
 of a bookmark may affect that of other bookmarks,
 due to the way bookmarks are associated with the URLs.
 
+@item For a similar reason, directory atime is not supported, since the atime
+attribute only exists on URLs, and directories are not associated with URLs.
+
 @item The bookmark storage (SQLite database file) should be writable even if
 the BookmarkFS filesystem is mounted read-only, due to the limitations
 of WAL-mode.
@@ -1498,7 +1497,7 @@ Notable limitations:
 @itemize @bullet{}
 @item Does not scale well with large bookmark storage,
 since everything is kept in memory, and the entire JSON file has to be parsed
-whenever a reload is required.
+(with a parser known not to be fast) whenever a reload is required.
 
 @item No support for tags (@pxref{Tags}) and keywords (@pxref{Keywords}),
 since Chromium does not have such concepts.
@@ -1729,7 +1728,7 @@ as well as a list of backend-specific options.
 Indicates that the function should print a version message.
 Mutually exclusive with @code{BOOKMARKFS_BACKEND_INFO_HELP}.
 
-In addition to the version number, the version message may also contain
+In addition to the version number, the version message may contain
 dependency versions, compile-time options, and other information
 that can be used to determine a specific version of the backend.
 
@@ -1970,7 +1969,7 @@ The pointer referring to the backend context.
 @subsection Enter Sandbox
 
 The @code{backend_sandbox} function is called to instruct the backend to
-enter a sandboxed state where it has limited access to system resources,
+enter a sandboxed state, where it has limited access to system resources,
 thereby improving security.
 @xref{Sandboxing}.
 
@@ -1979,10 +1978,10 @@ is @emph{not} set for this context.
 
 Considering how sandboxing is usually implemented,
 it may be complicated or even impractical for multiple backend contexts
-to enter sandbox separately without affecting other ones.
+to enter sandbox separately without affecting one another.
 Thus it is guaranteed that, when launched from a frontend program like
-@command{mount.bookmarkfs}, only one backend context will be created
-throughout the lifetime of the process if sandboxing is ever needed.
+@command{mount.bookmarkfs} which requires sandboxing, only one
+backend context will be created throughout the lifetime of the process.
 
 Type of the @code{backend_sandbox} function is defined as:
 
@@ -4321,8 +4320,7 @@ it is incompatible with our sandboxing design.
 Implemented with the @code{EVFILT_VNODE} filter of @freebsdmanpage{kevent, 2}.
 
 @item Fallback
-When no platform-specific filesystem watching mechanism is available,
-periodically checks the @code{st_ino} and @code{st_mtim} attributes
+Periodically checks the @code{st_ino} and @code{st_mtim} attributes
 of the watched file with @posixfuncmanpage{fstatat}.
 
 This approach is less efficient than ``native'' implementations,
