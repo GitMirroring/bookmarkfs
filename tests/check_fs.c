@@ -54,12 +54,10 @@ dispatch_subcmds (
         status = subcmd_ismount(argc, argv);
     } else if (0 == strcmp("sleep", cmd)) {
         status = subcmd_sleep(argc, argv);
-#ifdef HAVE_BOOKMARKFS_UTIL
     } else if (0 == strcmp("regrw", cmd)) {
         status = check_fs_regrw(argc, argv);
     } else if (0 == strcmp("dents", cmd)) {
         status = check_fs_dents(argc, argv);
-#endif
     } else if (0 == strcmp("times", cmd)) {
         status = check_fs_times(argc, argv);
     } else {

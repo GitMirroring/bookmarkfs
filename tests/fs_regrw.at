@@ -10,13 +10,9 @@ dnl
 AT_SETUP([fs: regular file read/write])
 AT_KEYWORDS([fs regrw])
 
-ATX_CHECK_FS_NEW_ANY([file_max=524288], [
-    # requires PRNG
-    ATX_FEAT_PREREQ([bookmarkfs-util])
-], [
+ATX_CHECK_FS_NEW_ANY([file_max=524288], , [
     name=$(ath_fn_rand_u64_hex)
     seed=$(ath_fn_prng_seed)
-    echo "prng seed: $seed"
 
     ATX_RUN([
         check-fs regrw -n 524288 -s "$seed" $name

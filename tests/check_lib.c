@@ -104,15 +104,12 @@ subcmd_prng (
     int   argc,
     char *argv[]
 ) {
-    uint64_t seed_buf[4], *seed = NULL;
+    char const *seed = NULL;
     int n = 0;
 
     OPT_START(argc, argv, "s:n:")
     OPT_OPT('s') {
-        if (0 != prng_seed_from_hex(seed_buf, optarg)) {
-            return -1;
-        }
-        seed = seed_buf;
+        seed = optarg;
         break;
     }
     OPT_OPT('n') {
@@ -121,7 +118,7 @@ subcmd_prng (
     }
     OPT_END
 
-    if (0 != prng_seed(seed)) {
+    if (0 != prng_seed_from_hex(seed)) {
         return -1;
     }
     for (; n > 0; --n) {

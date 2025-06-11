@@ -73,7 +73,6 @@ check_watcher (
 
 int
 prng_seed_from_hex (
-    uint64_t   *buf,
     char const *str
 );
 

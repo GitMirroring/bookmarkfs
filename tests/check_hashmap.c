@@ -168,16 +168,13 @@ check_hashmap (
     int   argc,
     char *argv[]
 ) {
-    uint64_t seed_buf[4], *seed = NULL;
+    char const *seed = NULL;
     int size_exp = -1;
     int rounds   = -1;
 
     OPT_START(argc, argv, "s:n:r:")
     OPT_OPT('s') {
-        if (0 != prng_seed_from_hex(seed_buf, optarg)) {
-            return -1;
-        }
-        seed = seed_buf;
+        seed = optarg;
         break;
     }
     OPT_OPT('n') {
@@ -199,7 +196,7 @@ check_hashmap (
         return -1;
     }
 
-    if (0 != prng_seed(seed)) {
+    if (0 != prng_seed_from_hex(seed)) {
         return -1;
     }
     return do_check_hashmap(1u << size_exp, rounds);

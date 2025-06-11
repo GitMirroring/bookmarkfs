@@ -10,13 +10,9 @@ dnl
 AT_SETUP([fs: last access/modification times])
 AT_KEYWORDS([fs times])
 
-ATX_CHECK_FS_NEW_ANY(, [
-    # requires PRNG
-    ATX_FEAT_PREREQ([bookmarkfs-util])
-], [
+ATX_CHECK_FS_NEW_ANY(, , [
     name=$(ath_fn_rand_u64_hex)
     seed=$(ath_fn_prng_seed)
-    echo "prng seed: $seed"
 
     mkdir $name
     ATX_RUN([
