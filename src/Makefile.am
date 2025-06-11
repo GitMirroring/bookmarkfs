@@ -28,7 +28,7 @@ UTIL_LIBS_ =
 if BOOKMARKFS_UTIL
   UTIL_LIBS_ += libbookmarkfs_util.la
 else
-  UTIL_LIBS_ += $(BOOKMARKFS_LIBS)
+  UTIL_LIBS_ += $(BOOKMARKFS_UTIL_LIBS)
 endif  # BOOKMARKFS_UTIL
 
 BACKEND_SOURCES_  = backend_util.c lib.c xstd.c
