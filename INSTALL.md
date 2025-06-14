@@ -166,19 +166,6 @@ Notes
   In this case, the utility library will not be built from source,
   and other components will link to the specified library instead.
 
- ### Targeting 32-bit Platforms
-
-  BookmarkFS requires 64-bit `off_t` and `time_t`, which may not be supported
-  on 32-bit platforms (e.g., i386 FreeBSD does not support 64-bit `time_t`).
-
-  If using Autoconf 2.72 or later, the configuration script automatically
-  performs checks and defines necessary macros, and fails if unsupported.
-  With legacy Autoconf, only `off_t` is checked.
-
-  To manually configure 64-bit `time_t`, add preprocessor flags
-  `-D_TIME_BITS=64` (or something equivalent, depending on the toolchain).
-  If unsupported, `make` will fail.
-
  ### FreeBSD and GNU libiconv
 
   NOTE: You may skip this section if _not_ building the Chromium backend.

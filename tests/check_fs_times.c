@@ -31,13 +31,14 @@
 #include <unistd.h>
 
 #include "check_util.h"
+#include "backend_util.h"
 #include "frontend_util.h"
 #include "prng.h"
 
 // Forward declaration start
 static int  compare_timespec  (struct timespec, struct timespec);
 static int  do_check_fs_times (int, int);
-static void usecs_to_timespec (struct timespec *, uint32_t);
+static void usecs_to_timespec (struct timespec *, uint64_t);
 // Forward declaration end
 
 static int
@@ -113,9 +114,8 @@ do_check_fs_times (
     ASSERT_NE(-1, compare_timespec(stat_buf.st_atim, now));
 
     for (int i = 0; i < rounds; ++i) {
-        uint64_t bits = prng_rand();
-        usecs_to_timespec(&times[0], bits & 0xffffffff);
-        usecs_to_timespec(&times[1], bits >> 32);
+        usecs_to_timespec(&times[0], prng_rand());
+        usecs_to_timespec(&times[1], prng_rand());
 
         ASSERT_EQ(0, futimens(fd, times));
         ASSERT_EQ(0, fstat(fd, &stat_buf));
@@ -142,9 +142,15 @@ do_check_fs_times (
 static void
 usecs_to_timespec (
     struct timespec *ts_buf,
-    uint32_t         usecs
+    uint64_t         usecs
 ) {
-    ts_buf->tv_sec  = usecs / 1000000;
+    int64_t secs = usecs / 1000000;
+#if defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T < 8)
+    secs %= (int64_t)INT32_MAX + 1;
+#else
+    secs %= TIMESPEC_SEC_MAX + 1;
+#endif
+    ts_buf->tv_sec  = secs;
     ts_buf->tv_nsec = (usecs % 1000000) * 1000;
 }
 

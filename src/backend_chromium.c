@@ -58,17 +58,14 @@
 #include "watcher.h"
 #include "xstd.h"
 
-#if defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T != 8)
-#  error "64-bit time_t is required"
-#endif
-
 #define BACKEND_FILENAME_GUID  ( 1u << 16 )
 
-// Chromium uses Windows FILETIME epoch instead of Unix epoch.
+// Chromium uses Windows FILETIME epoch, which is
+// `((1970 - 1601) * 365 + 89) * 24 * 3600` seconds before the Unix epoch.
 //
 // See Chromium source code: /base/time/time.h
 // (`base::Time::kTimeTToMicrosecondsOffset`)
-#define EPOCH_DIFF  ( (time_t)((1970 - 1601) * 365 + 89) * 24 * 3600 )
+#define EPOCH_DIFF  INT64_C(11644473600)
 
 #define BOOKMARKS_ROOT_ID  0
 
@@ -387,7 +384,7 @@ build_tsnode (
         ts = &now;
     }
 
-    time_t  secs      = ts->tv_sec + EPOCH_DIFF;
+    int64_t secs      = ts->tv_sec + EPOCH_DIFF;
     int64_t microsecs = secs * 1000000 + ts->tv_nsec / 1000;
 
     char buf[32];
@@ -1461,12 +1458,17 @@ parse_ts (
     }
 
     if (buf != NULL) {
-        time_t secs = microsecs / 1000000;
-        if (unlikely(secs < EPOCH_DIFF)) {
+        int64_t secs = microsecs / 1000000 - EPOCH_DIFF;
+        if (unlikely(secs < 0)) {
             // Stay away from negative tv_sec
-            secs = EPOCH_DIFF;
+            secs = 0;
         }
-        buf->tv_sec  = secs - EPOCH_DIFF;
+#if defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T < 8)
+        else if (secs > INT32_MAX) {
+            secs = INT32_MAX;
+        }
+#endif
+        buf->tv_sec  = secs;
         buf->tv_nsec = (microsecs % 1000000) * 1000;
     }
     return 0;

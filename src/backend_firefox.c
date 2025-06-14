@@ -2135,7 +2135,7 @@ static int64_t
 timespec_to_usecs (
     struct timespec const *ts
 ) {
-    return ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
+    return (int64_t)ts->tv_sec * 1000000 + ts->tv_nsec / 1000;
 }
 
 static int
@@ -2778,11 +2778,16 @@ usecs_to_timespec (
     struct timespec *ts_buf,
     int64_t          microsecs
 ) {
-    if (unlikely(microsecs < 0)) {
-        microsecs = 0;
+    int64_t secs = microsecs / 1000000;
+    if (unlikely(secs < 0)) {
+        secs = 0;
     }
-
-    ts_buf->tv_sec  = microsecs / 1000000;
+#if defined(SIZEOF_TIME_T) && (SIZEOF_TIME_T < 8)
+    else if (secs > INT32_MAX) {
+        secs = INT32_MAX;
+    }
+#endif
+    ts_buf->tv_sec  = secs;
     ts_buf->tv_nsec = (microsecs % 1000000) * 1000;
 }
 

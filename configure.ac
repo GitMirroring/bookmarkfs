@@ -196,18 +196,7 @@ AS_VAR_IF([ac_have_largefile], [no], [
     ]))
 ])
 
-m4_version_prereq([2.72], [
-    AC_SYS_YEAR2038
-    AS_VAR_IF([ac_have_year2038], [no], [
-        AC_MSG_ERROR(m4_normalize([
-            64-bit time_t is unsupported on this platform.
-        ]))
-    ])
-], [
-    dnl  fallback to compile-time check...
-    AX_COMPILE_CHECK_SIZEOF([time_t])
-])
-
+AX_COMPILE_CHECK_SIZEOF([time_t])
 AX_COMPILE_CHECK_SIZEOF([uintptr_t], [#include <stdint.h>])
 
 # -- Output --
