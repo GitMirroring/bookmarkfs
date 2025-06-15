@@ -316,11 +316,10 @@ static int     mozkw_purge        (struct backend_ctx *, int64_t);
 static int     mozkw_rename       (struct backend_ctx *, char const *,
                                    char const *, uint32_t);
 static int     mozorigin_delete   (struct backend_ctx *, int64_t);
-static int     mozorigin_get      (struct backend_ctx *, char const *, size_t,
-                                   char const *, size_t, int64_t *);
+static int     mozorigin_get      (struct backend_ctx *, struct mozorigin *);
 static int     mozorigin_insert   (struct backend_ctx *, struct mozorigin *);
-static int     mozplace_addref    (struct backend_ctx *, char const *, size_t,
-                                   int64_t *, struct timespec *);
+static int     mozplace_addref    (struct backend_ctx *, struct mozplace *,
+                                   struct timespec *);
 static int     mozplace_addref_cb (void *, sqlite3_stmt *);
 static int     mozplace_addref_id (struct backend_ctx *, int64_t);
 static int     mozplace_delete    (struct backend_ctx *, int64_t, int64_t);
@@ -331,8 +330,7 @@ static int     mozplace_update    (struct backend_ctx *, struct mozplace *);
 static int64_t mozplace_url_hash  (char const *, size_t);
 static int     parse_mkfsopts     (struct bookmarkfs_conf_opt const *,
                                    struct parsed_mkfsopts *);
-static int     parse_mozurl_host  (char const *, size_t, size_t *,
-                                   char const **, size_t *);
+static int     parse_mozurl       (char const *, size_t, struct mozorigin *);
 static int     parse_usecs        (char const *, size_t, int64_t *);
 static int     store_new          (sqlite3 *, int64_t);
 static int     store_sync         (sqlite3 *);
@@ -402,12 +400,14 @@ bookmark_do_create (
         return status;
     }
 
+    struct mozplace mp;
+    mp.id      = -1;
+    mp.url     = "about:blank";
+    mp.url_len = strlen(mp.url);
     stat_buf->value_len = -1;
-    int64_t place_id = 0;
     if (!is_dir) {
         stat_buf->value_len = 0;
-        status = mozplace_addref(ctx, STR_WITHLEN("about:blank"), &place_id,
-                &stat_buf->atime);
+        status = mozplace_addref(ctx, &mp, &stat_buf->atime);
         if (status < 0) {
             return status;
         }
@@ -422,19 +422,19 @@ bookmark_do_create (
     if (!(ctx->flags & BACKEND_FILENAME_GUID)) {
         guid = gen_random_guid(guid_buf);
     }
-    struct mozbm cols = {
-        .place_id   = place_id,
+    struct mozbm mb = {
+        .place_id   = mp.id,
         .parent_id  = parent_id,
         .title      = name,
         .title_len  = name_len,
         .date_added = date_added,
         .guid       = guid,
     };
-    status = mozbm_insert(ctx, &cols);
+    status = mozbm_insert(ctx, &mb);
     if (status < 0) {
         return status;
     }
-    stat_buf->id = cols.id;
+    stat_buf->id = mb.id;
 
     status = mozbm_mtime_update(ctx, parent_id, &date_added);
     if (status < 0) {
@@ -455,16 +455,16 @@ bookmark_do_delete (
         return -EPERM;
     }
 
-    struct mozbm cols;
-    int status = mozbm_lookup(ctx, parent_id, name, name_len, false, &cols);
+    struct mozbm mb;
+    int status = mozbm_lookup(ctx, parent_id, name, name_len, false, &mb);
     if (status < 0) {
         return status;
     }
-    if (unlikely((cols.place_id == 0) != is_dir)) {
+    if (unlikely((mb.place_id == 0) != is_dir)) {
         return is_dir ? -ENOTDIR : -EISDIR;
     }
 
-    status = mozbm_delete(ctx, cols.id, is_dir, true);
+    status = mozbm_delete(ctx, mb.id, is_dir, true);
     if (status < 0) {
         return status;
     }
@@ -533,7 +533,7 @@ fsck_apply (
     }
 
   update_name:  ;
-    struct mozbm cols = {
+    struct mozbm mb = {
         .id            = id,
         .place_id      = -1,
         .title         = name,
@@ -541,7 +541,7 @@ fsck_apply (
         .date_added    = -1,
         .last_modified = -1,
     };
-    status = mozbm_update(ctx, &cols);
+    status = mozbm_update(ctx, &mb);
     if (status < 0) {
         goto fail;
     }
@@ -610,32 +610,32 @@ keyword_create (
     size_t                           keyword_len,
     struct bookmarkfs_bookmark_stat *stat_buf
 ) {
-    struct mozbm bm_cols = {
+    struct mozbm mb = {
         .id = stat_buf->id,
     };
-    int status = mozbm_lookup_id(ctx, &bm_cols);
+    int status = mozbm_lookup_id(ctx, &mb);
     if (status < 0) {
         return status;
     }
-    if (bm_cols.place_id == 0) {
+    if (mb.place_id == 0) {
         return -EPERM;
     }
 
-    struct mozkw kw_cols = {
+    struct mozkw mk = {
         .keyword     = keyword,
         .keyword_len = keyword_len,
-        .place_id    = bm_cols.place_id,
+        .place_id    = mb.place_id,
     };
-    status = mozkw_insert(ctx, &kw_cols);
+    status = mozkw_insert(ctx, &mk);
     if (status < 0) {
         return status;
     }
 
-    status = bookmark_do_lookup(ctx, bm_cols.id, NULL, 0, 0, stat_buf);
+    status = bookmark_do_lookup(ctx, mb.id, NULL, 0, 0, stat_buf);
     if (status < 0) {
         return status;
     }
-    status = mozplace_addref_id(ctx, bm_cols.place_id);
+    status = mozplace_addref_id(ctx, mb.place_id);
     if (status < 0) {
         return status;
     }
@@ -774,23 +774,23 @@ mozbm_get_title (
 static int
 mozbm_insert (
     struct backend_ctx *ctx,
-    struct mozbm       *cols
+    struct mozbm       *mb
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_INSERT];
     char const *sql =
         "INSERT INTO `moz_bookmarks` (`parent`, `position`, `title`, "
             "`dateAdded`, `lastModified`, `type`, `fk`, `guid`, `syncStatus`) "
         "VALUES (?1, safeincr((" MOZBM_MAXPOS("?1") ")), ?2, ?3, ?3, "
-            "?4, nullif(?5, -1), ?6, 1)";
+            "?4, ?5, ?6, 1)";
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, prepare:, ,
-        DB_QUERY_BIND_INT64(cols->parent_id),
-        DB_QUERY_BIND_TEXT(cols->title, cols->title_len),
-        DB_QUERY_BIND_INT64(cols->date_added),
-        DB_QUERY_BIND_INT64(cols->place_id == 0 ? 2 : 1),
-        DB_QUERY_BIND_INT64(cols->place_id),
-        DB_QUERY_BIND_TEXT(cols->guid, GUID_STR_LEN),
+        DB_QUERY_BIND_INT64(mb->parent_id),
+        DB_QUERY_BIND_TEXT(mb->title, mb->title_len),
+        DB_QUERY_BIND_INT64(mb->date_added),
+        DB_QUERY_BIND_INT64(mb->place_id < 0 ? 2 : 1),
+        DB_QUERY_BIND_INT64(mb->place_id),
+        DB_QUERY_BIND_TEXT(mb->guid, GUID_STR_LEN),
     );
     if (status < 0) {
         // duplicate GUID
@@ -800,8 +800,8 @@ mozbm_insert (
         return status;
     }
 
-    cols->id = sqlite3_last_insert_rowid(ctx->db);
-    if (!is_valid_id(cols->id)) {
+    mb->id = sqlite3_last_insert_rowid(ctx->db);
+    if (!is_valid_id(mb->id)) {
         return -ENOSPC;
     }
     return 0;
@@ -814,7 +814,7 @@ mozbm_lookup (
     char const         *name,
     size_t              name_len,
     bool                validate_guid,
-    struct mozbm       *cols
+    struct mozbm       *mb
 ) {
 #define MOZBM_LOOKUP(col)  \
     "SELECT `id`, `fk`, `position` FROM `moz_bookmarks` "  \
@@ -841,16 +841,16 @@ mozbm_lookup (
     if (nrows == 0) {
         return -ENOENT;
     }
-    cols->id       = values[0];
-    cols->place_id = values[1];
-    cols->pos      = values[2];
+    mb->id       = values[0];
+    mb->place_id = values[1];
+    mb->pos      = values[2];
     return 0;
 }
 
 static int
 mozbm_lookup_id (
     struct backend_ctx *ctx,
-    struct mozbm       *cols
+    struct mozbm       *mb
 ) {
 #define MOZBM_LOOKUP_ID(col)  \
     "SELECT `id`, `fk` FROM `moz_bookmarks` WHERE (`fk`, `" col "`) = "  \
@@ -866,7 +866,7 @@ mozbm_lookup_id (
     int64_t values[2];
     ssize_t nrows;
     DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, values, nrows, , ,
-        DB_QUERY_BIND_INT64(cols->id),
+        DB_QUERY_BIND_INT64(mb->id),
     );
     if (nrows < 0) {
         return nrows;
@@ -874,8 +874,8 @@ mozbm_lookup_id (
     if (nrows == 0) {
         return -ESTALE;
     }
-    cols->id       = values[0];
-    cols->place_id = values[1];
+    mb->id       = values[0];
+    mb->place_id = values[1];
     return 0;
 }
 
@@ -1070,7 +1070,7 @@ mozbm_purge_check (
 static int
 mozbm_update (
     struct backend_ctx *ctx,
-    struct mozbm       *cols
+    struct mozbm       *mb
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_UPDATE];
     char const *sql = "UPDATE `moz_bookmarks` "
@@ -1080,13 +1080,13 @@ mozbm_update (
         "WHERE `id` = ? RETURNING `fk`";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &cols->place_id, nrows, , ,
-        DB_QUERY_BIND_INT64(cols->place_id),
-        DB_QUERY_BIND_TEXT(cols->title, cols->title_len),
-        DB_QUERY_BIND_TEXT(cols->guid, GUID_STR_LEN),
-        DB_QUERY_BIND_INT64(cols->date_added),
-        DB_QUERY_BIND_INT64(cols->last_modified),
-        DB_QUERY_BIND_INT64(cols->id),
+    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mb->place_id, nrows, , ,
+        DB_QUERY_BIND_INT64(mb->place_id),
+        DB_QUERY_BIND_TEXT(mb->title, mb->title_len),
+        DB_QUERY_BIND_TEXT(mb->guid, GUID_STR_LEN),
+        DB_QUERY_BIND_INT64(mb->date_added),
+        DB_QUERY_BIND_INT64(mb->last_modified),
+        DB_QUERY_BIND_INT64(mb->id),
     );
     if (nrows < 0) {
         // duplicate GUID
@@ -1155,7 +1155,7 @@ mozkw_delete (
 static int
 mozkw_insert (
     struct backend_ctx *ctx,
-    struct mozkw       *cols
+    struct mozkw       *mk
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_INSERT];
     char const *sql =
@@ -1163,22 +1163,22 @@ mozkw_insert (
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
-        DB_QUERY_BIND_TEXT(cols->keyword, cols->keyword_len),
-        DB_QUERY_BIND_INT64(cols->place_id),
+        DB_QUERY_BIND_TEXT(mk->keyword, mk->keyword_len),
+        DB_QUERY_BIND_INT64(mk->place_id),
     );
     if (status < 0) {
         // May fail with -EEXIST here.
         return status;
     }
 
-    cols->id = sqlite3_last_insert_rowid(ctx->db);
+    mk->id = sqlite3_last_insert_rowid(ctx->db);
     return 0;
 }
 
 static int
 mozkw_lookup (
     struct backend_ctx *ctx,
-    struct mozkw       *cols
+    struct mozkw       *mk
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_LOOKUP];
     char const *sql =
@@ -1187,7 +1187,7 @@ mozkw_lookup (
     int64_t values[2];
     ssize_t nrows;
     DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, values, nrows, , ,
-        DB_QUERY_BIND_TEXT(cols->keyword, cols->keyword_len),
+        DB_QUERY_BIND_TEXT(mk->keyword, mk->keyword_len),
     );
     if (nrows < 0) {
         return nrows;
@@ -1195,8 +1195,8 @@ mozkw_lookup (
     if (nrows == 0) {
         return -ENOENT;
     }
-    cols->id       = values[0];
-    cols->place_id = values[1];
+    mk->id       = values[0];
+    mk->place_id = values[1];
     return 0;
 }
 
@@ -1225,11 +1225,11 @@ mozkw_rename (
     char const         *new_name,
     uint32_t            flags
 ) {
-    struct mozkw old_cols = {
+    struct mozkw old_mk = {
         .keyword     = old_name,
         .keyword_len = strlen(old_name),
     };
-    int status = mozkw_lookup(ctx, &old_cols);
+    int status = mozkw_lookup(ctx, &old_mk);
     if (status < 0) {
         if (status != -ENOENT) {
             return status;
@@ -1238,7 +1238,7 @@ mozkw_rename (
         if (flags & BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE) {
             return -EEXIST;
         }
-        status = mozplace_delref(ctx, old_cols.place_id, 1);
+        status = mozplace_delref(ctx, old_mk.place_id, 1);
         if (status < 0) {
             return status;
         }
@@ -1249,7 +1249,7 @@ mozkw_rename (
         "UPDATE OR REPLACE `moz_keywords` SET `id` = ? WHERE `keyword` = ?";
 
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
-        DB_QUERY_BIND_INT64(old_cols.id),
+        DB_QUERY_BIND_INT64(old_mk.id),
         DB_QUERY_BIND_TEXT(new_name, strlen(new_name)),
     );
     if (status < 0) {
@@ -1283,20 +1283,16 @@ mozorigin_delete (
 static int
 mozorigin_get (
     struct backend_ctx *ctx,
-    char const         *prefix,
-    size_t              prefix_len,
-    char const         *host,
-    size_t              host_len,
-    int64_t            *id_ptr
+    struct mozorigin   *mo
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZORIGIN_GET];
     char const *sql =
         "SELECT `id` FROM `moz_origins` WHERE `prefix` = ? AND `host` = ?";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, id_ptr, nrows, , ,
-        DB_QUERY_BIND_TEXT(prefix, prefix_len),
-        DB_QUERY_BIND_TEXT(host, host_len),
+    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mo->id, nrows, , ,
+        DB_QUERY_BIND_TEXT(mo->prefix, mo->prefix_len),
+        DB_QUERY_BIND_TEXT(mo->host, mo->host_len),
     );
     if (nrows < 0) {
         return nrows;
@@ -1310,7 +1306,7 @@ mozorigin_get (
 static int
 mozorigin_insert (
     struct backend_ctx *ctx,
-    struct mozorigin   *cols
+    struct mozorigin   *mo
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZORIGIN_INSERT];
     char const *sql =
@@ -1320,33 +1316,29 @@ mozorigin_insert (
 
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
-        DB_QUERY_BIND_TEXT(cols->prefix, cols->prefix_len),
-        DB_QUERY_BIND_TEXT(cols->host, cols->host_len),
+        DB_QUERY_BIND_TEXT(mo->prefix, mo->prefix_len),
+        DB_QUERY_BIND_TEXT(mo->host, mo->host_len),
     );
     if (status < 0) {
         return status;
     }
 
-    cols->id = sqlite3_last_insert_rowid(ctx->db);
+    mo->id = sqlite3_last_insert_rowid(ctx->db);
     return 0;
 }
 
 static int
 mozplace_addref (
     struct backend_ctx *ctx,
-    char const         *url,
-    size_t              url_len,
-    int64_t            *id_ptr,
+    struct mozplace    *mp,
     struct timespec    *atime_buf
 ) {
-    size_t      prefix_len;
-    char const *host;
-    size_t      host_len;
-    if (0 != parse_mozurl_host(url, url_len, &prefix_len, &host, &host_len)) {
-        log_puts("parse_mozurl_host(): bad url");
+    struct mozorigin mo;
+    if (0 != parse_mozurl(mp->url, mp->url_len, &mo)) {
+        log_puts("parse_mozurl(): bad url");
         return -EINVAL;
     }
-    int64_t url_hash = mozplace_url_hash(url, url_len);
+    int64_t url_hash = mozplace_url_hash(mp->url, mp->url_len);
 
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_ADDREF];
     char const *sql =
@@ -1360,58 +1352,40 @@ mozplace_addref (
             qctx.atime_buf = atime_buf;
         },
         DB_QUERY_BIND_INT64(url_hash),
-        DB_QUERY_BIND_TEXT(url, url_len),
+        DB_QUERY_BIND_TEXT(mp->url, mp->url_len),
     );
     if (nrows < 0) {
         return nrows;
     }
     if (nrows > 0) {
-        *id_ptr = qctx.id;
+        mp->id = qctx.id;
         return 0;
     }
 
-    int64_t origin_id;
-    int status = mozorigin_get(ctx, url, prefix_len, host, host_len,
-            &origin_id);
-    if (status < 0) do {
+    int status = mozorigin_get(ctx, &mo);
+    if (status < 0) {
         if (status != -ENOENT) {
             return status;
         }
 
-        struct mozorigin cols = {
-            .prefix     = url,
-            .prefix_len = prefix_len,
-            .host       = host,
-            .host_len   = host_len,
-        };
-        status = mozorigin_insert(ctx, &cols);
+        status = mozorigin_insert(ctx, &mo);
         if (status < 0) {
             return status;
         }
-        origin_id = cols.id;
-    } while (0);
-
-    char *rev_host = xmalloc(host_len + 1);
-    for (size_t idx = 0; idx < host_len; ++idx) {
-        rev_host[idx] = host[host_len - idx - 1];
     }
-    rev_host[host_len] = '.';
 
-    struct mozplace cols = {
-        .url          = url,
-        .url_len      = url_len,
-        .url_hash     = url_hash,
-        .rev_host     = rev_host,
-        .rev_host_len = host_len + 1,
-        .origin_id    = origin_id,
-    };
-    status = mozplace_insert(ctx, &cols);
-    if (status < 0) {
-        goto end;
+    char *rev_host = xmalloc(mo.host_len + 1);
+    for (size_t idx = 0; idx < mo.host_len; ++idx) {
+        rev_host[idx] = mo.host[mo.host_len - idx - 1];
     }
-    *id_ptr = cols.id;
+    rev_host[mo.host_len] = '.';
 
-  end:
+    mp->url_hash     = url_hash;
+    mp->rev_host     = rev_host;
+    mp->rev_host_len = mo.host_len + 1;
+    mp->origin_id    = mo.id;
+    status = mozplace_insert(ctx, mp);
+
     free(rev_host);
     return status;
 }
@@ -1510,7 +1484,7 @@ mozplace_delref (
 static int
 mozplace_insert (
     struct backend_ctx *ctx,
-    struct mozplace    *cols
+    struct mozplace    *mp
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_INSERT];
     char const *sql = 
@@ -1521,11 +1495,11 @@ mozplace_insert (
     char guid_buf[GUID_STR_LEN];
     int status;
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, prepare:, ,
-        DB_QUERY_BIND_TEXT(cols->url, cols->url_len),
-        DB_QUERY_BIND_TEXT(cols->rev_host, cols->rev_host_len),
+        DB_QUERY_BIND_TEXT(mp->url, mp->url_len),
+        DB_QUERY_BIND_TEXT(mp->rev_host, mp->rev_host_len),
         DB_QUERY_BIND_TEXT(gen_random_guid(guid_buf), GUID_STR_LEN),
-        DB_QUERY_BIND_INT64(cols->url_hash),
-        DB_QUERY_BIND_INT64(cols->origin_id),
+        DB_QUERY_BIND_INT64(mp->url_hash),
+        DB_QUERY_BIND_INT64(mp->origin_id),
     );
     if (status < 0) {
         // duplicate GUID
@@ -1535,7 +1509,7 @@ mozplace_insert (
         return status;
     }
 
-    cols->id = sqlite3_last_insert_rowid(ctx->db);
+    mp->id = sqlite3_last_insert_rowid(ctx->db);
     return 0;
 }
 
@@ -1569,21 +1543,20 @@ mozplace_purge (
 static int
 mozplace_update (
     struct backend_ctx *ctx,
-    struct mozplace    *cols
+    struct mozplace    *mp
 ) {
-    if (cols->url == NULL) {
+    if (mp->url == NULL) {
         goto do_update;
     }
-    int64_t new_id;
-    int status = mozplace_addref(ctx, cols->url, cols->url_len, &new_id, NULL);
+    int64_t old_id = mp->id;
+    int status = mozplace_addref(ctx, mp, NULL);
     if (status < 0) {
         return status;
     }
-    status = mozplace_delref(ctx, cols->id, 1);
+    status = mozplace_delref(ctx, old_id, 1);
     if (status < 0) {
         return status;
     }
-    cols->id = new_id;
 
   do_update:  ;
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_UPDATE];
@@ -1593,9 +1566,9 @@ mozplace_update (
         "WHERE `id` = ?";
 
     DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
-        DB_QUERY_BIND_INT64(cols->last_visit_date),
-        DB_QUERY_BIND_TEXT(cols->desc, cols->desc_len),
-        DB_QUERY_BIND_INT64(cols->id),
+        DB_QUERY_BIND_INT64(mp->last_visit_date),
+        DB_QUERY_BIND_TEXT(mp->desc, mp->desc_len),
+        DB_QUERY_BIND_INT64(mp->id),
     );
     if (status < 0) {
         return status;
@@ -1643,7 +1616,7 @@ parse_mkfsopts (
     BACKEND_OPT_KEY("date_added") {
         BACKEND_OPT_VAL_START
         char *end;
-        int64_t val = strtoll(BACKEND_OPT_VAL_STR, &end, 10);
+        long long val = strtoll(BACKEND_OPT_VAL_STR, &end, 10);
         if (*end != '\0' || val < 0 || val == LLONG_MAX) {
             return BACKEND_OPT_BAD_VAL();
         }
@@ -1655,16 +1628,14 @@ parse_mkfsopts (
 }
 
 static int
-parse_mozurl_host (
-    char const  *url,
-    size_t       len,
-    size_t      *prefix_len_ptr,
-    char const **host_ptr,
-    size_t      *host_len_ptr
+parse_mozurl (
+    char const       *str,
+    size_t            len,
+    struct mozorigin *dst
 ) {
     UriUriA uri;
-    char const *end = url + len;
-    if (URI_SUCCESS != uriParseSingleUriExA(&uri, url, end, NULL)) {
+    char const *end = str + len;
+    if (URI_SUCCESS != uriParseSingleUriExA(&uri, str, end, NULL)) {
         return -1;
     }
     bool has_authority = false;
@@ -1709,9 +1680,16 @@ parse_mozurl_host (
         prefix_end += 2;
     }
 
-    *prefix_len_ptr = prefix_end - url;
-    *host_ptr       = host;
-    *host_len_ptr   = host_end - host;
+    // When authority is present:
+    // - prefix_len: len(scheme) + len("://")
+    // - host:       authority without userinfo and "@"
+    // Otherwise:
+    // - prefix_len: len(scheme) + len(":")
+    // - host:       ""
+    dst->prefix     = str;
+    dst->prefix_len = prefix_end - str;
+    dst->host       = host;
+    dst->host_len   = host_end - host;
     status = 0;
 
   end:
@@ -1735,7 +1713,7 @@ parse_usecs (
     buf[str_len] = '\0';
 
     char *end;
-    int64_t usecs = strtoll(buf, &end, 10);
+    long long usecs = strtoll(buf, &end, 10);
     if (*end != '\0' || usecs < 0 || usecs == LLONG_MAX) {
         return -1;
     }
@@ -2016,18 +1994,18 @@ tag_entry_add (
     size_t                           name_len,
     struct bookmarkfs_bookmark_stat *stat_buf
 ) {
-    struct mozbm cols = {
+    struct mozbm mb = {
         .id        = stat_buf->id,
         .parent_id = parent_id,
     };
-    int status = mozbm_lookup_id(ctx, &cols);
+    int status = mozbm_lookup_id(ctx, &mb);
     if (status < 0) {
         return status;
     }
-    if (cols.place_id == 0) {
+    if (mb.place_id == 0) {
         return -EPERM;
     }
-    status = tag_entry_lookup(ctx, &cols);
+    status = tag_entry_lookup(ctx, &mb);
     if (status == 0) {
         return -EEXIST;
     }
@@ -2040,9 +2018,9 @@ tag_entry_add (
         return -EIO;
     }
     char guid_buf[GUID_STR_LEN];
-    cols.date_added = date_added;
-    cols.guid       = gen_random_guid(guid_buf);
-    status = mozbm_insert(ctx, &cols);
+    mb.date_added = date_added;
+    mb.guid       = gen_random_guid(guid_buf);
+    status = mozbm_insert(ctx, &mb);
     if (status < 0) {
         return status;
     }
@@ -2055,7 +2033,7 @@ tag_entry_add (
         }
         return status;
     }
-    status = mozplace_addref_id(ctx, cols.place_id);
+    status = mozplace_addref_id(ctx, mb.place_id);
     if (status < 0) {
         return status;
     }
@@ -2080,24 +2058,24 @@ tag_entry_delete (
         return status;
     }
 
-    struct mozbm cols = {
+    struct mozbm mb = {
         .id        = stat_buf.id,
         .parent_id = parent_id,
     };
-    status = mozbm_lookup_id(ctx, &cols);
+    status = mozbm_lookup_id(ctx, &mb);
     if (status < 0) {
         return status;
     }
-    if (unlikely(cols.place_id == 0)) {
+    if (unlikely(mb.place_id == 0)) {
         // Bad bookmark file.  Tag entry should not be a directory.
         return -EIO;
     }
-    status = tag_entry_lookup(ctx, &cols);
+    status = tag_entry_lookup(ctx, &mb);
     if (status < 0) {
         return status;
     }
 
-    status = mozbm_delete(ctx, cols.id, false, false);
+    status = mozbm_delete(ctx, mb.id, false, false);
     if (status < 0) {
         return status;
     }
@@ -2111,16 +2089,16 @@ tag_entry_delete (
 static int
 tag_entry_lookup (
     struct backend_ctx *ctx,
-    struct mozbm       *cols
+    struct mozbm       *mb
 ) {
     sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_TAG_ENTRY_LOOKUP];
     char const *sql = "SELECT `id` FROM `moz_bookmarks` "
         "WHERE `parent` = ? AND `fk` = ? LIMIT 1";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &cols->id, nrows, , ,
-        DB_QUERY_BIND_INT64(cols->parent_id),
-        DB_QUERY_BIND_INT64(cols->place_id),
+    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mb->id, nrows, , ,
+        DB_QUERY_BIND_INT64(mb->parent_id),
+        DB_QUERY_BIND_INT64(mb->place_id),
     );
     if (nrows < 0) {
         return nrows;
@@ -3594,31 +3572,31 @@ bookmark_permute (
         return status;
     }
 
-    struct mozbm cols1;
-    status = mozbm_lookup(ctx, parent_id, name1, name1_len, false, &cols1);
+    struct mozbm mb1;
+    status = mozbm_lookup(ctx, parent_id, name1, name1_len, false, &mb1);
     if (status < 0) {
         goto fail;
     }
 
-    struct mozbm cols2;
-    status = mozbm_lookup(ctx, parent_id, name2, name2_len, false, &cols2);
+    struct mozbm mb2;
+    status = mozbm_lookup(ctx, parent_id, name2, name2_len, false, &mb2);
     if (status < 0) {
         goto fail;
     }
-    if (cols1.id == cols2.id) {
+    if (mb1.id == mb2.id) {
         goto fail;
     }
 
     if (op == BOOKMARKFS_PERMD_OP_SWAP) {
-        status = mozbm_pos_update(ctx, cols2.id, cols1.pos);
+        status = mozbm_pos_update(ctx, mb2.id, mb1.pos);
     } else {
-        status = mozbm_pos_shift(ctx, parent_id, cols1.pos, &cols2.pos, op);
+        status = mozbm_pos_shift(ctx, parent_id, mb1.pos, &mb2.pos, op);
     }
     if (status <= 0) {
         goto fail;
     }
 
-    status = mozbm_pos_update(ctx, cols1.id, cols2.pos);
+    status = mozbm_pos_update(ctx, mb1.id, mb2.pos);
     if (status < 0) {
         goto fail;
     }
@@ -3693,17 +3671,17 @@ bookmark_rename (
         goto end;
     }
 
-    struct mozbm old_cols;
+    struct mozbm old_mb;
     status = mozbm_lookup(ctx, old_parent_id, old_name, old_name_len, false,
-            &old_cols);
+            &old_mb);
     if (status < 0) {
         goto fail;
     }
 
-    struct mozbm new_cols;
-    new_cols.pos = -1;
+    struct mozbm new_mb;
+    new_mb.pos = -1;
     status = mozbm_lookup(ctx, new_parent_id, new_name, new_name_len, true,
-            &new_cols);
+            &new_mb);
     if (status < 0) {
         // move
         if (status != -ENOENT) {
@@ -3715,17 +3693,17 @@ bookmark_rename (
             status = -EEXIST;
             goto fail;
         }
-        if ((old_cols.place_id == 0) != (new_cols.place_id == 0)) {
-            status = (old_cols.place_id == 0) ? -ENOTDIR : -EISDIR;
+        if ((old_mb.place_id == 0) != (new_mb.place_id == 0)) {
+            status = (old_mb.place_id == 0) ? -ENOTDIR : -EISDIR;
             goto fail;
         }
-        status = mozbm_delete(ctx, new_cols.id, old_cols.place_id == 0, true);
+        status = mozbm_delete(ctx, new_mb.id, old_mb.place_id == 0, true);
         if (status < 0) {
             goto fail;
         }
     }
 
-    status = mozbm_move(ctx, old_cols.id, new_parent_id, new_cols.pos,
+    status = mozbm_move(ctx, old_mb.id, new_parent_id, new_mb.pos,
             name_changed ? new_name : NULL, new_name_len);
     if (status < 0) {
         if (status == -EEXIST) {
@@ -3747,7 +3725,7 @@ bookmark_rename (
         }
     }
     if (ctx->flags & BOOKMARKFS_BACKEND_CTIME) {
-        status = mozbm_mtime_update(ctx, old_cols.id, &mtime);
+        status = mozbm_mtime_update(ctx, old_mb.id, &mtime);
         if (status < 0) {
             goto fail;
         }
@@ -3772,13 +3750,13 @@ bookmark_set (
     struct backend_ctx *ctx = backend_ctx;
     debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
 
-    struct mozbm bm_cols = {
+    struct mozbm mb = {
         .id            = id,
         .place_id      = -1,
         .date_added    = -1,
         .last_modified = -1,
     };
-    struct mozplace place_cols = {
+    struct mozplace mp = {
         .last_visit_date = -1,
     };
 
@@ -3789,45 +3767,45 @@ bookmark_set (
             if (!valid_ts_sec(times[0].tv_sec)) {
                 return -EINVAL;
             }
-            place_cols.last_visit_date = timespec_to_usecs(&times[0]);
+            mp.last_visit_date = timespec_to_usecs(&times[0]);
             --xattr_id;
         }
         if (flags & BOOKMARK_FLAG(SET_MTIME)) {
             if (!valid_ts_sec(times[1].tv_sec)) {
                 return -EINVAL;
             }
-            bm_cols.last_modified = timespec_to_usecs(&times[1]);
+            mb.last_modified = timespec_to_usecs(&times[1]);
         }
     } else {
         xattr_id = get_xattr_id(xattr_name, ctx->flags);
         switch (xattr_id) {
           case BM_XATTR_NULL:
-            place_cols.url     = val;
-            place_cols.url_len = val_len;
+            mp.url     = val;
+            mp.url_len = val_len;
             break;
 
           case BM_XATTR_DESC:
-            place_cols.desc     = val;
-            place_cols.desc_len = val_len;
+            mp.desc     = val;
+            mp.desc_len = val_len;
             break;
 
           case BM_XATTR_TITLE:
             if (NULL != memchr(val, '\0', val_len)) {
                 return -EINVAL;
             }
-            bm_cols.title     = val;
-            bm_cols.title_len = val_len;
+            mb.title     = val;
+            mb.title_len = val_len;
             break;
 
           case BM_XATTR_GUID:
             if (!is_valid_guid(val, val_len)) {
                 return -EINVAL;
             }
-            bm_cols.guid = val;
+            mb.guid = val;
             break;
 
           case BM_XATTR_DATE_ADDED:
-            if (0 != parse_usecs(val, val_len, &bm_cols.date_added)) {
+            if (0 != parse_usecs(val, val_len, &mb.date_added)) {
                 return -EINVAL;
             }
             break;
@@ -3842,7 +3820,7 @@ bookmark_set (
         if (xattr_id != BM_XATTR_NULL
                 && ctx->flags & BOOKMARKFS_BACKEND_CTIME
         ) {
-            bm_cols.last_modified = usecs_now(NULL);
+            mb.last_modified = usecs_now(NULL);
         }
     }
 
@@ -3850,30 +3828,30 @@ bookmark_set (
     if (unlikely(status < 0)) {
         return status;
     }
-    status = mozbm_update(ctx, &bm_cols);
+    status = mozbm_update(ctx, &mb);
     if (status < 0) {
         goto fail;
     }
     if (xattr_id >= MOZBM_XATTR_START) {
         goto end;
     }
-    if (bm_cols.place_id == 0) {
+    if (mb.place_id == 0) {
         // Attempting to update moz_places fields on a directory.
         status = -EPERM;
         goto fail;
     }
 
-    place_cols.id = bm_cols.place_id;
-    status = mozplace_update(ctx, &place_cols);
+    mp.id = mb.place_id;
+    status = mozplace_update(ctx, &mp);
     if (status < 0) {
         goto fail;
     }
-    if (place_cols.id == bm_cols.place_id) {
+    if (mp.id == mb.place_id) {
         goto end;
     }
 
-    bm_cols.place_id = place_cols.id;
-    status = mozbm_update(ctx, &bm_cols);
+    mb.place_id = mp.id;
+    status = mozbm_update(ctx, &mb);
     if (status < 0) {
         goto fail;
     }
