@@ -122,7 +122,7 @@ do_check_fs_regrw (
 #ifndef O_DIRECT
 #  define O_DIRECT  0
 #endif
-    int fd = open(path, O_RDWR | O_CREAT | O_TRUNC | O_DIRECT);
+    int fd = open(path, O_RDWR | O_CREAT | O_TRUNC | O_DIRECT, 0600);
     ASSERT_NE(-1, fd);
 
     struct stat stat_buf;

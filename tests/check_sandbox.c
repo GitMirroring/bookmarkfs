@@ -58,18 +58,17 @@ do_check_sandbox (
 #  error "not implemented"
 #endif
 
-#define ASSERT_BAD_SYS(expr, cleanup_action)             \
-    ASSERT_EXPR_INT(expr, r_, (err_ = errno, r_ < 0), {  \
-        cleanup_action                                   \
-        goto end;                                        \
-    });                                                  \
-    ASSERT_EXPR_INT(err_, r_, r_ == ERR1 || r_ == ERR2, goto end;)
+#define ASSERT_BAD_SYS(expr, cleanup_action)  \
+    ASSERT_EXPR_INT(expr, r_, r_ < 0, {       \
+        cleanup_action                        \
+        goto end;                             \
+    });                                       \
+    ASSERT_EXPR_INT(errno, r_, r_ == ERR1 || r_ == ERR2, goto end;)
 
 #define ASSERT_BAD_FD(expr)   ASSERT_BAD_SYS(expr, close(r_);)
 #define ASSERT_EQ(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) == r_, goto end;)
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
-    int err_;
     int status = -1;
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);

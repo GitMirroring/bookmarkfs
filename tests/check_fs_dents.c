@@ -42,10 +42,11 @@
 struct check_item {
     int      id;
     unsigned flags;
+    int      ref;
 };
 
 // Forward declaration start
-static int dent_check        (int, struct check_item *, int const *, int, int);
+static int dent_check        (int, struct check_item *, int, int);
 static int dent_delete       (int, struct check_item *);
 static int dent_new          (int, struct check_item *);
 static int dent_permute      (int, struct check_item *, struct check_item *);
@@ -55,8 +56,7 @@ static int do_check_fs_dents (int, int);
 static int
 dent_check (
     int                dirfd,
-    struct check_item *item,
-    int const         *map,
+    struct check_item *items,
     int                n,
     int                ignore_dirty
 ) {
@@ -81,7 +81,7 @@ dent_check (
         if (id < 0 || id >= n) {
             return -1;
         }
-        struct check_item *found = item + map[id];
+        struct check_item *found = items + items[id].ref;
         if (found->flags & (ITEM_DELETED | ITEM_MARKED)) {
             return -1;
         }
@@ -95,14 +95,14 @@ dent_check (
         found->flags |= ITEM_MARKED;
     }
 
-    for (last_found = item + n; item < last_found; ++item) {
-        if (ignore_dirty && item->flags & ITEM_DIRTY) {
+    for (last_found = items + n; items < last_found; ++items) {
+        if (ignore_dirty && items->flags & ITEM_DIRTY) {
             continue;
         }
-        if (!(item->flags & (ITEM_DELETED | ITEM_MARKED))) {
+        if (!(items->flags & (ITEM_DELETED | ITEM_MARKED))) {
             return -1;
         }
-        item->flags &= ~ITEM_MARKED;
+        items->flags &= ~ITEM_MARKED;
     }
     return 0;
 }
@@ -176,10 +176,10 @@ dent_permute (
     }
 
     struct check_item item_tmp = *item1;
-    *item1 = *item2;
-    *item2 = item_tmp;
-    item1->flags |= ITEM_DIRTY;
-    item2->flags |= ITEM_DIRTY;
+    item1->id    = item2->id;
+    item1->flags = item2->flags | ITEM_DIRTY;
+    item2->id    = item_tmp.id;
+    item2->flags = item_tmp.flags | ITEM_DIRTY;
     return 0;
 }
 
@@ -192,15 +192,14 @@ do_check_fs_dents (
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
     struct check_item *items = calloc(n, sizeof(struct check_item));
-    int               *map   = malloc(sizeof(int) * n);
-    if (items == NULL || map == NULL) {
+    if (items == NULL) {
         return -1;
     }
     int status = -1;
 
     for (int i = 0; i < n; ++i) {
         struct check_item *item = items + i;
-        map[i] = item->id = i;
+        item->ref = item->id = i;
         ASSERT_EQ(0, dent_new(dirfd, item));
     }
 
@@ -219,20 +218,19 @@ do_check_fs_dents (
                 continue;
             }
             ASSERT_EQ(0, dent_permute(dirfd, i1, i2));
-            map[i1->id] = i1 - items;
-            map[i2->id] = i2 - items;
+            items[i1->id].ref = i1 - items;
+            items[i2->id].ref = i2 - items;
 #endif
         }
     }
 
-    ASSERT_EQ(0, dent_check(dirfd, items, map, n, 1));
+    ASSERT_EQ(0, dent_check(dirfd, items, n, 1));
     ASSERT_EQ(0, lseek(dirfd, 0, SEEK_SET));
-    ASSERT_EQ(0, dent_check(dirfd, items, map, n, 0));
+    ASSERT_EQ(0, dent_check(dirfd, items, n, 0));
     status = 0;
 
   end:
     free(items);
-    free(map);
     return status;
 }
 

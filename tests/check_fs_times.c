@@ -68,11 +68,12 @@ do_check_fs_times (
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
     int status = -1;
+    int fd     = -1;
 
     struct timespec now;
     ASSERT_EQ(0, clock_gettime(CLOCK_REALTIME, &now));
 
-    int fd = openat(dirfd, FILE1_NAME, O_WRONLY | O_CREAT | O_EXCL);
+    fd = openat(dirfd, FILE1_NAME, O_WRONLY | O_CREAT | O_EXCL, 0600);
     ASSERT_NE(-1, fd);
 
     struct stat stat_buf;
