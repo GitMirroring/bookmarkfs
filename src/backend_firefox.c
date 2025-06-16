@@ -74,10 +74,11 @@
 #define BOOKMARKS_ROOT_GUID  "root________"
 #define TAGS_ROOT_GUID       "tags________"
 
-#define DO_QUERY(ctx, stmt_ptr, sql, query_cb, query_cb_data,        \
-                 result, BEFORE_PREPARE, BEFORE_QUERY, ...)          \
+#define DO_QUERY(ctx, stmt_idx, sql, query_cb, query_cb_data,        \
+                 result, BEFORE_PREPARE, ...)                        \
     do {                                                             \
-        sqlite3_stmt *stmt_ = *(stmt_ptr);                           \
+        sqlite3_stmt **stmt_ptr_ = &(ctx)->stmts[stmt_idx];          \
+        sqlite3_stmt  *stmt_     = *stmt_ptr_;                       \
         BEFORE_PREPARE                                               \
         if (stmt_ == NULL) {                                         \
             stmt_ = db_prepare((ctx)->db, sql, strlen(sql), true);   \
@@ -85,10 +86,9 @@
                 (result) = -EIO;                                     \
                 break;                                               \
             }                                                        \
-            *(stmt_ptr) = stmt_;                                     \
+            *stmt_ptr_ = stmt_;                                      \
         }                                                            \
         struct db_stmt_bind_item const bind_[] = { __VA_ARGS__ };    \
-        BEFORE_QUERY                                                 \
         (result) = db_query(stmt_, bind_, DB_BIND_ITEMS_CNT(bind_),  \
                 true, (query_cb), (query_cb_data));                  \
     } while (0)
@@ -114,35 +114,35 @@ enum {
     STMT_BEGIN = PERSISTED_STMT_WRITE_START,
     STMT_COMMIT,
     STMT_ROLLBACK,
-    STMT_MOZPLACE_ADDREF,
-    STMT_MOZPLACE_ADDREF_ID,
-    STMT_MOZPLACE_DELETE,
-    STMT_MOZPLACE_DELREF,
-    STMT_MOZPLACE_INSERT,
-    STMT_MOZPLACE_UPDATE,
-    STMT_MOZORIGIN_DELETE,
-    STMT_MOZORIGIN_GET,
-    STMT_MOZORIGIN_INSERT,
-    STMT_MOZBM_DELETE_DIR,
-    STMT_MOZBM_DELETE_URL,
-    STMT_MOZBM_GET_TITLE,
-    STMT_MOZBM_INSERT,
-    STMT_MOZBM_LOOKUP,
-    STMT_MOZBM_LOOKUP_ID,
-    STMT_MOZBM_MOVE,
-    STMT_MOZBM_MTIME_UPDATE,
-    STMT_MOZBM_POS_SHIFT,
-    STMT_MOZBM_POS_UPDATE,
-    STMT_MOZBM_PURGE,
-    STMT_MOZBM_PURGE_CHECK,
-    STMT_MOZBM_UPDATE,
-    STMT_MOZBMDEL_INSERT,
-    STMT_MOZKW_DELETE,
-    STMT_MOZKW_INSERT,
-    STMT_MOZKW_LOOKUP,
-    STMT_MOZKW_PURGE,
-    STMT_MOZKW_RENAME,
-    STMT_TAG_ENTRY_LOOKUP,
+    STMT_MP_ADDREF,
+    STMT_MP_ADDREF_ID,
+    STMT_MP_DELETE,
+    STMT_MP_DELREF,
+    STMT_MP_INSERT,
+    STMT_MP_UPDATE,
+    STMT_MO_DELETE,
+    STMT_MO_GET,
+    STMT_MO_INSERT,
+    STMT_MB_DELETE_DIR,
+    STMT_MB_DELETE_URL,
+    STMT_MB_GET_TITLE,
+    STMT_MB_INSERT,
+    STMT_MB_LOOKUP,
+    STMT_MB_LOOKUP_FK,
+    STMT_MB_LOOKUP_ID,
+    STMT_MB_MOVE,
+    STMT_MB_MTIME_UPDATE,
+    STMT_MB_POS_SHIFT,
+    STMT_MB_POS_UPDATE,
+    STMT_MB_PURGE,
+    STMT_MB_PURGE_CHECK,
+    STMT_MB_UPDATE,
+    STMT_MBDEL_INSERT,
+    STMT_MK_DELETE,
+    STMT_MK_INSERT,
+    STMT_MK_LOOKUP,
+    STMT_MK_PURGE,
+    STMT_MK_RENAME,
 #endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
     PERSISTED_STMT_END,
 };
@@ -692,16 +692,16 @@ mozbm_delete (
     "AND `id` NOT IN (SELECT DISTINCT `parent` FROM `moz_bookmarks`) ")
 #define MOZBM_DELETE_URL  MOZBM_DELETE_("")
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_DELETE_URL];
-    char const    *sql      = MOZBM_DELETE_URL;
+    int         stmt_idx = STMT_MB_DELETE_URL;
+    char const *sql      = MOZBM_DELETE_URL;
     if (is_dir) {
-        stmt_ptr = &ctx->stmts[STMT_MOZBM_DELETE_DIR];
+        stmt_idx = STMT_MB_DELETE_DIR;
         sql      = MOZBM_DELETE_DIR;
     }
 
     struct mozbm_delete_ctx qctx;
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, mozbm_delete_cb, &qctx, nrows, , ,
+    DO_QUERY(ctx, stmt_idx, sql, mozbm_delete_cb, &qctx, nrows, ,
         DB_QUERY_BIND_INT64(id),
     );
     if (nrows < 0) {
@@ -753,12 +753,11 @@ mozbm_get_title (
     db_query_row_func  *row_func,
     void               *user_data
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_GET_TITLE];
     char const *sql = "SELECT `title` FROM `moz_bookmarks` "
         "WHERE `id` = ? AND `parent` = ?";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, row_func, user_data, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_GET_TITLE, sql, row_func, user_data, nrows, ,
         DB_QUERY_BIND_INT64(id),
         DB_QUERY_BIND_INT64(parent_id),
     );
@@ -776,7 +775,6 @@ mozbm_insert (
     struct backend_ctx *ctx,
     struct mozbm       *mb
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_INSERT];
     char const *sql =
         "INSERT INTO `moz_bookmarks` (`parent`, `position`, `title`, "
             "`dateAdded`, `lastModified`, `type`, `fk`, `guid`, `syncStatus`) "
@@ -784,7 +782,7 @@ mozbm_insert (
             "?4, ?5, ?6, 1)";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, prepare:, ,
+    DO_QUERY(ctx, STMT_MB_INSERT, sql, NULL, NULL, status, prepare:,
         DB_QUERY_BIND_INT64(mb->parent_id),
         DB_QUERY_BIND_TEXT(mb->title, mb->title_len),
         DB_QUERY_BIND_INT64(mb->date_added),
@@ -820,7 +818,6 @@ mozbm_lookup (
     "SELECT `id`, `fk`, `position` FROM `moz_bookmarks` "  \
     "WHERE `parent` = ? AND `" col "` = ? ORDER BY `position` LIMIT 1"
 
-    struct sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_LOOKUP];
     char const *sql = MOZBM_LOOKUP("title");
     if (ctx->flags & BACKEND_FILENAME_GUID) {
         if (validate_guid && !is_valid_guid(name, name_len)) {
@@ -831,7 +828,7 @@ mozbm_lookup (
 
     int64_t values[3];
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, values, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_LOOKUP, sql, db_query_i64_cb, values, nrows, ,
         DB_QUERY_BIND_INT64(parent_id),
         DB_QUERY_BIND_TEXT(name, name_len),
     );
@@ -857,15 +854,14 @@ mozbm_lookup_id (
         "(SELECT `fk`, `" col "` FROM `moz_bookmarks` WHERE `id` = ?) "  \
     "ORDER BY `id` LIMIT 1"
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_LOOKUP_ID];
-    char const    *sql      = MOZBM_LOOKUP_ID("title");
+    char const *sql = MOZBM_LOOKUP_ID("title");
     if (ctx->flags & BACKEND_FILENAME_GUID) {
         sql = MOZBM_LOOKUP_ID("guid");
     }
 
     int64_t values[2];
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, values, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_LOOKUP_ID, sql, db_query_i64_cb, values, nrows, ,
         DB_QUERY_BIND_INT64(mb->id),
     );
     if (nrows < 0) {
@@ -893,14 +889,13 @@ mozbm_move (
         "ifnull(?3, safeincr((" MOZBM_MAXPOS("?1") ")))) "  \
     "WHERE `id` = ?4"
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_MOVE];
     char const *sql = MOZBM_MOVE("title");
     if (ctx->flags & BACKEND_FILENAME_GUID) {
         sql = MOZBM_MOVE("guid");
     }
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MB_MOVE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(new_parent),
         DB_QUERY_BIND_TEXT(new_name, new_name_len),
         DB_QUERY_BIND_INT64(new_position),
@@ -918,7 +913,6 @@ mozbm_mtime_update (
     int64_t             id,
     int64_t            *usecs_ptr
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_MTIME_UPDATE];
     char const *sql =
         "UPDATE `moz_bookmarks` SET `lastModified` = ? WHERE `id` = ?";
 
@@ -934,7 +928,7 @@ mozbm_mtime_update (
     }
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MB_MTIME_UPDATE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(usecs),
         DB_QUERY_BIND_INT64(id),
     );
@@ -989,13 +983,12 @@ mozbm_pos_shift (
         pos_start = tmp;
     }
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_POS_SHIFT];
     char const *sql =
         "UPDATE `moz_bookmarks` SET `position` = `position` + (? - 1) "
         "WHERE `parent` = ? AND `position` BETWEEN ? AND ?";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MB_POS_SHIFT, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(diff),
         DB_QUERY_BIND_INT64(parent_id),
         DB_QUERY_BIND_INT64(pos_start),
@@ -1013,12 +1006,11 @@ mozbm_pos_update (
     int64_t             id,
     int64_t             new_pos
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_POS_UPDATE];
     char const *sql =
         "UPDATE `moz_bookmarks` SET `position` = ? WHERE `id` = ?";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MB_POS_UPDATE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(new_pos),
         DB_QUERY_BIND_INT64(id),
     );
@@ -1033,11 +1025,10 @@ mozbm_purge (
     struct backend_ctx *ctx,
     int64_t             place_id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_PURGE];
     char const *sql = "DELETE FROM `moz_bookmarks` WHERE `fk` = ?";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MB_PURGE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(place_id),
     );
     if (status < 0) {
@@ -1051,20 +1042,19 @@ mozbm_purge_check (
     struct backend_ctx *ctx,
     int64_t             place_id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_PURGE_CHECK];
     char const *sql = "SELECT COUNT(*) FROM `moz_bookmarks` "
         "WHERE `fk` = ? AND `title` IS NOT NULL";
 
-    int64_t result;
+    int64_t cnt;
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &result, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_PURGE_CHECK, sql, db_query_i64_cb, &cnt, nrows, ,
         DB_QUERY_BIND_INT64(place_id),
     );
     if (nrows < 0) {
         return nrows;
     }
     debug_assert(nrows == 1);
-    return result == 0;
+    return cnt == 0;
 }
 
 static int
@@ -1072,7 +1062,6 @@ mozbm_update (
     struct backend_ctx *ctx,
     struct mozbm       *mb
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBM_UPDATE];
     char const *sql = "UPDATE `moz_bookmarks` "
         "SET (`fk`, `title`, `guid`, `dateAdded`, `lastModified`) "
             "= (ifnull(?, `fk`), ifnull(?, `title`), ifnull(?, `guid`), "
@@ -1080,7 +1069,7 @@ mozbm_update (
         "WHERE `id` = ? RETURNING `fk`";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mb->place_id, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_UPDATE, sql, db_query_i64_cb, &mb->place_id, nrows, ,
         DB_QUERY_BIND_INT64(mb->place_id),
         DB_QUERY_BIND_TEXT(mb->title, mb->title_len),
         DB_QUERY_BIND_TEXT(mb->guid, GUID_STR_LEN),
@@ -1106,7 +1095,6 @@ mozbmdel_insert (
     struct backend_ctx *ctx,
     char const         *guid
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZBMDEL_INSERT];
     char const *sql =
         "INSERT OR IGNORE INTO `moz_bookmarks_deleted` (`guid`, `dateRemoved`)"
         "VALUES (?, ?)";
@@ -1117,7 +1105,7 @@ mozbmdel_insert (
     }
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MBDEL_INSERT, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_TEXT(guid, GUID_STR_LEN),
         DB_QUERY_BIND_INT64(date_removed),
     );
@@ -1133,13 +1121,12 @@ mozkw_delete (
     char const         *name,
     size_t              name_len
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_DELETE];
     char const *sql = "DELETE FROM `moz_keywords` "
         "WHERE `keyword` = ? RETURNING `place_id`";
 
     int64_t place_id;
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &place_id, status, , ,
+    DO_QUERY(ctx, STMT_MK_DELETE, sql, db_query_i64_cb, &place_id, status, ,
         DB_QUERY_BIND_TEXT(name, name_len),
     );
     if (status < 0) {
@@ -1157,12 +1144,11 @@ mozkw_insert (
     struct backend_ctx *ctx,
     struct mozkw       *mk
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_INSERT];
     char const *sql =
         "INSERT INTO `moz_keywords` (`keyword`, `place_id`) VALUES (?, ?)";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MK_INSERT, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_TEXT(mk->keyword, mk->keyword_len),
         DB_QUERY_BIND_INT64(mk->place_id),
     );
@@ -1180,13 +1166,12 @@ mozkw_lookup (
     struct backend_ctx *ctx,
     struct mozkw       *mk
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_LOOKUP];
     char const *sql =
         "SELECT `id`, `place_id` FROM `moz_keywords` WHERE `keyword` = ?";
 
     int64_t values[2];
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, values, nrows, , ,
+    DO_QUERY(ctx, STMT_MK_LOOKUP, sql, db_query_i64_cb, values, nrows, ,
         DB_QUERY_BIND_TEXT(mk->keyword, mk->keyword_len),
     );
     if (nrows < 0) {
@@ -1205,11 +1190,10 @@ mozkw_purge (
     struct backend_ctx *ctx,
     int64_t             place_id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_PURGE];
     char const *sql = "DELETE FROM `moz_keywords` WHERE `place_id` = ?";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MK_PURGE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(place_id),
     );
     if (status < 0) {
@@ -1244,11 +1228,10 @@ mozkw_rename (
         }
     }
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZKW_RENAME];
     char const *sql =
         "UPDATE OR REPLACE `moz_keywords` SET `id` = ? WHERE `keyword` = ?";
 
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MK_RENAME, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(old_mk.id),
         DB_QUERY_BIND_TEXT(new_name, strlen(new_name)),
     );
@@ -1266,12 +1249,11 @@ mozorigin_delete (
     struct backend_ctx *ctx,
     int64_t             id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZORIGIN_DELETE];
     char const *sql = "DELETE FROM `moz_origins` WHERE `id` = ? "
         "AND `id` NOT IN (SELECT DISTINCT `origin_id` FROM `moz_places`)";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MO_DELETE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(id),
     );
     if (status < 0) {
@@ -1285,12 +1267,11 @@ mozorigin_get (
     struct backend_ctx *ctx,
     struct mozorigin   *mo
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZORIGIN_GET];
     char const *sql =
         "SELECT `id` FROM `moz_origins` WHERE `prefix` = ? AND `host` = ?";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mo->id, nrows, , ,
+    DO_QUERY(ctx, STMT_MO_GET, sql, db_query_i64_cb, &mo->id, nrows, ,
         DB_QUERY_BIND_TEXT(mo->prefix, mo->prefix_len),
         DB_QUERY_BIND_TEXT(mo->host, mo->host_len),
     );
@@ -1308,14 +1289,13 @@ mozorigin_insert (
     struct backend_ctx *ctx,
     struct mozorigin   *mo
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZORIGIN_INSERT];
     char const *sql =
         "INSERT INTO `moz_origins` (`prefix`, `host`, `frecency`, "
             "`recalc_frecency`, `recalc_alt_frecency`) "
         "VALUES (?, ?, 1, 1, 1)";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MO_INSERT, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_TEXT(mo->prefix, mo->prefix_len),
         DB_QUERY_BIND_TEXT(mo->host, mo->host_len),
     );
@@ -1340,17 +1320,14 @@ mozplace_addref (
     }
     int64_t url_hash = mozplace_url_hash(mp->url, mp->url_len);
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_ADDREF];
     char const *sql =
         "UPDATE `moz_places` SET `foreign_count` = `foreign_count` + 1 "
         "WHERE `url_hash` = ? AND `url` = ? RETURNING `id`, `last_visit_date`";
 
     struct mozplace_addref_ctx qctx;
+    qctx.atime_buf = atime_buf;
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, mozplace_addref_cb, &qctx, nrows, ,
-        {
-            qctx.atime_buf = atime_buf;
-        },
+    DO_QUERY(ctx, STMT_MP_ADDREF, sql, mozplace_addref_cb, &qctx, nrows, ,
         DB_QUERY_BIND_INT64(url_hash),
         DB_QUERY_BIND_TEXT(mp->url, mp->url_len),
     );
@@ -1409,12 +1386,11 @@ mozplace_addref_id (
     struct backend_ctx *ctx,
     int64_t             id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_ADDREF_ID];
     char const *sql = "UPDATE `moz_places` "
         "SET `foreign_count` = `foreign_count` + 1 WHERE `id` = ?";
 
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MP_ADDREF_ID, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(id),
     );
     if (status < 0) {
@@ -1432,11 +1408,10 @@ mozplace_delete (
     int64_t             id,
     int64_t             origin_id
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_DELETE];
     char const *sql = "DELETE FROM `moz_places` WHERE `id` = ?";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, nrows, , ,
+    DO_QUERY(ctx, STMT_MP_DELETE, sql, NULL, NULL, nrows, ,
         DB_QUERY_BIND_INT64(id),
     );
     if (nrows < 0) {
@@ -1454,14 +1429,13 @@ mozplace_delref (
     int64_t             id,
     int                 purge
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_DELREF];
     char const *sql =
         "UPDATE `moz_places` SET `foreign_count` = `foreign_count` - ? "
         "WHERE `id` = ? RETURNING `foreign_count`, `origin_id`";
 
     ssize_t nrows;
     int64_t result[2];  // `foreign_count`, `origin_id`
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, result, nrows, , ,
+    DO_QUERY(ctx, STMT_MP_DELREF, sql, db_query_i64_cb, result, nrows, ,
         DB_QUERY_BIND_INT64(purge == 0 ? 1 : purge),
         DB_QUERY_BIND_INT64(id),
     );
@@ -1486,7 +1460,6 @@ mozplace_insert (
     struct backend_ctx *ctx,
     struct mozplace    *mp
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_INSERT];
     char const *sql = 
         "INSERT INTO `moz_places` (`url`, `rev_host`, `guid`, `frecency`, "
             "`foreign_count`, `url_hash`, `origin_id`, `recalc_frecency`) "
@@ -1494,7 +1467,7 @@ mozplace_insert (
 
     char guid_buf[GUID_STR_LEN];
     int status;
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, prepare:, ,
+    DO_QUERY(ctx, STMT_MP_INSERT, sql, NULL, NULL, status, prepare:,
         DB_QUERY_BIND_TEXT(mp->url, mp->url_len),
         DB_QUERY_BIND_TEXT(mp->rev_host, mp->rev_host_len),
         DB_QUERY_BIND_TEXT(gen_random_guid(guid_buf), GUID_STR_LEN),
@@ -1559,13 +1532,12 @@ mozplace_update (
     }
 
   do_update:  ;
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_MOZPLACE_UPDATE];
     char const *sql = "UPDATE `moz_places` "
         "SET (`last_visit_date`, `description`) "
             "= (ifnull(?, `last_visit_date`), ifnull(?, `description`)) "
         "WHERE `id` = ?";
 
-    DO_QUERY(ctx, stmt_ptr, sql, NULL, NULL, status, , ,
+    DO_QUERY(ctx, STMT_MP_UPDATE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(mp->last_visit_date),
         DB_QUERY_BIND_TEXT(mp->desc, mp->desc_len),
         DB_QUERY_BIND_INT64(mp->id),
@@ -2091,12 +2063,11 @@ tag_entry_lookup (
     struct backend_ctx *ctx,
     struct mozbm       *mb
 ) {
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_TAG_ENTRY_LOOKUP];
     char const *sql = "SELECT `id` FROM `moz_bookmarks` "
         "WHERE `parent` = ? AND `fk` = ? LIMIT 1";
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, db_query_i64_cb, &mb->id, nrows, , ,
+    DO_QUERY(ctx, STMT_MB_LOOKUP_FK, sql, db_query_i64_cb, &mb->id, nrows, ,
         DB_QUERY_BIND_INT64(mb->parent_id),
         DB_QUERY_BIND_INT64(mb->place_id),
     );
@@ -2180,10 +2151,10 @@ bookmark_do_get (
 #define BOOKMARK_GET_WITH_TITLE  \
     BOOKMARK_GET("WHEN " STRINGIFY(BM_XATTR_TITLE) " THEN `b`.`title` ")
 
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET_EX];
-    char const    *sql      = BOOKMARK_GET_EX;
+    int         stmt_idx = STMT_BOOKMARK_GET_EX;
+    char const *sql      = BOOKMARK_GET_EX;
     if (xattr_id >= MOZBM_XATTR_START) {
-        stmt_ptr = &ctx->stmts[STMT_BOOKMARK_GET];
+        stmt_idx = STMT_BOOKMARK_GET;
         sql      = BOOKMARK_GET_WITH_GUID;
         if (ctx->flags & BACKEND_FILENAME_GUID) {
             sql = BOOKMARK_GET_WITH_TITLE;
@@ -2191,10 +2162,7 @@ bookmark_do_get (
     }
 
     ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, bookmark_get_cb, qctx, nrows, ,
-        {
-            qctx->tags_root_id = ctx->tags_root_id;
-        },
+    DO_QUERY(ctx, stmt_idx, sql, bookmark_get_cb, qctx, nrows, ,
         DB_QUERY_BIND_INT64(xattr_id),
         DB_QUERY_BIND_INT64(id),
     );
@@ -2270,8 +2238,7 @@ bookmark_do_list (
         { STMT_BOOKMARK_LIST_TAG,     STMT_BOOKMARK_LIST_TAG_EX     },
         { STMT_BOOKMARK_LIST_KEYWORD, STMT_BOOKMARK_LIST_KEYWORD_EX },
     };
-    sqlite3_stmt **stmt_ptr
-        = &ctx->stmts[stmt_idx_table[bookmark_type][with_stat]];
+    int stmt_idx = stmt_idx_table[bookmark_type][with_stat];
 
     bool filename_is_guid = ctx->flags & BACKEND_FILENAME_GUID;
     char const *sql_table[3][2][2] = {
@@ -2284,17 +2251,14 @@ bookmark_do_list (
     };
     char const *sql = sql_table[bookmark_type][filename_is_guid][with_stat];
 
-    ssize_t nrows;
-    DO_QUERY(ctx, stmt_ptr, sql, qctx->row_func, qctx, nrows, ,
-        {
-            bool name_distinct = filename_is_guid
-                || !BOOKMARKFS_BOOKMARK_IS_TYPE(flags, BOOKMARK)
-                || (ctx->flags & BACKEND_ASSUME_TITLE_DISTINCT);
+    qctx->tags_root_id = ctx->tags_root_id;
+    qctx->check_name = !filename_is_guid
+        && BOOKMARKFS_BOOKMARK_IS_TYPE(flags, BOOKMARK)
+        && !(ctx->flags & BACKEND_ASSUME_TITLE_DISTINCT);
+    qctx->with_stat = with_stat;
 
-            qctx->tags_root_id = ctx->tags_root_id;
-            qctx->check_name   = !name_distinct;
-            qctx->with_stat    = with_stat;
-        },
+    ssize_t nrows;
+    DO_QUERY(ctx, stmt_idx, sql, qctx->row_func, qctx, nrows, ,
         DB_QUERY_BIND_INT64(id),
         DB_QUERY_BIND_INT64(off),
     );
@@ -2395,15 +2359,12 @@ bookmark_do_lookup (
     sql = sql_table[bookmark_type][filename_is_guid];
 
   query:  ;
-    sqlite3_stmt **stmt_ptr = &ctx->stmts[stmt_idx];
+    struct bookmark_lookup_ctx qctx;
+    qctx.tags_root_id = name == NULL ? UINT64_MAX : ctx->tags_root_id;
+    qctx.stat_buf     = stat_buf;
 
     ssize_t nrows;
-    struct bookmark_lookup_ctx qctx;
-    DO_QUERY(ctx, stmt_ptr, sql, bookmark_lookup_cb, &qctx, nrows, ,
-        {
-            qctx.tags_root_id = name == NULL ? UINT64_MAX : ctx->tags_root_id;
-            qctx.stat_buf     = stat_buf;
-        },
+    DO_QUERY(ctx, stmt_idx, sql, bookmark_lookup_cb, &qctx, nrows, ,
         DB_QUERY_BIND_INT64(id),
         DB_QUERY_BIND_TEXT(name, name_len),
     );
@@ -3254,8 +3215,9 @@ bookmark_get (
 
   query:  ;
     struct bookmark_get_ctx qctx;
-    qctx.callback  = callback;
-    qctx.user_data = user_data;
+    qctx.tags_root_id = ctx->tags_root_id;
+    qctx.callback     = callback;
+    qctx.user_data    = user_data;
     int status = bookmark_do_get(ctx, id, xattr_id, &qctx);
     if (status < 0) {
         return status;
