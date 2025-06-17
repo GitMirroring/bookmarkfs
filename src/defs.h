@@ -92,10 +92,6 @@
 #  define UNUSED_VAR(name)  name##_unused_ VARATTR_UNUSED_
 #endif  /* defined(HAVE_STDC_23) */
 
-#if defined(__FreeBSD__) || (defined(__linux__) && defined(_GNU_SOURCE))
-#  define HAVE_PIPE2  1
-#endif
-
 #ifndef __FreeBSD__
 #  define O_RESOLVE_BENEATH  0
 #  define PROT_MAX(prot)     0

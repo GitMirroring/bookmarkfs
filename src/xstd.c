@@ -111,14 +111,14 @@ xpipe2 (
     int pipefd[2],
     int flags
 ) {
-#ifdef HAVE_PIPE2
+#if defined(__FreeBSD__) || (defined(__linux__) && defined(_GNU_SOURCE))
     if (0 != pipe2(pipefd, flags)) {
         log_printf("pipe2(): %s", xstrerror(errno));
         return -1;
     }
     return 0;
 
-#else  /* !defined(HAVE_PIPE2) */
+#else
     if (0 != pipe(pipefd)) {
         log_printf("pipe(): %s", xstrerror(errno));
         return -1;
@@ -147,7 +147,7 @@ xpipe2 (
     close(pipefd[1]);
     return -1;
 
-#endif  /* defined(HAVE_PIPE2) */
+#endif
 }
 
 void *
