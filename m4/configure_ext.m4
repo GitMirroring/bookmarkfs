@@ -8,8 +8,8 @@ dnl  This file is offered as-is, without any warranty.
 dnl
 
 dnl
-dnl  EX_FEAT(feature, default-value, description, [action-if-enabled],
-dnl          [action-if-disabled])
+dnl  EX_FEAT(feature, [default-value], description, [action-if-enabled],
+dnl          [no-ac-define])
 dnl
 dnl  Provide an option to enable or disable a feature.
 dnl
@@ -19,15 +19,19 @@ AC_DEFUN([EX_FEAT], [
     AC_MSG_CHECKING(m4_normalize([if $3 is enabled]))
     AC_ARG_ENABLE([$1], m4_normalize([
         AS_HELP_STRING([--]arg_action_[-$1], arg_action_ [$3])
-    ]), , [
+    ]), , m4_ifnblank([$2], [
         AS_VAR_SET([enable_]feat_name_, [$2])
-    ])
-    AS_VAR_IF([enable_]feat_name_, [no], [
-        AC_MSG_RESULT([no])
-        $5
-    ], [
+    ]))
+    AS_VAR_IF([enable_]feat_name_, [yes], [
         AC_MSG_RESULT([yes])
         $4
+        m4_ifblank([$5], [
+            AC_DEFINE(m4_if(m4_substr(feat_name_, 0, 10), [bookmarkfs], ,
+                            [BOOKMARKFS_])[]m4_toupper(feat_name_),
+                    [1], [Define to 1 if $3 is enabled.])
+        ])
+    ], [
+        AC_MSG_RESULT([no])
     ])
     AS_VAR_SET([desc_]feat_name_, ["$3"])
     m4_popdef([arg_action_])
