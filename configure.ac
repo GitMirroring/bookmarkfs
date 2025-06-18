@@ -9,7 +9,7 @@ dnl
 
 AC_PREREQ([2.70])
 AC_INIT([bookmarkfs], [0.1.2], [bug-bookmarkfs@nongnu.org])
-AC_CONFIG_SRCDIR([bookmarkfs_util.pc.in])
+AC_CONFIG_SRCDIR([src/bookmarkfs_util.pc.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_TESTDIR([tests])
@@ -175,8 +175,7 @@ AC_DEFINE([BUILDING_BOOKMARKFS], [1], [Define to 1 if building BookmarkFS.])
 AC_CONFIG_FILES([
     Makefile
     doc/Makefile
-    src/Makefile
+    src/Makefile src/bookmarkfs_util.pc
     tests/Makefile tests/atlocal
-    bookmarkfs_util.pc
 ])
 AC_OUTPUT

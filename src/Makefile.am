@@ -13,6 +13,7 @@ noinst_HEADERS     = backend_util.h db.h defs.h frontend_util.h fs_ops.h  \
                      xattr.h xstd.h
 lib_LTLIBRARIES    =
 pkglib_LTLIBRARIES =
+pkgconfig_DATA     = bookmarkfs_util.pc
 
 BASE_CPPFLAGS_ =
 if NO_FILE_NAME
