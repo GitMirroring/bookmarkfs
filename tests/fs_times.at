@@ -12,11 +12,10 @@ AT_KEYWORDS([fs times])
 
 ATX_CHECK_FS_NEW_ANY(, , [
     name=$(ath_fn_rand_u64_hex)
-    seed=$(ath_fn_prng_seed)
 
     mkdir $name
     ATX_RUN([
-        check-fs times -s "$seed" -r 512 $name
+        check-fs times -r 512 $name
     ])
 ])
 

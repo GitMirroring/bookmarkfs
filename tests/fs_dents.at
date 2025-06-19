@@ -13,11 +13,10 @@ AT_KEYWORDS([fs dents])
 ATX_CHECK_FS_NEW_ANY(, , [
     ATX_RUN_REPEAT([8], [
         name=$(ath_fn_rand_u64_hex)
-        seed=$(ath_fn_prng_seed)
 
         mkdir $name
         ATX_RUN([
-            check-fs dents -n 1024 -s "$seed" $name
+            check-fs dents -n 1024 $name
         ])
     ])
 ])

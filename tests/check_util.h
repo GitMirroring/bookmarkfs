@@ -72,8 +72,6 @@ check_watcher (
 );
 
 int
-prng_seed_from_hex (
-    char const *str
-);
+prng_seed_from_env (void);
 
 #endif  /* !defined(BOOKMARKFS_CHECK_UTIL_H_) */

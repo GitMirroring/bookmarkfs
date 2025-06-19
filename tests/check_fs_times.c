@@ -160,16 +160,11 @@ check_fs_times (
     int   argc,
     char *argv[]
 ) {
-    char const *seed = NULL;
     int rounds = -1;
 
-    OPT_START(argc, argv, "r:s:")
+    OPT_START(argc, argv, "r:")
     OPT_OPT('r') {
         rounds = atoi(optarg);
-        break;
-    }
-    OPT_OPT('s') {
-        seed = optarg;
         break;
     }
     OPT_END
@@ -184,7 +179,7 @@ check_fs_times (
     }
     char const *path = argv[0];
 
-    if (0 != prng_seed_from_hex(seed)) {
+    if (0 != prng_seed_from_env()) {
         return -1;
     }
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);

@@ -15,11 +15,15 @@ AT_KEYWORDS([lib prng])
 # For reliable testing of PRNGs, see <https://prng.di.unimi.it/#quality>.
 ATX_CHECK_LIB([
     gen_num() {
-        check-util-lib prng -s$1 -n$2
+        env BOOKMARKFS_TEST_PRNG_SEED=$1 check-util-lib prng -n$2
     }
 
-    ATX_RUN_REPEAT([16], [
-        seed=$(ath_fn_prng_seed)
+    repeat=1
+    if test -z "$BOOKMARKFS_TEST_PRNG_SEED"; then
+        repeat=16
+    fi
+    ATX_RUN_REPEAT([$repeat], [
+        seed=$(check-util-lib prng -n4 | tr -d '\n')
         count=32
 
         num_1=$(gen_num $seed $count)

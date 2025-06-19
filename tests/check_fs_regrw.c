@@ -167,16 +167,11 @@ check_fs_regrw (
     int   argc,
     char *argv[]
 ) {
-    char const *seed = NULL;
     int file_max = -1;
 
-    OPT_START(argc, argv, "n:s:")
+    OPT_START(argc, argv, "n:")
     OPT_OPT('n') {
         file_max = atoi(optarg);
-        break;
-    }
-    OPT_OPT('s') {
-        seed = optarg;
         break;
     }
     OPT_END
@@ -191,7 +186,7 @@ check_fs_regrw (
     }
     char const *path = argv[0];
 
-    if (0 != prng_seed_from_hex(seed)) {
+    if (0 != prng_seed_from_env()) {
         return -1;
     }
     return do_check_fs_regrw(path, file_max);

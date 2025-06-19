@@ -26,25 +26,25 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "prng.h"
 
 int
-prng_seed_from_hex (
-    char const *str
-) {
-    uint64_t buf[4], *seed = NULL;
+prng_seed_from_env (void)
+{
+    char const *seed_str = getenv("BOOKMARKFS_TEST_PRNG_SEED");
+    if (seed_str == NULL) {
+        return prng_seed(NULL);
+    }
 
-    if (str != NULL) {
-        int cnt = sscanf(str,
-                "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
-                &buf[0], &buf[1], &buf[2], &buf[3]);
-        if (cnt != 4) {
-            log_puts("bad prng seed");
-            return -1;
-        }
-        seed = buf;
-        log_printf("prng seed: '%s'", str);
+    uint64_t seed[4];
+    int cnt = sscanf(seed_str,
+            "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
+            &seed[0], &seed[1], &seed[2], &seed[3]);
+    if (cnt != 4) {
+        log_puts("bad prng seed");
+        return -1;
     }
     return prng_seed(seed);
 }

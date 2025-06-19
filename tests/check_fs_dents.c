@@ -239,16 +239,11 @@ check_fs_dents (
     int   argc,
     char *argv[]
 ) {
-    char const *seed = NULL;
     int n = -1;
 
-    OPT_START(argc, argv, "n:s:")
+    OPT_START(argc, argv, "n:")
     OPT_OPT('n') {
         n = atoi(optarg);
-        break;
-    }
-    OPT_OPT('s') {
-        seed = optarg;
         break;
     }
     OPT_END
@@ -263,7 +258,7 @@ check_fs_dents (
     }
     char const *path = argv[0];
 
-    if (0 != prng_seed_from_hex(seed)) {
+    if (0 != prng_seed_from_env()) {
         return -1;
     }
     int dirfd = open(path, O_RDONLY | O_DIRECTORY);
