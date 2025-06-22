@@ -2815,11 +2815,13 @@ store_init (
     uint64_t *bookmarks_root_id_ptr,
     uint64_t *tags_root_id_ptr
 ) {
-    int status = -EIO;
+    if (0 != db_check(db)) {
+        return -1;
+    }
 
     int64_t user_version;
     if (1 != db_exec(db, SQL_PRAGMA("user_version"), NULL, &user_version)) {
-        return status;
+        return -1;
     }
     // The oldest schema version supported by modern Firefox is 52,
     // which was used in Firefox 62-68.  Fortunately, it has not changed
@@ -2830,13 +2832,13 @@ store_init (
     // (after ensuring that no incompatible changes are made).
     if (user_version < 52 || user_version > 78) {
         log_printf("unsupported schema version %" PRIi64, user_version);
-        return status;
+        return -1;
     }
 
     char const *sql = "SELECT `id` FROM `moz_bookmarks` WHERE `guid` = ?";
     sqlite3_stmt *stmt = db_prepare(db, sql, strlen(sql), false);
     if (unlikely(stmt == NULL)) {
-        return status;
+        return -1;
     }
 
     struct store_check_args {
@@ -2848,6 +2850,7 @@ store_init (
     };
     size_t num_args = sizeof(check_args) / sizeof(struct store_check_args);
 
+    int status = -1;
     for (size_t idx = 0; idx < num_args; ++idx) {
         struct store_check_args *args = check_args + idx;
 
@@ -2956,9 +2959,6 @@ backend_create (
     uint64_t bookmarks_root_id = UINT64_MAX;
     uint64_t tags_root_id      = UINT64_MAX;
     if (conf->flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
-        if (0 != db_check(db)) {
-            goto close_db;
-        }
         // Defer initialization in sandbox mode, so that
         // user-provided data is only read after entering sandbox.
         if (0 != store_init(db, &bookmarks_root_id, &tags_root_id)) {
@@ -3381,7 +3381,7 @@ backend_mkfs (
 
     struct db_pragma_item const pragmas[] = {
         SQL_PRAGMA_ITEM("locking_mode", "exclusive"),
-        SQL_PRAGMA_ITEM("journal_mode", "memory"),
+        SQL_PRAGMA_ITEM("journal_mode", "wal"),
         SQL_PRAGMA_ITEM("synchronous",  "0"),
         // Schema version 74 was used in Firefox 115-117.
         //
