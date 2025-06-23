@@ -120,9 +120,6 @@ OpenBSD does provide a libfuse-compatible library, however,
 it only covers the high-level API, while BookmarkFS uses the
 @uref{https://libfuse.github.io/doxygen/fuse__lowlevel_8h.html, low-level API}.
 
-For a similar reason, @uref{https://github.com/winfsp/winfsp, WinFsp}
-won't help much if you're trying to port BookmarkFS to Microsoft Windows.
-
 Other notable portability issues:
 
 @table @asis
@@ -206,11 +203,8 @@ the effective user ID and group ID of the calling process.
 On FreeBSD, you may wish to set the @samp{vfs.usermount}
 @freebsdmanpage{sysctl, 8} to @t{1} for unprivileged mounts.
 
-To unmount a BookmarkFS filesystem, run @linuxmanpage{fusermount3, 1} or
-@linuxmanpage{umount, 8} on @var{target}.
-The daemon process will automatically dismount the filesystem upon
-@code{SIGINT} or @code{SIGTERM} receipt, however, it only works in
-non-sandbox mode.
+To unmount a BookmarkFS filesystem, run @linuxmanpage{fusermount3, 1}
+(with the @option{-u} option) or @linuxmanpage{umount, 8} on @var{target}.
 
 Options:
 
@@ -267,7 +261,7 @@ the user has to choose which one to maintain:
 mtime updates normally; ctime value always follow mtime.
 
 The kernel may automatically update and cache ctime,
-making it appear more ``correct'' than what we expect.
+making it appear more ``correct'' than expected.
 However, this behavior should not be relied upon.
 
 @item Last status change time
@@ -990,15 +984,17 @@ To change the order of directory entries, @pxref{Permute Directory Entries}.
 BookmarkFS provides an I/O control for rearranging directory entries:
 
 @example c
-#include <bookmarkfs/ioctl.h>
+struct bookmarkfs_permd_data permd_data = @{ /* ... */ @};
 
-int ioctl (int dirfd, BOOKMARKFS_IOC_PERMD,
-        struct bookmarkfs_permd_data const *argp);
+status = ioctl(dirfd, BOOKMARKFS_IOC_PERMD, &permd_data);
+// ...
 @end example
 
 The @code{bookmarkfs_permd_data} structure is defined as:
 
 @example c
+#include <bookmarkfs/ioctl.h>
+
 struct bookmarkfs_permd_data @{
     enum bookmarkfs_permd_op op;
 
@@ -1082,25 +1078,25 @@ from another bookmark management software.
 @node Online Filesystem Check
 @subsection Online Filesystem Check
 
-To perform filesystem check on a mounted BookmarkFS filesystem,
-use the following I/O controls:
+BookmarkFS provides I/O controls to perform online filesystem checks:
 
 @example c
-#include <bookmarkfs/ioctl.h>
+struct bookmarkfs_fsck_data fsck_data = @{ /* ... */ @};
 
-int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_NEXT,
-        struct bookmarkfs_fsck_data *argp);
-
-int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_APPLY,
-        struct bookmarkfs_fsck_data *argp);
-
-int ioctl (int dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
+result = ioctl(dirfd, BOOKMARKFS_IOC_FSCK_NEXT, &fsck_data);
+// ...
+result = ioctl(dirfd, BOOKMARKFS_IOC_FSCK_APPLY, &fsck_data);
+// ...
+result = ioctl(dirfd, BOOKMARKFS_IOC_FSCK_REWIND);
+// ...
 @end example
 
 @anchor{Filesystem-Check Data}
 The @code{bookmarkfs_fsck_data} structure is defined as:
 
 @example c
+#include <bookmarkfs/ioctl.h>
+
 struct bookmarkfs_fsck_data @{
     uint64_t id;
     uint64_t extra;
@@ -1116,14 +1112,14 @@ Find the next bookmark with invalid name under the directory.
 
 @anchor{Filesystem-Check Result Code}
 @cindex Filesystem-Check Result Code
-On success, @code{ioctl()} updates @var{argp}, and returns
+On success, @code{ioctl()} updates @var{fsck_data}, and returns
 one of the values defined in @code{enum bookmarkfs_fsck_result}:
 
 @table @code
 @item BOOKMARKFS_FSCK_RESULT_END
 There are no more bookmarks with invalid name under the directory.
 
-Fields in @var{argp} have unspecified values.
+Fields in @var{fsck_data} have unspecified values.
 
 @item BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE
 The bookmark name duplicates with another bookmark which appears earlier
@@ -1162,7 +1158,7 @@ otherwise the behavior is undefined.
 The @code{name} field should be set to the new name for the bookmark.
 The @code{extra} field is unused.
 
-On success, @code{ioctl()} updates @var{argp}, and returns
+On success, @code{ioctl()} updates @var{fsck_data}, and returns
 one of the values defined in @code{enum bookmarkfs_fsck_result},
 like with @code{BOOKMARKFS_IOC_FSCK_NEXT}.
 Additionally, it may also return:
@@ -1248,7 +1244,7 @@ The Firefox backend provides access to the bookmark data of the web browser
 and its derivatives, notably @uref{https://www.torproject.org/, Tor Browser}
 and @uref{https://librewolf.net/, Librewolf}.
 
-Backend name (for the @option{-o backend} option): @samp{firefox}.
+Backend name (for the @option{-o backend=@var{name}} option): @samp{firefox}.
 
 Firefox bookmarks are stored in a SQLite database under the profile directory.
 When mounting the filesystem, this pathname shall be passed as the @var{src}
@@ -1387,7 +1383,7 @@ The Chromium backend provides access to the bookmark data of the web browser
 notably @uref{https://github.com/ungoogled-software/ungoogled-chromium,
 ungoogled-chromium}.
 
-Backend name (for the @option{-o backend} option): @samp{chromium}.
+Backend name (for the @option{-o backend=@var{name}} option): @samp{chromium}.
 
 Chromium bookmarks are stored in a text file (in JSON format)
 under the profile directory.
@@ -4306,26 +4302,7 @@ Refer to the source code in @file{src/sandbox.c} for implementation details.
 @node File Watcher
 @section File Watcher
 
-File watchers detect filesystem changes using platform-specific features:
-
-@table @asis
-@item Linux
-Implemented with @linuxmanpage{fanotify, 7}.
-Requires kernel version 5.13 or later for unprivileged users.
-
-@linuxmanpage{inotify, 7} does not have this limitation, however,
-it is incompatible with our sandboxing design.
-
-@item FreeBSD
-Implemented with the @code{EVFILT_VNODE} filter of @freebsdmanpage{kevent, 2}.
-
-@item Fallback
-Periodically checks the @code{st_ino} and @code{st_mtim} attributes
-of the watched file with @posixfuncmanpage{fstatat}.
-
-This approach is less efficient than ``native'' implementations,
-but should work on any POSIX-compatible system.
-@end table
+Each file watcher watches for changes of a single file on the filesystem.
 
 Functions:
 
@@ -4358,7 +4335,26 @@ A bit array of the following flags:
 
 @table @asis
 @item @code{WATCHER_FALLBACK}
-Do not use platform-specific features.
+By default, the file watcher uses platform-specific API to detect
+filesystem changes:
+
+@table @asis
+@item Linux
+Implemented with @linuxmanpage{fanotify, 7}.
+Requires kernel version 5.13 or later for unprivileged users.
+
+@linuxmanpage{inotify, 7} does not have this limitation, however,
+it is incompatible with our sandboxing design.
+
+@item FreeBSD
+Implemented with the @code{EVFILT_VNODE} filter of @freebsdmanpage{kevent, 2}.
+@end table
+
+With this flag, the watcher instead periodically checks the @code{st_ino} and
+@code{st_mtim} attributes of the watched file with @posixfuncmanpage{fstatat}.
+
+The fallback implementation is less efficient than ``native'' ones,
+but should work on any POSIX-compatible system.
 
 @item @code{WATCHER_NOOP}
 The watcher does nothing, and @code{watcher_poll()} always return
