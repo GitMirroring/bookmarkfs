@@ -35,6 +35,7 @@
 #include "backend.h"
 #include "fsck_ops.h"
 #include "ioctl.h"
+#include "lib.h"
 #include "macros.h"
 #include "sandbox.h"
 #include "version.h"
@@ -202,6 +203,8 @@ print_version (void)
             BOOKMARKFS_VER_MAJOR, BOOKMARKFS_VER_MINOR, BOOKMARKFS_VER_PATCH);
     puts(BOOKMARKFS_FEATURE_STRING(DEBUG,            "debug"));
     puts(BOOKMARKFS_FEATURE_STRING(INTERACTIVE_FSCK, "interactive"));
+
+    bookmarkfs_print_lib_version("\n");
 }
 
 static int
