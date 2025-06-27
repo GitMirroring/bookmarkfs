@@ -302,8 +302,16 @@ Stay in the foreground, do not daemonize.
 @item -h
 Print help text, and then exit.
 
+If also given the @option{-o backend=@var{name}} option,
+print help text of the corresponding backend.
+This also applies to @command{fsck.bookmarkfs} and @command{mkfs.bookmarkfs}.
+
 @item -V
 Print version and feature information, and then exit.
+
+If also given the @option{-o backend=@var{name}} option,
+print version information of the corresponding backend.
+This also applies to @command{fsck.bookmarkfs} and @command{mkfs.bookmarkfs}.
 @end table
 
 Unrecognized options specified with @option{-o} are passed to libfuse
@@ -481,8 +489,14 @@ Also @pxref{Disabling Landlock}.
 @item -h
 Print help text, and then exit.
 
+If also given the @option{-o handler=@var{name}} option,
+print help text of the corresponding fsck handler.
+
 @item -V
 Print version and feature information, and then exit.
+
+If also given the @option{-o handler=@var{name}} option,
+print version information of the corresponding fsck handler.
 @end table
 
 
