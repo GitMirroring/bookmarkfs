@@ -61,7 +61,7 @@ AS_VAR_IF([host_os_is_linux], [yes], [
     EX_FEAT([sandbox-landlock], [yes], [Landlock features for sandboxing])
 ])
 
-EX_FEAT([xxhash-inline], [no], [using xxhash as a header-only library])
+EX_FEAT([xxhash-inline], [yes], [using xxhash as a header-only library])
 
 EX_FEAT([bookmarkfs-debug], [no], [debugging features for BookmarkFS])
 

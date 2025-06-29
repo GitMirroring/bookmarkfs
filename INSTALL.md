@@ -104,8 +104,8 @@ Installation
     * No longer requires: libseccomp
   - `--disable-sandbox-landlock` (Linux-only)
     * Disable the [Landlock] feature in the sandbox implementation
-  - `--enable-xxhash-inline`
-    * Use xxHash as a header-only library
+  - `--disable-xxhash-inline`
+    * Do not use xxHash as a header-only library
   - `--disable-backend-firefox-write`
     * Build the Firefox backend without write features
     * No longer requires: Nettle, uriparser
