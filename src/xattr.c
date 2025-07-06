@@ -63,11 +63,13 @@ xattr_do_get (
 #if defined(__linux__)
     result = fgetxattr(fd, name, buf, buf_len);
     if (result < 0) {
+        result = -errno;
         log_printf("fgetxattr(): %s", strerror(errno));
     }
 #elif defined(__FreeBSD__)
     result = extattr_get_fd(fd, EXTATTR_NAMESPACE_USER, name, buf, buf_len);
     if (result < 0) {
+        result = -errno;
         log_printf("extattr_get_fd(): %s", strerror(errno));
     }
 #else
@@ -86,11 +88,13 @@ xattr_do_list (
 #if defined(__linux__)
     result = flistxattr(fd, buf, buf_len);
     if (result < 0) {
+        result = -errno;
         log_printf("flistxattr(): %s", strerror(errno));
     }
 #elif defined(__FreeBSD__)
     result = extattr_list_fd(fd, EXTATTR_NAMESPACE_USER, buf, buf_len);
     if (result < 0) {
+        result = -errno;
         log_printf("extattr_list_fd(): %s", strerror(errno));
     }
 #else
