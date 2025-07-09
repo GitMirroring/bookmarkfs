@@ -147,7 +147,7 @@ Installation
 
   Install the user manual:
 
-    $ make install-man install-info
+    $ make install-info
 
   Uninstall:
 
