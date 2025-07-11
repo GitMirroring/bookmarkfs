@@ -11,6 +11,8 @@ AT_SETUP([util lib: sandbox])
 AT_KEYWORDS([lib sandbox])
 
 ATX_CHECK_LIB([
+    ATX_FEAT_PREREQ([sandbox])
+
     tmpdir=./$(ath_fn_rand_u64_hex).tmp.d
 
     mkdir $tmpdir

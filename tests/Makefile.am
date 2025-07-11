@@ -22,8 +22,12 @@ if BOOKMARKFS_UTIL
 
   check_util_lib_CPPFLAGS = -I$(top_srcdir)/src
   check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
-  check_util_lib_SOURCES  = check_lib.c check_watcher.c check_sandbox.c  \
+  check_util_lib_SOURCES  = check_lib.c check_watcher.c  \
                             check_hashmap.c check_util.c
+
+if SANDBOX
+  check_util_lib_SOURCES += check_sandbox.c
+endif  # SANDBOX
 endif  # BOOKMARKFS_UTIL
 
 if BOOKMARKFS_MOUNT

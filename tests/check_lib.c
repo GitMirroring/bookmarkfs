@@ -59,8 +59,10 @@ dispatch_subcmds (
         status = subcmd_prng(argc, argv);
     } else if (0 == strcmp("watcher", cmd)) {
         status = check_watcher(argc, argv);
+#ifdef BOOKMARKFS_SANDBOX
     } else if (0 == strcmp("sandbox", cmd)) {
         status = check_sandbox(argc, argv);
+#endif
     } else if (0 == strcmp("hashmap", cmd)) {
         status = check_hashmap(argc, argv);
     } else {
