@@ -23,11 +23,11 @@ LT_INIT([disable-static dlopen])
 
 AC_CANONICAL_HOST
 AS_CASE(["${host_os}"], [linux*], [
-    AS_VAR_SET([host_os_is_linux], [yes])
+    AS_VAR_SET([host_os], [linux])
 ], [freebsd*], [
-    AS_VAR_SET([host_os_is_freebsd], [yes])
+    AS_VAR_SET([host_os], [freebsd])
 ], [
-    AC_MSG_ERROR(m4_normalize([Unsupported platform "${host_os}".]))
+    AC_MSG_ERROR([Unsupported platform "${host_os}".])
 ])
 
 # -- Checks for programs --
@@ -54,7 +54,7 @@ EX_FEAT([bookmarkfs-mount], [NE], [the mount.bookmarkfs program], [
 
 EX_FEAT([sandbox], [YDE], [sandboxing])
 
-AS_VAR_IF([host_os_is_linux], [yes], [
+AS_VAR_IF([host_os], [linux], [
     EX_FEAT([sandbox-landlock], [YD], [using Landlock for sandboxing])
 ])
 
@@ -95,7 +95,7 @@ AX_PTHREAD
 
 EX_DEP([fuse3], [>= 3.5], [fuse3 library], , [bookmarkfs-mount])
 
-AS_VAR_IF([host_os_is_linux], [yes], [
+AS_VAR_IF([host_os], [linux], [
     EX_DEP([libseccomp], [>= 2.5], [libseccomp library], , [sandbox])
 ])
 

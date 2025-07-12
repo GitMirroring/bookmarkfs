@@ -48,11 +48,13 @@ AC_DEFUN([EX_FEAT], [
 ])
 
 dnl
-dnl  EX_DEP(pkg-name, version, pkg-desc, [action-if-found],
-dnl         [required-by-features]...)
+dnl  EX_DEP(pkg-name, version, pkg-desc, [action-if-found], [feat-names]...)
 dnl
 dnl  Check whether a package exists with `pkg-config`,
 dnl  and provide an option to specify the package's custom install location.
+dnl
+dnl  If at least one feature specified in `feat-names` is enabled,
+dnl  automatically enable checking the package, and fail if not found.
 dnl
 AC_DEFUN([EX_DEP], [
     AC_ARG_WITH([$1], m4_normalize([
@@ -60,21 +62,21 @@ AC_DEFUN([EX_DEP], [
                 [pkg-config search path for $3])
     ]), , [
         AS_VAR_SET([with_$1], [no])
-        m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
+        m4_ifnblank([$5], m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
             AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
                 AS_VAR_SET([with_$1], [yes])
             ])
-        ])
+        ]))
     ])
     AS_VAR_IF([with_$1], [no], [
-        m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
+        m4_ifnblank([$5], m4_foreach([feat_name_], [m4_shiftn(4, $@)], [
             AS_VAR_IF([enable_]m4_translit(feat_name_, [-], [_]), [yes], [
                 AC_MSG_ERROR(m4_normalize([
                     Bad option '[--without-]feat_name_'. The $3 is mandatory
                     for AS_VAR_GET([desc_]m4_translit(feat_name_, [-], [_])).
                 ]))
             ])
-        ])
+        ]))
     ], [
         AS_VAR_SET([old_pkg_config_path_], ["${PKG_CONFIG_PATH}"])
         AS_VAR_IF([with_$1], [yes], , [
