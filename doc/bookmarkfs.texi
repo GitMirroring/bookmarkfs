@@ -3354,8 +3354,8 @@ Handler-specific options:
 Path to the Tcl script file.
 This option is mandatory.
 
-The script is evaluated once after interpreter initialization.
-The evaluation result will be used as the command name for later executions.
+The script is evaluated after interpreter initialization.
+Later executions use the evaluation result as command name.
 
 The following variables are set before script evaluation:
 
@@ -4217,7 +4217,6 @@ For example:
 @itemize @bullet{}
 @item access local files other than the bookmark storage
 @item establish socket connections
-@item execute other files
 @end itemize
 
 This mechanism reduces the attack surface for exploit,

@@ -17,9 +17,6 @@ Requirements
   - GNU/Linux
   - FreeBSD (with caveats)
 
-  See the user manual for comments if you wish to port BookmarkFS to other
-  operating systems.
-
  ### Dependencies
 
   In addition to the OS kernel and a POSIX-compatible libc,
@@ -49,14 +46,11 @@ Requirements
     * Autoconf Archive
   - `pkg-config`
   - POSIX-compatible `make`
-    * One with `VPATH` support is recommended
   - C99-capable C compiler
-    * GCC or Clang is recommended
 
   Optionally:
 
-  - GNU Texinfo
-    * For building the user manual
+  - GNU Texinfo (for building the user manual)
 
 
 Installation
@@ -74,27 +68,27 @@ Installation
     $ ../configure --help
 
   BookmarkFS has multiple components.  By default, none will be built.
-  Except for the utility library, each component can be enabled independently:
+  To enable a component, specify the corresponding option:
 
-  - The BookmarkFS utility library: `--enable-bookmarkfs-util`
+  - `--enable-bookmarkfs-util`: the BookmarkFS utility library
     * Requires: libseccomp (Linux-only), xxHash
     * Automatically enabled if required by other components
-  - The `mount.bookmarkfs` program: `--enable-bookmarkfs-mount`
+  - `--enable-bookmarkfs-mount`: the `mount.bookmarkfs` program
     * Requires: libfuse, bookmarkfs-util
-  - The `fsck.bookmarkfs` program: `--enable-bookmarkfs-fsck`
+  - `--enable-bookmarkfs-fsck`: the `fsck.bookmarkfs` program
     * Requires: Readline, bookmarkfs-util
-  - The `mkfs.bookmarkfs` program: `--enable-bookmarkfs-mkfs`
-  - The `bookmarkctl` program: `--enable-bookmarkctl`
-  - The Firefox backend: `--enable-backend-firefox`
+  - `--enable-bookmarkfs-mkfs`: the `mkfs.bookmarkfs` program
+  - `--enable-bookmarkctl`: the `bookmarkctl` program
+  - `--enable-backend-firefox`: backend for Firefox
     * Requires: SQLite, Nettle, uriparser, bookmarkfs-util
-  - The Chromium backend: `--enable-backend-chromium`
+  - `--enable-backend-chromium`: backend for Chromium
     * Requires: Jansson, Nettle, bookmarkfs-util
-  - The Tcl-based handler for `fsck.bookmarkfs`: `--enable-fsck-handler-tcl`
+  - `--enable-fsck-handler-tcl`: Tcl-based handler for `fsck.bookmarkfs`
     * Requires: Tcl
 
   For each of the required third-party libraries, if installed in a
-  custom location, it should be specified with `--with-<foo>=<pkgconfdir>`,
-  where `<foo>` is the library name, and `<pkgconfdir>` is the directory
+  custom location, it should be specified with `--with-<lib>=<pkgconfdir>`,
+  where `<lib>` is the library name, and `<pkgconfdir>` is the directory
   holding its pkg-config file.
 
   Other options:
@@ -103,7 +97,7 @@ Installation
     * Build the utility library without sandboxing features
     * No longer requires: libseccomp
   - `--disable-sandbox-landlock` (Linux-only)
-    * Disable the [Landlock] feature in the sandbox implementation
+    * Do not use [Landlock] for sandboxing
   - `--disable-xxhash-inline`
     * Do not use xxHash as a header-only library
   - `--disable-backend-firefox-write`
@@ -115,7 +109,7 @@ Installation
   - `--enable-boookmarkfs-debug`
     * Add more run-time checks and logs for debugging
   - `--disable-native-watcher`
-    * Build the file watcher without platform-specific API dependency
+    * Do not use platform-specific features for the file watcher
   - `--disable-interactive-fsck`
     * Disable interactive features for `fsck.bookmarkfs`
     * No longer requires: Readline
@@ -141,7 +135,7 @@ Installation
 
     $ make install-exec
 
-  Install the development headers and the pkg-config file:
+  Install headers, man pages and the pkg-config file:
 
     $ make install-data
 
