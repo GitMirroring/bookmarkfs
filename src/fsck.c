@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
 #  include <readline/history.h>
 #  include <readline/readline.h>
 #endif
@@ -77,7 +77,7 @@ struct fsck_info {
 };
 
 // Forward declaration start
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
 static int  init_readline (struct fsck_info const *);
 #endif
 
@@ -92,7 +92,7 @@ static int  parse_opts    (struct fsck_info *, int, char *[]);
 
 extern struct bookmarkfs_fsck_handler const fsck_handler_simple;
 
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
 
 static int
 init_readline (
@@ -111,7 +111,7 @@ init_readline (
     return 0;
 }
 
-#endif  /* defined(BOOKMARKFS_INTERACTIVE_FSCK) */
+#endif  /* defined(ENABLE_INTERACTIVE_FSCK) */
 
 static void
 destroy_ctx (
@@ -166,7 +166,7 @@ do_fsck (
             }
             goto run_handler;
         }
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
         if (result == BOOKMARKFS_FSCK_USER_INPUT) {
             putchar('\n');
             data.str = readline(data.str);
@@ -234,7 +234,7 @@ init_all (
         }
         goto end;
     }
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
     if (0 != init_readline(&info)) {
         goto end;
     }
@@ -441,7 +441,7 @@ parse_opts (
         SUBOPT_END
     }
     OPT_OPT('i') {
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
         info->flags.interactive = 1;
         break;
 #else

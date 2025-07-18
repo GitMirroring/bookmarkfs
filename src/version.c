@@ -30,16 +30,16 @@ uint32_t
 bookmarkfs_lib_version (void)
 {
     uint32_t vernum = BOOKMARKFS_VERNUM;
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
     vernum |= BOOKMARKFS_FEAT_DEBUG;
 #endif
-#ifdef BOOKMARKFS_SANDBOX
+#ifdef ENABLE_SANDBOX
     vernum |= BOOKMARKFS_FEAT_SANDBOX;
-#ifdef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifdef ENABLE_SANDBOX_LANDLOCK
     vernum |= BOOKMARKFS_FEAT_SANDBOX_LANDLOCK;
 #endif
-#endif  /* defined(BOOKMARKFS_SANDBOX) */
-#ifdef BOOKMARKFS_NATIVE_WATCHER
+#endif  /* defined(ENABLE_SANDBOX) */
+#ifdef ENABLE_NATIVE_WATCHER
     vernum |= BOOKMARKFS_FEAT_NATIVE_WATCHER;
 #endif
     return vernum;

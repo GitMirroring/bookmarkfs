@@ -36,13 +36,13 @@
 
 void
 xabort_ (
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
     char const *assertion,
 #endif
     char const *name,
     int         line
 ) {
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
     fprintf(stderr, "%s:%d: assertion (%s) failed\n", name, line, assertion);
 #else
     fprintf(stderr, "%s:%d: assertion failed\n", name, line);

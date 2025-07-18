@@ -39,16 +39,16 @@ AC_PROG_MAKE_SET
 
 # -- Checks for features --
 
-EX_FEAT([bookmarkctl], [NE], [the bookmarkctl program])
+EX_FEAT([bookmarkctl], [E], [the bookmarkctl program])
 
-EX_FEAT([bookmarkfs-fsck], [NE], [the fsck.bookmarkfs program], [
+EX_FEAT([bookmarkfs-fsck], [E], [the fsck.bookmarkfs program], [
     AS_VAR_SET([enable_bookmarkfs_util],  [yes])
     AS_VAR_SET([enable_interactive_fsck], [yes])
 ])
 
-EX_FEAT([bookmarkfs-mkfs], [NE], [the mkfs.bookmarkfs program])
+EX_FEAT([bookmarkfs-mkfs], [E], [the mkfs.bookmarkfs program])
 
-EX_FEAT([bookmarkfs-mount], [NE], [the mount.bookmarkfs program], [
+EX_FEAT([bookmarkfs-mount], [E], [the mount.bookmarkfs program], [
     AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
@@ -60,16 +60,16 @@ AS_VAR_IF([host_os], [linux], [
 
 EX_FEAT([xxhash-inline], [YD], [using xxhash as a header-only library])
 
-EX_FEAT([bookmarkfs-debug], [ND], [debugging features for BookmarkFS])
+EX_FEAT([bookmarkfs-debug], [D], [debugging features for BookmarkFS])
 
-EX_FEAT([backend-firefox], [NE], [Firefox backend], [
+EX_FEAT([backend-firefox], [E], [Firefox backend], [
     AS_VAR_SET([enable_bookmarkfs_util],       [yes])
     AS_VAR_SET([enable_backend_firefox_write], [yes])
 ])
 
 EX_FEAT([backend-firefox-write], [DE], [write support for the Firefox backend])
 
-EX_FEAT([backend-chromium], [NE], [Chromium backend], [
+EX_FEAT([backend-chromium], [E], [Chromium backend], [
     AS_VAR_SET([enable_bookmarkfs_util],        [yes])
     AS_VAR_SET([enable_backend_chromium_write], [yes])
 ])
@@ -81,7 +81,7 @@ EX_FEAT([native-watcher], [YD], [platform-specific file watcher])
 
 EX_FEAT([interactive-fsck], [DE], [interactive features for fsck.bookmarkfs])
 
-EX_FEAT([fsck-handler-tcl], [NE], [Tcl-based fsck handler])
+EX_FEAT([fsck-handler-tcl], [E], [Tcl-based fsck handler])
 
 EX_FEAT([bookmarkfs-util], [E], [the BookmarkFS utility library], [
     EX_DEP([bookmarkfs_util], [>= 0.1], [BookmarkFS utility library], [

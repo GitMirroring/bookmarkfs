@@ -129,7 +129,7 @@ static int
 wait_for_watcher (
     struct watcher *w
 ) {
-#ifdef BOOKMARKFS_NATIVE_WATCHER
+#ifdef ENABLE_NATIVE_WATCHER
 #  define TRY_INTERVAL  { .tv_nsec = 50 * 1000000 }
 #  define MAX_TRIES     10
 #else
@@ -167,7 +167,7 @@ check_watcher (
     }
 
     uint32_t sandbox_flags = 0;
-#ifndef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifndef ENABLE_SANDBOX_LANDLOCK
     sandbox_flags |= SANDBOX_NO_LANDLOCK;
 #endif
 #if defined(__FreeBSD__)

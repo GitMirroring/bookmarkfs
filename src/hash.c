@@ -28,10 +28,10 @@
 
 #include "hash.h"
 
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
 #  define XXH_DEBUGLEVEL  1
 #endif
-#ifdef BOOKMARKFS_XXHASH_INLINE
+#ifdef ENABLE_XXHASH_INLINE
 #  define XXH_INLINE_ALL
 #  define XXH_IMPLEMENTATION
 #endif

@@ -39,7 +39,7 @@
 #include <iconv.h>
 #include <unistd.h>
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 #  include <nettle/base16.h>
 #  include <nettle/md5.h>
 #endif
@@ -118,11 +118,11 @@ struct backend_ctx {
     json_t *roots;
     json_t *fake_root;
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     uint64_t         max_id;
     iconv_t          cd;
     enum dirty_level dirty;
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
     int         dirfd;
     char const *name;
@@ -148,7 +148,7 @@ struct build_node_ctx {
     struct bookmarkfs_bookmark_stat *stat_buf;
 };
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 struct chksum_iter_ctx {
     struct md5_ctx  mdctx;
     iconv_t         cd;
@@ -161,7 +161,7 @@ struct idmap_iter_ctx {
     struct hashmap *id_map;
     struct hashmap *guid_map;
     struct hashmap *assoc_map;
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     uint64_t        max_id;
 #endif
 };
@@ -188,7 +188,7 @@ struct parsed_mkfsopts {
 };
 
 // Forward declaration start
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 static int  build_node      (struct backend_ctx *, json_t *, char const **,
                              size_t, bool, struct build_node_ctx *);
 static int  build_node_guid (json_t *, struct hashmap const *, uint8_t *,
@@ -209,7 +209,7 @@ static int  store_new       (struct timespec const *, json_t **);
 static int  store_save      (struct backend_ctx *);
 static void update_guid     (struct node_entry *, struct hashmap *,
                              unsigned long, uint8_t *, unsigned long);
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 static int  assocmap_comp (union hashmap_key, void const *);
 static unsigned long
@@ -262,7 +262,7 @@ static void print_version (void);
 static int  store_load    (struct backend_ctx *);
 // Forward declaration end
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 
 static int
 build_node (
@@ -684,7 +684,7 @@ update_guid (
     memcpy(entry->guid, guid, UUID_LEN);
 }
 
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 static int
 assocmap_comp (
@@ -764,7 +764,7 @@ build_maps (
     ctx->id_map    = id_map;
     ctx->guid_map  = guid_map;
     ctx->assoc_map = assoc_map;
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     ctx->max_id    = iter_ctx.max_id;
 #endif
     json_decref(ctx->fake_root);
@@ -1278,11 +1278,11 @@ maps_iter_cb (
     hashmap_insert(assoc_map, hashcode_assoc, entry);
 
   end:
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     if (id > ctx->max_id) {
         ctx->max_id = id;
     }
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
     *parent_data_ptr = entry;
     return 0;
 }
@@ -1500,7 +1500,7 @@ print_version (void)
 {
     printf("bookmarkfs-backend-chromium %d.%d.%d\n",
             BOOKMARKFS_VER_MAJOR, BOOKMARKFS_VER_MINOR, BOOKMARKFS_VER_PATCH);
-    puts(BOOKMARKFS_FEATURE_STRING(DEBUG,                  "debug"));
+    puts(BOOKMARKFS_FEATURE_STRING(BOOKMARKFS_DEBUG,       "debug"));
     puts(BOOKMARKFS_FEATURE_STRING(BACKEND_CHROMIUM_WRITE, "write"));
 
     bookmarkfs_print_lib_version("\n");
@@ -1518,13 +1518,13 @@ store_load (
         goto do_load;
     }
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     // Prioritize client-side modification to the store.
     // Changes made by other processes will be lost.
     if (ctx->dirty > DIRTY_LEVEL_NONE) {
         return 0;
     }
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
     switch (watcher_poll(watcher)) {
       case -EAGAIN:
@@ -1577,7 +1577,7 @@ store_load (
     ctx->store    = store;
     ctx->checksum = checksum;
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
         ctx->dirty = DIRTY_LEVEL_NONE;
     }
@@ -1595,17 +1595,17 @@ backend_create (
     struct bookmarkfs_backend_create_resp *resp
 ) {
     if (!(conf->flags & BOOKMARKFS_BACKEND_READONLY)) {
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
         struct timespec now;
         xgetrealtime(&now);
         if (!valid_ts_sec(now.tv_sec)) {
             log_puts("bad system time");
             return -1;
         }
-#else  /* !defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#else  /* !defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
         log_puts("write support is not enabled on this build");
         return -1;
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
     }
 
     struct parsed_mntopts opts = { 0 };
@@ -1646,7 +1646,7 @@ backend_create (
     *ctx = (struct backend_ctx) {
         .name  = name,
         .dirfd = dirfd,
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
         .cd = (iconv_t)-1,
 #endif
         .flags         = conf->flags | opts.other_flags,
@@ -1680,7 +1680,7 @@ backend_destroy (
         return;
     }
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
         store_save(ctx);
     }
@@ -1740,7 +1740,7 @@ backend_sandbox (
         return 0;
     }
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
         // Do not lazy-init iconv in sandbox mode,
         // since it may want to load modules (e.g., from /usr/lib/gconv).
@@ -1820,7 +1820,7 @@ bookmark_check (
                 user_data);
     } else {
         debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
         status = fsck_apply(ctx, parent_id, fsck_data, callback, user_data);
 #endif
     }
@@ -2061,7 +2061,7 @@ cookie_free (
     }
 }
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 
 static int
 backend_mkfs (
@@ -2606,7 +2606,7 @@ bookmark_sync (
     return store_save(ctx);
 }
 
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 BOOKMARKFS_API
 struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
@@ -2623,7 +2623,7 @@ struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
 
     .cookie_free = cookie_free,
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
     .backend_mkfs = backend_mkfs,
 
     .bookmark_create  = bookmark_create,
@@ -2632,5 +2632,5 @@ struct bookmarkfs_backend const bookmarkfs_backend_chromium = {
     .bookmark_rename  = bookmark_rename,
     .bookmark_set     = bookmark_set,
     .bookmark_sync    = bookmark_sync,
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 };

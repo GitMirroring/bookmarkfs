@@ -35,7 +35,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#if !defined(BOOKMARKFS_NATIVE_WATCHER)
+#if !defined(ENABLE_NATIVE_WATCHER)
 #elif defined(__linux__)
 #  include <sys/fanotify.h>
 #  define WATCHER_IMPL_FANOTIFY

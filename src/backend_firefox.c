@@ -37,7 +37,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
 #  include <nettle/base64.h>
 #  include <uriparser/Uri.h>
 #endif
@@ -109,7 +109,7 @@ enum {
     STMT_BOOKMARK_LOOKUP_KEYWORD,
     STMT_BOOKMARK_LOOKUP_TAG_ASSOC,
     STMT_DATA_VERSION,
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
     PERSISTED_STMT_WRITE_START,
     STMT_BEGIN = PERSISTED_STMT_WRITE_START,
     STMT_COMMIT,
@@ -143,7 +143,7 @@ enum {
     STMT_MK_LOOKUP,
     STMT_MK_PURGE,
     STMT_MK_RENAME,
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
     PERSISTED_STMT_END,
 };
 
@@ -277,7 +277,7 @@ struct parsed_mntopts {
 };
 
 // Forward declaration start
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
 static int     bookmark_do_create (struct backend_ctx *, uint64_t,
                                    char const *, size_t, bool,
                                    struct bookmarkfs_bookmark_stat *);
@@ -345,7 +345,7 @@ static int     txn_begin          (struct backend_ctx *);
 static int     txn_end            (struct backend_ctx *);
 static int     txn_rollback       (struct backend_ctx *, int);
 static int64_t usecs_now          (struct timespec *);
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 
 static int     bookmark_do_get    (struct backend_ctx *, uint64_t, int,
                                    struct bookmark_get_ctx *);
@@ -376,7 +376,7 @@ static int     store_init         (sqlite3 *, uint64_t *, uint64_t *);
 static int     store_check_cb     (void *, sqlite3_stmt *);
 // Forward declaration end
 
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
 
 static int
 bookmark_do_create (
@@ -2126,7 +2126,7 @@ usecs_now (
     return timespec_to_usecs(ts_buf);
 }
 
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 
 static int
 bookmark_do_get (
@@ -2324,13 +2324,13 @@ bookmark_do_lookup (
     }
 
     bool filename_is_guid = ctx->flags & BACKEND_FILENAME_GUID;
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
     if (filename_is_guid && (flags & BOOKMARK_FLAG(LOOKUP_VALIDATE_GUID))) {
         if (!is_valid_guid(name, name_len)) {
             return -EPERM;
         }
     }
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 
     uint32_t bookmark_type = flags & BOOKMARKFS_BOOKMARK_TYPE_MASK;
     switch (bookmark_type) {
@@ -2803,7 +2803,7 @@ print_version (void)
 {
     printf("bookmarkfs-backend-firefox %d.%d.%d\n",
             BOOKMARKFS_VER_MAJOR, BOOKMARKFS_VER_MINOR, BOOKMARKFS_VER_PATCH);
-    puts(BOOKMARKFS_FEATURE_STRING(DEBUG,                 "debug"));
+    puts(BOOKMARKFS_FEATURE_STRING(BOOKMARKFS_DEBUG,      "debug"));
     puts(BOOKMARKFS_FEATURE_STRING(BACKEND_FIREFOX_WRITE, "write"));
 
     bookmarkfs_print_lib_version("\n");
@@ -2894,7 +2894,7 @@ backend_create (
 ) {
     bool readonly = conf->flags & BOOKMARKFS_BACKEND_READONLY;
     if (!readonly) {
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
         struct timespec now;
         xgetrealtime(&now);
         if (!valid_ts_sec(now.tv_sec)) {
@@ -2908,10 +2908,10 @@ backend_create (
             log_printf("sqlite version too low (%d<%d)", vernum, minver);
             return -1;
         }
-#else  /* !defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#else  /* !defined(ENABLE_BACKEND_FIREFOX_WRITE) */
         log_puts("write support is not enabled on this build");
         return -1;
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
     }
 
     struct parsed_mntopts opts = { 0 };
@@ -3017,11 +3017,11 @@ backend_destroy (
     }
 
     int end = PERSISTED_STMT_END;
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
     if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
         end = PERSISTED_STMT_WRITE_START;
     }
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
     for (int idx = 0; idx < end; ++idx) {
         sqlite3_stmt *stmt = ctx->stmts[idx];
         if (stmt != NULL) {
@@ -3029,7 +3029,7 @@ backend_destroy (
         }
     }
 
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
         store_sync(ctx->db);
     }
@@ -3162,7 +3162,7 @@ bookmark_check (
         status = bookmark_do_list(ctx, parent_id, idx, flags, &qctx);
     } else {
         debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
         status = fsck_apply(ctx, parent_id, fsck_data, &qctx);
 #endif
     }
@@ -3327,7 +3327,7 @@ cookie_free (
     }
 }
 
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
 
 static int
 backend_mkfs (
@@ -3835,7 +3835,7 @@ bookmark_sync (
     return store_sync(ctx->db);
 }
 
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 
 BOOKMARKFS_API
 struct bookmarkfs_backend const bookmarkfs_backend_firefox = {
@@ -3852,7 +3852,7 @@ struct bookmarkfs_backend const bookmarkfs_backend_firefox = {
 
     .cookie_free = cookie_free,
 
-#ifdef BOOKMARKFS_BACKEND_FIREFOX_WRITE
+#ifdef ENABLE_BACKEND_FIREFOX_WRITE
     .backend_mkfs = backend_mkfs,
 
     .bookmark_create  = bookmark_create,
@@ -3861,5 +3861,5 @@ struct bookmarkfs_backend const bookmarkfs_backend_firefox = {
     .bookmark_rename  = bookmark_rename,
     .bookmark_set     = bookmark_set,
     .bookmark_sync    = bookmark_sync,
-#endif  /* defined(BOOKMARKFS_BACKEND_FIREFOX_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 };

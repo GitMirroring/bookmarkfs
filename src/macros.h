@@ -47,7 +47,7 @@
 
 #define BOOKMARKFS_FEATURE_STRING_EX(which, name, off, on)  \
     &(off name on name)  \
-        [(sizeof(STRINGIFY(BOOKMARKFS_##which)) == 2) * (sizeof(off name) - 1)]
+        [(sizeof(STRINGIFY(ENABLE_##which)) == 2) * (sizeof(off name) - 1)]
 #define BOOKMARKFS_FEATURE_STRING(which, name)  \
     BOOKMARKFS_FEATURE_STRING_EX(which, name, "  - ", "  + ")
 

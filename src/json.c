@@ -128,11 +128,11 @@ json_array_search (
     json_t const *needle
 ) {
     size_t idx;
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
     size_t cnt = json_array_size(haystack);
 #endif
     for (idx = 0; needle != json_array_get(haystack, idx); ++idx) {
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
         xassert(idx < cnt);
 #endif
     }

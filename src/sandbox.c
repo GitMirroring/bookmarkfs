@@ -31,9 +31,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#if !defined(BOOKMARKFS_SANDBOX)
+#if !defined(ENABLE_SANDBOX)
 #elif defined(__linux__)
-#  ifdef BOOKMARKFS_SANDBOX_LANDLOCK
+#  ifdef ENABLE_SANDBOX_LANDLOCK
 #    include <linux/landlock.h>
 #    include <sys/syscall.h>
 #  endif
@@ -94,13 +94,13 @@ struct scmp_rule_def {
 static int add_scmp_rules (scmp_filter_ctx, struct scmp_rule_def const *,
                            size_t);
 
-#ifdef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifdef ENABLE_SANDBOX_LANDLOCK
 static int landlock_create_ruleset (struct landlock_ruleset_attr const *,
                                     size_t, uint32_t);
 static int landlock_add_rule       (int, enum landlock_rule_type,
                                     void const *, uint32_t);
 static int landlock_restrict_self  (int, uint32_t);
-#endif  /* defined(BOOKMARKFS_SANDBOX_LANDLOCK) */
+#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
 // Forward declaration end
 
 static int
@@ -128,7 +128,7 @@ add_scmp_rules (
     return 0;
 }
 
-#ifdef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifdef ENABLE_SANDBOX_LANDLOCK
 
 static int
 landlock_create_ruleset (
@@ -158,7 +158,7 @@ landlock_restrict_self (
     return syscall(SYS_landlock_restrict_self, ruleset_fd, flags);
 }
 
-#endif  /* defined(BOOKMARKFS_SANDBOX_LANDLOCK) */
+#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
 
 int
 sandbox_enter (
@@ -192,7 +192,7 @@ sandbox_enter (
 
         // signals
         SCMP_RULE_NOARG(sigaction,       10),
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
         // Make ASAN happy...
         SCMP_RULE_NOARG(sigaltstack,     0),
 #endif
@@ -298,7 +298,7 @@ sandbox_enter (
         goto apply_seccomp;
     }
     status = -1;
-#ifdef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifdef ENABLE_SANDBOX_LANDLOCK
     int ruleset_version = landlock_create_ruleset(NULL, 0,
             LANDLOCK_CREATE_RULESET_VERSION);
     if (unlikely(ruleset_version < 0)) {
@@ -368,7 +368,7 @@ sandbox_enter (
 
 #else
     log_puts("landlock is not supported on this build");
-#endif  /* defined(BOOKMARKFS_SANDBOX_LANDLOCK) */
+#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
 
     if (status < 0) {
         goto free_sfctx;
@@ -431,7 +431,7 @@ sandbox_enter (
 
 #endif  /* defined(SANDBOX_IMPL_CAPSICUM) */
 
-#ifndef BOOKMARKFS_SANDBOX
+#ifndef ENABLE_SANDBOX
 
 int
 sandbox_enter (
@@ -446,4 +446,4 @@ sandbox_enter (
     return -1;
 }
 
-#endif  /* !defined(BOOKMARKFS_SANDBOX) */
+#endif  /* !defined(ENABLE_SANDBOX) */

@@ -537,7 +537,7 @@ print_version (void)
 {
     printf("mount.bookmarkfs (BookmarkFS) %d.%d.%d\n",
             BOOKMARKFS_VER_MAJOR, BOOKMARKFS_VER_MINOR, BOOKMARKFS_VER_PATCH);
-    puts(BOOKMARKFS_FEATURE_STRING(DEBUG, "debug"));
+    puts(BOOKMARKFS_FEATURE_STRING(BOOKMARKFS_DEBUG, "debug"));
 
     bookmarkfs_print_lib_version("\n");
 }

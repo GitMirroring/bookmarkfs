@@ -97,7 +97,7 @@ do_check_sandbox (
     bool check_above        = true;
     bool check_lookup_above = true;
 #ifdef __linux__
-#  ifndef BOOKMARKFS_SANDBOX_LANDLOCK
+#  ifndef ENABLE_SANDBOX_LANDLOCK
     // If only we could filter renameat2() with seccomp...
     check_above = false;
 #  endif
@@ -153,7 +153,7 @@ check_sandbox (
     char *argv[]
 ) {
     uint32_t flags = 0;
-#ifndef BOOKMARKFS_SANDBOX_LANDLOCK
+#ifndef ENABLE_SANDBOX_LANDLOCK
     flags |= SANDBOX_NO_LANDLOCK;
 #endif
     char const *path = NULL;

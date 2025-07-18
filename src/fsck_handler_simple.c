@@ -52,14 +52,14 @@ struct handler_ctx {
 };
 
 // Forward declaration start
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
 static int  expect_input (struct handler_ctx *, char **);
 static int  expect_next  (struct handler_ctx *, int, char **);
 static int  handle_input (struct handler_ctx *,
                           union bookmarkfs_fsck_handler_data *);
 static void print_entry  (struct bookmarkfs_fsck_data const *);
 static void print_usage  (void);
-#endif  /* defined(BOOKMARKFS_INTERACTIVE_FSCK) */
+#endif  /* defined(ENABLE_INTERACTIVE_FSCK) */
 
 static void fix_name_dup (struct handler_ctx *, struct bookmarkfs_fsck_data *);
 static void fix_entry    (struct handler_ctx *, enum bookmarkfs_fsck_result,
@@ -70,7 +70,7 @@ static int  parse_opts   (struct bookmarkfs_conf_opt const *,
                           struct parsed_opts *);
 // Forward declaration end
 
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
 
 static int
 expect_input (
@@ -216,7 +216,7 @@ print_usage (void)
             "See the user manual for more information.");
 }
 
-#endif  /* defined(BOOKMARKFS_INTERACTIVE_FSCK) */
+#endif  /* defined(ENABLE_INTERACTIVE_FSCK) */
 
 static void
 fix_name_dup (
@@ -291,7 +291,7 @@ handle_entry (
         fix_entry(ctx, why, entry_data);
         control = BOOKMARKFS_FSCK_APPLY;
     }
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
     if (ctx->flags & BOOKMARKFS_FSCK_HANDLER_INTERACTIVE) {
         ctx->data_buf = *entry_data;
         control = expect_input(ctx, &data->str);
@@ -370,7 +370,7 @@ fsck_handler_run (
     if (why > 0) {
         return handle_entry(ctx, why, data);
     }
-#ifdef BOOKMARKFS_INTERACTIVE_FSCK
+#ifdef ENABLE_INTERACTIVE_FSCK
     if (ctx->flags & FSCK_HANDLER_EXPECT_INPUT) {
         return handle_input(ctx, data);
     }

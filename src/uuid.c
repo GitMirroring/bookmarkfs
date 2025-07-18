@@ -30,13 +30,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 #  include <nettle/base16.h>
 #endif
 
 #include "prng.h"
 
-#ifdef BOOKMARKFS_BACKEND_CHROMIUM_WRITE
+#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 
 void
 uuid_bin2hex (
@@ -85,7 +85,7 @@ uuid_hex2bin (
     return 0;
 }
 
-#else  /* !defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#else  /* !defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 /**
  * This implementation is meant to get rid of the Nettle dependency
@@ -113,7 +113,7 @@ uuid_hex2bin (
     return 0;
 }
 
-#endif  /* defined(BOOKMARKFS_BACKEND_CHROMIUM_WRITE) */
+#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 void
 uuid_generate_random (

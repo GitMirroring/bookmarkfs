@@ -39,35 +39,35 @@
 #  define unlikely(e)  (e)
 #endif  /* defined(HAVE___BUILTIN_EXPECT) */
 
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
 #  define xassert(e)  if (unlikely(!(e))) xabort_(#e, FILE_NAME_, __LINE__)
 #else
 #  define xassert(e)  if (unlikely(!(e))) xabort_(FILE_NAME_, __LINE__)
 #endif
 
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
 #  define debug_assert(e)  xassert(e)
 #  define unreachable()    xassert(0)
-#else  /* !defined(BOOKMARKFS_DEBUG) */
+#else  /* !defined(ENABLE_BOOKMARKFS_DEBUG) */
 #  define debug_assert(e)  if (!(e)) { unreachable(); }
 #  ifdef HAVE___BUILTIN_UNREACHABLE
 #    define unreachable()  __builtin_unreachable()
 #  else
 #    define unreachable()
 #  endif
-#endif  /* defined(BOOKMARKFS_DEBUG) */
+#endif  /* defined(ENABLE_BOOKMARKFS_DEBUG) */
 
 #define log_printf_(f, ...)  \
     fprintf(stderr, "%s:" f "\n", FILE_NAME_, __VA_ARGS__)
 
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
 #  define log_printf(f, ...)  log_printf_("%d: " f, __LINE__, __VA_ARGS__)
 #else
 #  define log_printf(f, ...)  log_printf_(" " f, __VA_ARGS__);
 #endif
 #define log_puts(s)  log_printf("%s", s)
 
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
 #  define debug_printf(f, ...)  log_printf("[debug] " f, __VA_ARGS__)
 #  define debug_puts(s)         debug_printf("%s", s)
 #else
@@ -100,7 +100,7 @@ BOOKMARKFS_INTERNAL
 FUNCATTR_COLD FUNCATTR_NORETURN
 void
 xabort_ (
-#ifdef BOOKMARKFS_DEBUG
+#ifdef ENABLE_BOOKMARKFS_DEBUG
     char const *assertion,
 #endif
     char const *name,
