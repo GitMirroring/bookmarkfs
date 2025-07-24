@@ -38,7 +38,7 @@ AC_DEFUN([EX_FEAT], [
         AC_MSG_RESULT([no])
     ])
     m4_if(m4_index([$2], [E]), [-1], , [
-        AM_CONDITIONAL(m4_toupper(ex_feat), [test "x$enable_]ex_feat[" != xno])
+        AM_CONDITIONAL(m4_toupper(ex_feat), [test "x$enable_]ex_feat[" = xyes])
     ])
     AS_VAR_SET([desc_]ex_feat, ["$3"])
     m4_popdef([ex_feat])
