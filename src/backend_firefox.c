@@ -2827,10 +2827,10 @@ store_init (
     // which was used in Firefox 62-68.  Fortunately, it has not changed
     // in a way that makes it incompatible with this backend.
     //
-    // Schema version 80 is the latest version, used since Firefox 140.
+    // Schema version 82 is the latest version, used since Firefox 141.
     // Bump this version whenever a new schema version is available
     // (after ensuring that no incompatible changes are made).
-    if (user_version < 52 || user_version > 80) {
+    if (user_version < 52 || user_version > 82) {
         log_printf("unsupported schema version %" PRIi64, user_version);
         return -1;
     }
