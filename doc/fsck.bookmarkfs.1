@@ -31,19 +31,20 @@ via the corresponding backend.
 .PP
 The
 .I pathname
-argument is the path to the bookmark storage, equivalent to the
+argument should be specified in
+.RI \[dq] src : dir \[dq]
+format:
+.TP
+.I src
+Path to the bookmark storage, equivalent to the
 .I src
 argument for
 .BR mount.bookmarkfs (1).
-.PP
-Alternatively,
-.I pathname
-could be a colon-separated string
-.RI \[dq] src : dir \[dq],
-where
+.TP
 .I dir
-refers to the directory to operate on,
-relative to the root directory of the subsystem.
+The bookmark directory to operate on, relative to the root directory of the
+BookmarkFS filesystem referred to by
+.IR src .
 .
 .SH OPTIONS
 .TP
@@ -76,19 +77,14 @@ Attempt to repair errors found during fsck.
 Readline application name in interactive mode.
 Defaults to "fsck.bookmarkfs".
 .TP
-.BR "\-o type=bookmark" | tag | keyword
-Subsystem type.
-Defaults to "bookmark".
-.IP
-This option is ignored when performing online fsck.
-.TP
 .B \-i
 Enable interactive mode.
 .TP
 .B \-R
 Perform fsck on subdirectories recursively.
 .IP
-This option is ignored when performing fsck on tags or keywords.
+Cannot recurse across subsystems (subsystem root directory must be part of
+.IR pathname ).
 .TP
 .B \-o no_sandbox
 Do not enable sandboxing features.

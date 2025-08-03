@@ -72,7 +72,6 @@ struct fsck_info {
         unsigned interactive   : 1;
         unsigned readonly      : 1;
         unsigned recursive     : 1;
-        unsigned type          : BOOKMARKFS_BOOKMARK_TYPE_BITS;
     } flags;
 };
 
@@ -214,7 +213,6 @@ init_all (
         .rl_app_name = "fsck.bookmarkfs",
         .flags = {
             .readonly = 1,
-            .type     = BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK,
         },
     };
 
@@ -284,7 +282,7 @@ init_backend (
         }
     }
 
-    uint32_t flags = info->flags.type << BOOKMARKFS_BOOKMARK_TYPE_SHIFT;
+    uint32_t flags = 0;
     if (info->flags.no_sandbox) {
         flags |= BOOKMARKFS_BACKEND_NO_SANDBOX;
     }
@@ -362,7 +360,6 @@ parse_opts (
         BOOKMARKFS_OPT_NO_SANDBOX,
         BOOKMARKFS_OPT_REPAIR,
         BOOKMARKFS_OPT_RL_APP,
-        BOOKMARKFS_OPT_TYPE,
 
         BOOKMARKFS_OPT_END_,
     };
@@ -375,7 +372,6 @@ parse_opts (
         BOOKMARKFS_OPT(NO_SANDBOX,  "no_sandbox"),
         BOOKMARKFS_OPT(REPAIR,      "repair"),
         BOOKMARKFS_OPT(RL_APP,      "rl_app"),
-        BOOKMARKFS_OPT(TYPE,        "type"),
 
         BOOKMARKFS_OPT(END_, NULL),
     };
@@ -408,17 +404,6 @@ parse_opts (
         }
         SUBOPT_OPT(BOOKMARKFS_OPT_REPAIR) SUBOPT_NO_VAL {
             info->flags.readonly = 0;
-        }
-        SUBOPT_OPT(BOOKMARKFS_OPT_TYPE) SUBOPT_HAS_VAL {
-            if (0 == strcmp("tag", SUBOPT_VAL)) {
-                info->flags.type = BOOKMARKFS_BOOKMARK_TYPE_TAG;
-            } else if (0 == strcmp("keyword", SUBOPT_VAL)) {
-                info->flags.type = BOOKMARKFS_BOOKMARK_TYPE_KEYWORD;
-            } else if (0 == strcmp("bookmark", SUBOPT_VAL)) {
-                info->flags.type = BOOKMARKFS_BOOKMARK_TYPE_BOOKMARK;
-            } else {
-                return SUBOPT_ERR_BAD_KEY();
-            }
         }
         SUBOPT_OPT_FALLBACK() {
             char *opt = SUBOPT_STR;

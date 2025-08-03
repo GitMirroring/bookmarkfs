@@ -60,7 +60,6 @@ struct fsck_dir {
     void     *cookie;
     off_t     off;
 };
-#define FSCK_DIR_INIT(id_)  (struct fsck_dir) { .id = (id_), .off = -1 }
 
 // Forward declaration start
 static int  do_fsck    (struct fsck_ctx *, struct fsck_dir *,
@@ -71,7 +70,7 @@ static int  do_list    (struct fsck_ctx const *, struct fsck_dir *,
                         uint64_t *);
 static int  do_list_cb (void *, struct bookmarkfs_bookmark_entry const *);
 static void free_dir   (struct fsck_ctx const *, struct fsck_dir const *);
-static int  init_top   (struct fsck_ctx const *, uint64_t, char *, uint64_t *);
+static int  init_top   (struct fsck_ctx const *);
 static int  reset_top  (struct fsck_ctx *);
 // Forward declaration end
 
@@ -167,12 +166,16 @@ free_dir (
 
 static int
 init_top (
-    struct fsck_ctx const *ctx,
-    uint64_t               id,
-    char                  *path,
-    uint64_t              *result_id_ptr
+    struct fsck_ctx const *ctx
 ) {
-    for (char *sep; path != NULL; path = sep) {
+    uint64_t id = ctx->dir_stack[0].id;
+    if (id == UINT64_MAX) {
+        debug_assert(BOOKMARKFS_BOOKMARK_IS_TYPE(ctx->flags, TAG));
+        log_puts("backend does not support tags");
+        return -1;
+    }
+
+    for (char *sep, *path = ctx->path; path != NULL; path = sep) {
         sep = strchr(path, '/');
         if (sep != NULL) {
             *(sep++) = '\0';
@@ -182,12 +185,12 @@ init_top (
         }
 
         struct bookmarkfs_bookmark_stat stat_buf;
-        int status = BACKEND_CALL(ctx, bookmark_lookup, id, path, 0,
-                &stat_buf);
+        int status = BACKEND_CALL(ctx, bookmark_lookup, id, path,
+                ctx->flags & BOOKMARKFS_BOOKMARK_TYPE_MASK, &stat_buf);
         if (status < 0) {
           fail:
             log_printf("bookmark_lookup(): %s: %s", path, xstrerror(-status));
-            return status;
+            return -1;
         }
         if (stat_buf.value_len >= 0) {
             status = -ENOTDIR;
@@ -196,7 +199,7 @@ init_top (
         id = stat_buf.id;
     }
 
-    *result_id_ptr = id;
+    ctx->dir_stack[0].id = id;
     return 0;
 }
 
@@ -280,10 +283,12 @@ fsck_create (
     uint32_t                          flags,
     void                            **fsck_ctx_ptr
 ) {
-    char *sep = strchr(path, ':');
-    if (sep != NULL) {
-        *(sep++) = '\0';
+    char *subsys = strchr(path, ':');
+    if (subsys == NULL) {
+        log_puts("subsystem not specified");
+        return -1;
     }
+    *(subsys++) = '\0';
 
     struct bookmarkfs_backend_conf const conf = {
         .version    = BOOKMARKFS_VERNUM,
@@ -300,23 +305,30 @@ fsck_create (
     }
     debug_assert(resp.flags & BOOKMARKFS_BACKEND_EXCLUSIVE);
 
+    path = strchr(subsys, '/');
+    if (path != NULL) {
+        *(path++) = '\0';
+    }
     uint64_t root_id = resp.bookmarks_root_id;
-    if (!BOOKMARKFS_BOOKMARK_IS_TYPE(flags, BOOKMARK)) {
-        if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, TAG)) {
+    if (0 != strcmp("bookmarks", subsys)) {
+        if (0 == strcmp("tags", subsys)) {
             root_id = resp.tags_root_id;
-            if (root_id == UINT64_MAX) {
-                log_puts("backend does not support tags");
-                goto fail;
-            }
-        } else if (BOOKMARKFS_BOOKMARK_IS_TYPE(flags, KEYWORD)) {
+            flags |= BOOKMARKFS_BOOKMARK_TYPE(TAG);
+        } else if (0 == strcmp("keywords", subsys)) {
             if (!(resp.flags & BOOKMARKFS_BACKEND_HAS_KEYWORD)) {
                 log_puts("backend does not support keywords");
                 goto fail;
             }
             root_id = 0;
+            flags |= BOOKMARKFS_BOOKMARK_TYPE(KEYWORD);
+        } else {
+            log_printf("unsupported subsystem '%s'", subsys);
+            goto fail;
         }
-        // Tag/keyword fsck only applies to toplevel dir.
-        sep = NULL;
+        if (path != NULL && path[0] != '\0') {
+            log_printf("%s fsck only applies to the toplevel dir", subsys);
+            goto fail;
+        }
         flags &= ~BOOKMARKFS_FSCK_OP_RECURSIVE;
     }
 
@@ -330,20 +342,22 @@ fsck_create (
         .backend_ctx    = resp.backend_ctx,
         .dir_stack      = xmalloc(sizeof(struct fsck_dir) * dir_stack_size),
         .dir_stack_size = dir_stack_size,
-        .path           = sep,
+        .path           = path,
         .flags          = flags,
     };
-    struct fsck_dir *dir = &ctx->dir_stack[0];
-    *dir = FSCK_DIR_INIT(root_id);
+    ctx->dir_stack[0] = (struct fsck_dir) { .id = root_id, .off = -1 };
 
     if (flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
-        if (0 != init_top(ctx, dir->id, sep, &dir->id)) {
-            free(ctx);
-            goto fail;
+        if (0 != init_top(ctx)) {
+            goto free_ctx;
         }
     }
     *fsck_ctx_ptr = ctx;
     return 0;
+
+  free_ctx:
+    free(ctx->dir_stack);
+    free(ctx);
 
   fail:
     backend->backend_destroy(resp.backend_ctx);
@@ -387,9 +401,6 @@ fsck_next (
     while (1) {
         if (dir->off < 0) {
             result = do_fsck(ctx, dir, NULL, entry);
-            if (result < 0) {
-                goto end;
-            }
             if (result != BOOKMARKFS_FSCK_RESULT_END) {
                 goto end;
             }
@@ -421,7 +432,7 @@ fsck_next (
                     sizeof(struct fsck_dir) * ctx->dir_stack_size);
             dir = ctx->dir_stack + old_size;
         }
-        *dir = FSCK_DIR_INIT(subdir_id);
+        *dir = (struct fsck_dir) { .id = subdir_id, .off = -1 };
     }
 
   end:
@@ -435,22 +446,22 @@ fsck_sandbox (
 ) {
     struct fsck_ctx *ctx = fsck_ctx;
 
-    struct bookmarkfs_backend_create_resp info = {
+    struct bookmarkfs_backend_create_resp resp = {
         .bookmarks_root_id = UINT64_MAX,
+        .tags_root_id      = UINT64_MAX,
     };
-    if (0 != BACKEND_CALL(ctx, backend_sandbox, &info)) {
+    if (0 != BACKEND_CALL(ctx, backend_sandbox, &resp)) {
         return -1;
     }
 
-    uint64_t top_id = ctx->dir_stack[0].id;
-    if (top_id == UINT64_MAX) {
-        top_id = info.bookmarks_root_id;
+    struct fsck_dir *dir = &ctx->dir_stack[0];
+    if (dir->id == UINT64_MAX) {
+        dir->id = resp.bookmarks_root_id;
+        if (BOOKMARKFS_BOOKMARK_IS_TYPE(ctx->flags, TAG)) {
+            dir->id = resp.tags_root_id;
+        }
     }
-    if (0 != init_top(ctx, top_id, ctx->path, &top_id)) {
-        return -1;
-    }
-    ctx->dir_stack[0].id = top_id;
-    return 0;
+    return init_top(ctx);
 }
 
 struct bookmarkfs_fsck_ops const fsck_offline_ops = {

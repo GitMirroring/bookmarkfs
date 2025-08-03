@@ -399,12 +399,18 @@ The @var{pathname} argument refers to the directory to operate on.
 In offline mode, fsck is performed directly on the bookmark storage via the
 corresponding backend.
 
-The @var{pathname} argument is the path to the bookmark storage, equivalent to
-the @var{src} argument given to @command{mount.bookmarkfs}.
+The @var{pathname} argument should be specified in @samp{@var{src}:@var{dir}}
+format:
 
-Alternatively, @var{pathname} could be specified in @samp{@var{src}:@var{dir}}
-format, where @var{dir} refers to the directory to operate on,
-relative to the root directory of the subsystem.
+@table @var
+@item src
+Path to the bookmark storage, equivalent to the @var{src} argument given to
+@command{mount.bookmarkfs}.
+
+@item dir
+The bookmark directory to operate on, relative to the root directory of the
+BookmarkFS filesytem referred to by @var{src}.
+@end table
 @end table
 
 Options:
@@ -462,19 +468,14 @@ Defaults to @samp{fsck.bookmarkfs}.
 
 @xref{Conditional Init Constructs,,, readline, GNU Readline Library}.
 
-@item -o type=bookmark|tag|keyword
-Subsystem type (@pxref{Filesystem Hierarchy}).
-Defaults to @samp{bookmark}.
-
-This option is ignored when performing online fsck.
-
 @item -i
 Enable interactive mode.
 
 @item -R
 Perform fsck on subdirectories recursively.
 
-This option is ignored when performing fsck on tags or keywords.
+Cannot recurse across subsystems (subsystem root directory must be
+part of @var{pathname}).
 
 @item -o no_sandbox
 Do not enable sandboxing features.
