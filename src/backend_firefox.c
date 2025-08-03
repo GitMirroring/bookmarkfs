@@ -2387,7 +2387,6 @@ bookmark_check_cb (
     sqlite3_stmt *stmt
 ) {
     struct bookmark_list_ctx *ctx = user_data;
-    debug_assert(ctx->check_name);
 
     int64_t id = sqlite3_column_int64(stmt, 0);
     if (unlikely(!is_valid_id(id))) {
