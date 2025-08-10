@@ -104,13 +104,6 @@ db_exec (
     int64_t       *values_buf
 );
 
-int
-db_fcntl (
-    sqlite3 *db,
-    int      op,
-    int      val
-);
-
 sqlite3 *
 db_open (
     char const *path

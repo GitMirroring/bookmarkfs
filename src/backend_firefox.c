@@ -333,7 +333,7 @@ static int     parse_mkfsopts     (struct bookmarkfs_conf_opt const *,
 static int     parse_mozurl       (char const *, size_t, struct mozorigin *);
 static int     parse_usecs        (char const *, size_t, int64_t *);
 static int     store_new          (sqlite3 *, int64_t);
-static int     store_sync         (sqlite3 *);
+static int     store_sync         (sqlite3 *, bool);
 static int     tag_entry_add      (struct backend_ctx *, uint64_t,
                                    char const *, size_t,
                                    struct bookmarkfs_bookmark_stat *);
@@ -1948,11 +1948,16 @@ store_new (
 
 static int
 store_sync (
-    sqlite3 *db
+    sqlite3 *db,
+    bool     full_sync
 ) {
-    int err = sqlite3_wal_checkpoint(db, "main");
+    int mode = SQLITE_CHECKPOINT_PASSIVE;
+    if (full_sync) {
+        mode = SQLITE_CHECKPOINT_TRUNCATE;
+    }
+    int err = sqlite3_wal_checkpoint_v2(db, "main", mode, NULL, NULL);
     if (err != SQLITE_OK) {
-        log_printf("sqlite3_wal_checkpoint(): %s", sqlite3_errmsg(db));
+        log_printf("sqlite3_wal_checkpoint_v2(): %s", sqlite3_errmsg(db));
         return -db_errno(err);
     }
     return 0;
@@ -2963,12 +2968,6 @@ backend_create (
         if (0 != store_init(db, &bookmarks_root_id, &tags_root_id)) {
             goto close_db;
         }
-    } else {
-        // Persist -wal and -shm files in sandbox mode,
-        // since we're unable to unlink them.
-        if (0 != db_fcntl(db, SQLITE_FCNTL_PERSIST_WAL, 1)) {
-            goto close_db;
-        }
     }
 
     if (0 != db_register_safeincr(db)) {
@@ -3030,7 +3029,8 @@ backend_destroy (
 
 #ifdef ENABLE_BACKEND_FIREFOX_WRITE
     if (!(ctx->flags & BOOKMARKFS_BACKEND_READONLY)) {
-        store_sync(ctx->db);
+        store_sync(ctx->db, (ctx->flags & BACKEND_EXCLUSIVE_LOCK) &&
+                !(ctx->flags & BOOKMARKFS_BACKEND_NO_SANDBOX));
     }
 #endif
     sqlite3_close(ctx->db);
@@ -3831,7 +3831,7 @@ bookmark_sync (
     struct backend_ctx *ctx = backend_ctx;
     debug_assert(!(ctx->flags & BOOKMARKFS_BACKEND_READONLY));
 
-    return store_sync(ctx->db);
+    return store_sync(ctx->db, false);
 }
 
 #endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */

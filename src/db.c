@@ -190,20 +190,6 @@ db_exec (
             values_buf == NULL ? NULL : db_query_i64_cb, values_buf);
 }
 
-int
-db_fcntl (
-    sqlite3 *db,
-    int      op,
-    int      val
-) {
-    int status = sqlite3_file_control(db, "main", op, &val);
-    if (status != SQLITE_OK) {
-        log_printf("sqlite3_file_control: %s", sqlite3_errstr(status));
-        return status;
-    }
-    return 0;
-}
-
 sqlite3 *
 db_open (
     char const *path
