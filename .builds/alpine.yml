@@ -6,8 +6,7 @@
 # this notice are preserved.  This file is offered as-is, without any warranty.
 #
 
-# Switch to alpine/latest once tcc leaves aports/testing
-image: alpine/edge
+image: alpine/latest
 packages: [
   # build
   autoconf, automake, libtool, autoconf-archive, pkgconf, pdpmake, tcc,
