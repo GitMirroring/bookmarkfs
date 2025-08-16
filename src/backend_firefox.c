@@ -413,10 +413,6 @@ bookmark_do_create (
         }
     }
 
-    int64_t date_added = usecs_now(&stat_buf->mtime);
-    if (unlikely(date_added < 0)) {
-        return -EIO;
-    }
     char const *guid = name;
     char guid_buf[GUID_STR_LEN];
     if (!(ctx->flags & BACKEND_FILENAME_GUID)) {
@@ -427,7 +423,7 @@ bookmark_do_create (
         .parent_id  = parent_id,
         .title      = name,
         .title_len  = name_len,
-        .date_added = date_added,
+        .date_added = usecs_now(&stat_buf->mtime),
         .guid       = guid,
     };
     status = mozbm_insert(ctx, &mb);
@@ -436,7 +432,7 @@ bookmark_do_create (
     }
     stat_buf->id = mb.id;
 
-    status = mozbm_mtime_update(ctx, parent_id, &date_added);
+    status = mozbm_mtime_update(ctx, parent_id, &mb.date_added);
     if (status < 0) {
         return status;
     }
@@ -922,9 +918,6 @@ mozbm_mtime_update (
     }
     if (usecs < 0) {
         usecs = usecs_now(NULL);
-        if (unlikely(usecs < 0)) {
-            return -EIO;
-        }
     }
 
     int status;
@@ -1099,15 +1092,10 @@ mozbmdel_insert (
         "INSERT OR IGNORE INTO `moz_bookmarks_deleted` (`guid`, `dateRemoved`)"
         "VALUES (?, ?)";
 
-    int64_t date_removed = usecs_now(NULL);
-    if (unlikely(date_removed < 0)) {
-        return -EIO;
-    }
-
     int status;
     DO_QUERY(ctx, STMT_MBDEL_INSERT, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_TEXT(guid, GUID_STR_LEN),
-        DB_QUERY_BIND_INT64(date_removed),
+        DB_QUERY_BIND_INT64(usecs_now(NULL)),
     );
     if (status < 0) {
         return status;
@@ -1990,12 +1978,8 @@ tag_entry_add (
         return status;
     }
 
-    int64_t date_added = usecs_now(&stat_buf->mtime);
-    if (unlikely(date_added < 0)) {
-        return -EIO;
-    }
     char guid_buf[GUID_STR_LEN];
-    mb.date_added = date_added;
+    mb.date_added = usecs_now(&stat_buf->mtime);
     mb.guid       = gen_random_guid(guid_buf);
     status = mozbm_insert(ctx, &mb);
     if (status < 0) {
@@ -2014,7 +1998,7 @@ tag_entry_add (
     if (status < 0) {
         return status;
     }
-    status = mozbm_mtime_update(ctx, parent_id, &date_added);
+    status = mozbm_mtime_update(ctx, parent_id, &mb.date_added);
     if (status < 0) {
         return status;
     }
@@ -3340,9 +3324,6 @@ backend_mkfs (
     }
     if (opts.date_added < 0) {
         opts.date_added = usecs_now(NULL);
-        if (unlikely(opts.date_added < 0)) {
-            return -1;
-        }
     }
 
     int open_flags = O_CREAT | O_WRONLY | O_TRUNC;
