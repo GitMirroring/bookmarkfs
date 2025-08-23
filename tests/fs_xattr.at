@@ -17,7 +17,7 @@ m4_define([ATX_CHECK_FS_NEW_XATTR], [
     ATX_FEAT_PREREQ([bookmarkctl])
     ATX_CHECK_FS_NEW_FIREFOX([$1], [$2], [
         gen_guid() {
-            echo $(ath_fn_rand_base64 9 | tr '+/' '-_')
+            ath_fn_rand_base64 9 | tr '+/' '-_'
         }
         epoch_diff=0
         $3
@@ -47,6 +47,10 @@ ATX_CHECK_FS_NEW_XATTR(, , [
     name=$(ath_fn_rand_u64_hex)
 
     touch $name
+    ATX_RUN([
+        "$bookmarkctl" xattr-list $name | grep -q ^guid$
+        "$bookmarkctl" xattr-list $name | grep -q ^date_added$
+    ])
     ATX_RUN_REPEAT([8], [
         guid=$(gen_guid)
         ts=$(gen_timestamp)
