@@ -2552,7 +2552,15 @@ bookmark_set (
     bool nocheck = true;
     switch (key_type) {
       case BM_XATTR_DATE_ADDED:
-        if (0 != parse_ts(val, NULL)) {
+#define MAX_TIME_STR_LEN  19
+        if (val_len > MAX_TIME_STR_LEN) {
+            return -EINVAL;
+        }
+        char ts_buf[MAX_TIME_STR_LEN + 1];
+#undef MAX_TIME_STR_LEN
+        memcpy(ts_buf, val, val_len);
+        ts_buf[val_len] = '\0';
+        if (0 != parse_ts(ts_buf, NULL)) {
             return -EINVAL;
         }
         break;
