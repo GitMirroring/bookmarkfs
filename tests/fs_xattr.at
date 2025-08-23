@@ -1,0 +1,63 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([fs: extended attributes])
+AT_KEYWORDS([fs xattr])
+
+dnl
+dnl  ATX_CHECK_FS_NEW_XATTR([options], [prepare], [check])
+dnl
+m4_define([ATX_CHECK_FS_NEW_XATTR], [
+    ATX_FEAT_PREREQ([bookmarkctl])
+    ATX_CHECK_FS_NEW_FIREFOX([$1], [$2], [
+        gen_guid() {
+            echo $(ath_fn_rand_base64 9 | tr '+/' '-_')
+        }
+        epoch_diff=0
+        $3
+    ])
+    ATX_CHECK_FS_NEW_CHROMIUM([$1], [$2], [
+        gen_guid() {
+            if test -f /proc/sys/kernel/random/uuid; then
+                cat /proc/sys/kernel/random/uuid
+            elif command -v uuidgen > /dev/null; then
+                uuidgen -r
+            else
+                exit 77
+            fi
+        }
+        epoch_diff=11644473600
+        $3
+    ])
+])
+
+ATX_CHECK_FS_NEW_XATTR(, , [
+    gen_timestamp() {
+        secs=$(od -vAn -N4 -tu4 /dev/urandom | tr -d ' ')
+        echo "$(($secs + $epoch_diff))000000"
+    }
+
+    bookmarkctl="$buildsrcdir/bookmarkctl"
+    name=$(ath_fn_rand_u64_hex)
+
+    touch $name
+    ATX_RUN_REPEAT([8], [
+        guid=$(gen_guid)
+        ts=$(gen_timestamp)
+
+        ATX_RUN([
+            "$bookmarkctl" xattr-set -v $guid guid $name
+            test "$("$bookmarkctl" xattr-get -q guid $name)" = "$guid"
+            "$bookmarkctl" xattr-set -v $ts date_added $name
+            test "$("$bookmarkctl" xattr-get -q date_added $name)" = "$ts"
+        ])
+    ])
+])
+
+AT_CLEANUP
