@@ -208,7 +208,7 @@ static int  parse_mkfsopts  (struct bookmarkfs_conf_opt const *,
 static int  store_new       (struct timespec const *, json_t **);
 static int  store_save      (struct backend_ctx *);
 static void update_guid     (struct node_entry *, struct hashmap *,
-                             unsigned long, uint8_t *, unsigned long);
+                             long, uint8_t *, unsigned long);
 #endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 static int  assocmap_comp (union hashmap_key, void const *);
@@ -674,7 +674,7 @@ static void
 update_guid (
     struct node_entry *entry,
     struct hashmap    *guid_map,
-    unsigned long      old_entry_id,
+    long               old_entry_id,
     uint8_t           *guid,
     unsigned long      hashcode
 ) {
@@ -2510,8 +2510,7 @@ bookmark_set (
         return status;
     }
 
-    unsigned long entry_id;
-    struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, &entry_id);
+    struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, NULL);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2577,7 +2576,7 @@ bookmark_set (
             // Must not overwrite existing entry.
             return entry_found->id == id ? 0 : -EPERM;
         }
-        update_guid(entry, ctx->guid_map, entry_id, guid, hashcode);
+        update_guid(entry, ctx->guid_map, -1, guid, hashcode);
         break;
 
       case BM_XATTR_TITLE:
