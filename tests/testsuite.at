@@ -165,26 +165,29 @@ m4_define([ATX_CHECK_FS_NEW], [
 ])
 
 dnl
-dnl  ATX_CHECK_FS_NEW_ANY([options], [prepare], [check])
+dnl  ATX_CHECK_FS_NEW_FIREFOX([options], [prepare], [check])
 dnl
-m4_define([ATX_CHECK_FS_NEW_ANY], [
+m4_define([ATX_CHECK_FS_NEW_FIREFOX], [
     ATX_CHECK_FS_NEW([firefox], [$1], [mnt.tmp], [$2], [
         ATX_RUN_IN_DIR([mnt.tmp/bookmarks/unfiled], [$3])
     ])
+])
+
+dnl
+dnl  ATX_CHECK_FS_NEW_CHROMIUM([options], [prepare], [check])
+dnl
+m4_define([ATX_CHECK_FS_NEW_CHROMIUM], [
     ATX_CHECK_FS_NEW([chromium], [$1], [mnt.tmp], [$2], [
         ATX_RUN_IN_DIR([mnt.tmp/bookmarks/Other bookmarks], [$3])
     ])
 ])
 
 dnl
-dnl  ATX_CHECK_FS_NEW_ASSOC([options], [prepare], [check])
+dnl  ATX_CHECK_FS_NEW_ANY([options], [prepare], [check])
 dnl
-m4_define([ATX_CHECK_FS_NEW_ASSOC], [
-    ATX_CHECK_FS_NEW([firefox], [$1], [mnt.tmp], [$2], [
-        atx_tags=../../tags
-        atx_keywords=../../keywords
-        ATX_RUN_IN_DIR([mnt.tmp/bookmarks/unfiled], [$3])
-    ])
+m4_define([ATX_CHECK_FS_NEW_ANY], [
+    ATX_CHECK_FS_NEW_FIREFOX([$1], [$2], [$3])
+    ATX_CHECK_FS_NEW_CHROMIUM([$1], [$2], [$3])
 ])
 
 dnl  -- Helper functions --
