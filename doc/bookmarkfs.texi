@@ -390,7 +390,7 @@ online or offline mode:
 @table @asis
 @item Online Mode
 In online mode, fsck is performed on a mounted BookmarkFS filesystem
-using @code{ioctl()}.
+using @linuxmanpage{ioctl, 2}.
 @xref{Online Filesystem Check}.
 
 The @var{pathname} argument refers to the directory to operate on.
@@ -409,7 +409,7 @@ Path to the bookmark storage, equivalent to the @var{src} argument given to
 
 @item dir
 The bookmark directory to operate on, relative to the root directory of the
-BookmarkFS filesytem referred to by @var{src}.
+BookmarkFS filesystem referred to by @var{src}.
 @end table
 @end table
 
@@ -547,7 +547,7 @@ Print version and feature information, and then exit.
 @section @command{bookmarkctl}
 
 The @command{bookmarkctl} program is a command-line wrapper for various
-operations on a BookmarkFS filesystem that cannot be done portably with
+operations on a BookmarkFS filesystem that cannot be done portably using
 POSIX utilities alone, including I/O controls and managing extended attributes.
 
 @example
@@ -2741,7 +2741,7 @@ A bit array of the following flags:
 Indicates that the function should not replace an existing object.
 
 This flag is analogous to the @code{RENAME_NOREPLACE} flag for
-@linuxmanpage{renameat2}.
+@linuxmanpage{renameat2, 2}.
 
 @item BOOKMARKFS_BOOKMARK_TYPE_MASK
 The subsystem to operate on.
