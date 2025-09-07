@@ -101,8 +101,8 @@ if BACKEND_FIREFOX
   backend_firefox_la_SOURCES  = $(BACKEND_SOURCES_) backend_firefox.c db.c
 
 if BACKEND_FIREFOX_WRITE
-  backend_firefox_la_CPPFLAGS += $(NETTLE_CFLAGS) $(LIBURIPARSER_CFLAGS)
-  backend_firefox_la_LIBADD   += $(NETTLE_LIBS) $(LIBURIPARSER_LIBS)
+  backend_firefox_la_CPPFLAGS += $(NETTLE_CFLAGS)
+  backend_firefox_la_LIBADD   += $(NETTLE_LIBS)
 endif  # BACKEND_FIREFOX_WRITE
 endif  # BACKEND_FIREFOX
 

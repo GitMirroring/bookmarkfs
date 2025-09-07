@@ -39,7 +39,6 @@
 
 #ifdef ENABLE_BACKEND_FIREFOX_WRITE
 #  include <nettle/base64.h>
-#  include <uriparser/Uri.h>
 #endif
 
 #include "backend.h"
@@ -1593,51 +1592,26 @@ parse_mozurl (
     size_t            len,
     struct mozorigin *dst
 ) {
-    UriUriA uri;
-    char const *end = str + len;
-    if (URI_SUCCESS != uriParseSingleUriExA(&uri, str, end, NULL)) {
+    char const *part = memchr(str, ':', len);
+    if (part == NULL) {
         return -1;
     }
-    bool has_authority = false;
 
-    int status = -1;
-    if (uri.scheme.first == NULL) {
-        goto end;
-    }
-
-    char const *host_end = end;
-    UriPathSegmentA *path = uri.pathHead;
-    if (path != NULL) {
-        host_end = path->text.first - 1;
-    }
-    if (uri.hostText.afterLast != NULL) {
-        host_end = uri.hostText.afterLast;
-        if (host_end < end && *host_end == ']') {
-            ++host_end;
+    char const *end      = str + len;
+    char const *host     = "";
+    size_t      host_len = 0;
+    if (end - ++part > 1 && part[0] == '/' && part[1] == '/') {
+        host_len = end - (part += 2);
+        host = memchr(part, '@', host_len);
+        if (host == NULL) {
+            host = part;
+        } else {
+            host_len -= ++host - part;
         }
-    }
-    if (uri.portText.afterLast != NULL) {
-        host_end = uri.portText.afterLast;
-        has_authority = true;
-    }
-
-    char const *host = host_end;
-    if (uri.hostText.first != NULL) {
-        host = uri.hostText.first;
-        if (host[-1] == '[') {
-            --host;
+        end = memchr(host, '/', host_len);
+        if (end != NULL) {
+            host_len = end - host;
         }
-        if (host_end - host > 0) {
-            has_authority = true;
-        }
-    }
-
-    char const *prefix_end = uri.scheme.afterLast + 1;
-    if (uri.userInfo.first != NULL) {
-        has_authority = true;
-    }
-    if (has_authority) {
-        prefix_end += 2;
     }
 
     // When authority is present:
@@ -1647,14 +1621,10 @@ parse_mozurl (
     // - prefix_len: len(scheme) + len(":")
     // - host:       ""
     dst->prefix     = str;
-    dst->prefix_len = prefix_end - str;
+    dst->prefix_len = part - str;
     dst->host       = host;
-    dst->host_len   = host_end - host;
-    status = 0;
-
-  end:
-    uriFreeUriMembersA(&uri);
-    return status;
+    dst->host_len   = host_len;
+    return 0;
 }
 
 static int
