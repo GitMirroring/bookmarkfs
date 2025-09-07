@@ -11,7 +11,7 @@ packages: [
   # build
   autoconf, automake, libtool, autoconf-archive, pkgconf, texinfo,
   # lib
-  fusefs-libs3, sqlite3, jansson, nettle, readline, tcl86, uriparser, xxhash,
+  fusefs-libs3, sqlite3, jansson, nettle, readline, tcl86, xxhash,
 ]
 sources:
   - https://git.sr.ht/~cismonx/bookmarkfs

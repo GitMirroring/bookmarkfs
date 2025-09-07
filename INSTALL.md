@@ -31,7 +31,6 @@ Requirements
   | [Nettle]     | 3.4             |
   | GNU Readline | 6.0             |
   | [Tcl]        | 8.6             |
-  | [uriparser]  | 0.9             |
   | xxHash       | 0.8             |
 
   Some of them can be optional, depending on which components of BookmarkFS
@@ -80,7 +79,7 @@ Installation
   - `--enable-bookmarkfs-mkfs`: the `mkfs.bookmarkfs` program
   - `--enable-bookmarkctl`: the `bookmarkctl` program
   - `--enable-backend-firefox`: backend for Firefox
-    * Requires: SQLite, Nettle, uriparser, bookmarkfs-util
+    * Requires: SQLite, Nettle, bookmarkfs-util
   - `--enable-backend-chromium`: backend for Chromium
     * Requires: Jansson, Nettle, bookmarkfs-util
   - `--enable-fsck-handler-tcl`: Tcl-based handler for `fsck.bookmarkfs`
@@ -102,7 +101,7 @@ Installation
     * Do not use xxHash as a header-only library
   - `--disable-backend-firefox-write`
     * Build the Firefox backend without write features
-    * No longer requires: Nettle, uriparser
+    * No longer requires: Nettle
   - `--disable-backend-chromium-write`
     * Build the Chromium backend without write features
     * No longer requires: Nettle
@@ -183,8 +182,7 @@ Notes
 
 <!-- reflinks -->
 
-[Jansson]:   https://github.com/akheron/jansson
-[Nettle]:    https://www.lysator.liu.se/~nisse/nettle/
-[Landlock]:  https://docs.kernel.org/userspace-api/landlock.html
-[Tcl]:       https://www.tcl-lang.org/
-[uriparser]: https://github.com/uriparser/uriparser
+[Jansson]:  https://github.com/akheron/jansson
+[Nettle]:   https://www.lysator.liu.se/~nisse/nettle/
+[Landlock]: https://docs.kernel.org/userspace-api/landlock.html
+[Tcl]:      https://www.tcl-lang.org/

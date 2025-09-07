@@ -12,7 +12,7 @@ packages: [
   autoconf, automake, libtool, autoconf-archive, pkgconf, make, gcc, texinfo,
   # lib
   libfuse3-dev, libseccomp-dev, libsqlite3-dev, libjansson-dev, nettle-dev,
-  libreadline-dev, tcl-dev, liburiparser-dev, libxxhash-dev,
+  libreadline-dev, tcl-dev, libxxhash-dev,
   # for fusermount3(1)
   fuse3,
 ]

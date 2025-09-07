@@ -13,7 +13,7 @@ packages: [
   texinfo, musl-dev, tcc-libs-static,
   # lib
   fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev, nettle-dev,
-  readline-dev, tcl-dev, uriparser-dev, xxhash-dev,
+  readline-dev, tcl-dev, xxhash-dev,
   # for managing FUSE mounts
   busybox-mdev-openrc, fuse-openrc, fuse3, umount,
 ]

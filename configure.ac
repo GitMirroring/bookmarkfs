@@ -110,9 +110,6 @@ EX_DEP([readline], [>= 6.0], [GNU Readline library], , [interactive-fsck])
 
 EX_DEP([tcl], [>= 8.6], [Tcl library], , [fsck-handler-tcl])
 
-EX_DEP([liburiparser], [>= 0.9], [uriparser library], ,
-        [backend-firefox-write])
-
 EX_DEP([libxxhash], [>= 0.8], [xxHash library], [
     AS_VAR_IF([enable_xxhash_inline], [yes], [
         AS_VAR_SET([LIBXXHASH_LIBS])
