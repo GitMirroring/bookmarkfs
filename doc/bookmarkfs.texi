@@ -92,8 +92,8 @@ BookmarkFS is free software, distributed under the terms of the
 @uref{https://www.gnu.org/licenses/#GPL, GNU General Public License},
 either version 3, or any later version of the license.
 
-To install BookmarkFS, refer to the @file{INSTALL.md} file under the
-root directory of the project codebase.
+For instructions on how to build and install BookmarkFS, see the
+@file{INSTALL.md} file under the root directory of the project codebase.
 
 BookmarkFS is
 @uref{https://savannah.nongnu.org/projects/bookmarkfs, hosted on Savannah},
@@ -1270,7 +1270,7 @@ argument (@pxref{mount.bookmarkfs}):
 @end example
 
 Actual path for the profile directories may differ across distributions.
-When in doubt, visit @url{about:profiles} in your browser.
+When in doubt, visit @indicateurl{about:profiles} in your browser.
 
 Backend-specific options (@command{mount.bookmarkfs} only):
 
@@ -1410,7 +1410,7 @@ argument (@pxref{mount.bookmarkfs}):
 @end example
 
 Actual path for the profile directories may differ across distributions.
-When in doubt, visit @url{chrome://profile-internals/} in your browser.
+When in doubt, visit @indicateurl{chrome://profile-internals/} in your browser.
 
 Backend-specific options (@command{mount.bookmarkfs} only):
 
@@ -3815,11 +3815,11 @@ Updates the seed used by the hash function.
 
 void
 hash_seed (
-    uint64_t s
+    uint64_t seed
 );
 @end example
 
-With the same seed, the hash function always produces the same digest
+With the same @code{seed}, the hash function always produces the same digest
 for the same input.
 
 If this function is never called, the hash function bahaves as if it is
@@ -4140,9 +4140,6 @@ Too many collisions on a single bucket forces a rehash.
 With a good-quality hash function, the average load factor of a hash table
 should be around 70%~75% before it must rehash.
 
-@item Performance is suboptimal without hardware support for
-@uref{https://en.wikipedia.org/wiki/Find_first_set, Find First Set}.
-
 @item Concurrent writes on the same hash table is MT-Unsafe.
 @end itemize
 
@@ -4167,7 +4164,7 @@ Updates the seed used by the PRNG.
 
 int
 prng_seed (
-    uint64_t const s[4]
+    uint64_t const seed[4]
 );
 @end example
 
@@ -4178,8 +4175,7 @@ Function arguments:
 The new seed (i.e., the internal state) for the PRNG.
 
 @quotation Note
-It is recommended to seed the PRNG with values that ``appear to be random''
-(have a uniform distribution of bits).
+It is recommended to seed the PRNG with values that ``appear to be random''.
 
 A seed with all bits zero (equivalent to never calling @code{prng_seed()})
 results in @code{prng_rand()} producing a bad-quality number sequence.
@@ -4189,7 +4185,7 @@ If @code{NULL}, the seed will be obtained using @linuxmanpage{getrandom, 2}.
 @end table
 
 The function returns @t{0} on success, and @t{-1} on error.
-If @code{s} is not @code{NULL}, the function never fails.
+If @code{seed} is not @code{NULL}, the function never fails.
 
 @item prng_rand
 Returns the next value in the pseudo-random number sequence.

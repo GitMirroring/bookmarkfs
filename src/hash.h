@@ -54,7 +54,7 @@ hash_digestcb (
 
 void
 hash_seed (
-    uint64_t s
+    uint64_t seed
 );
 
 #endif  /* !defined(BOOKMARKFS_HASH_H_) */

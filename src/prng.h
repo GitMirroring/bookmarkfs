@@ -32,7 +32,7 @@ prng_rand (void);
 
 int
 prng_seed (
-    uint64_t const s[4]
+    uint64_t const seed[4]
 );
 
 #endif  /* !defined(BOOKMARKFS_PRNG_H_) */
