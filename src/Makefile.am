@@ -8,9 +8,9 @@
 
 bin_PROGRAMS       =
 pkginclude_HEADERS = backend.h common.h ioctl.h fsck_handler.h version.h
-noinst_HEADERS     = backend_util.h db.h defs.h frontend_util.h fs_ops.h  \
-                     fsck_ops.h fsck_util.h json.h lib.h macros.h uuid.h  \
-                     xattr.h xstd.h
+noinst_HEADERS     = base64.h backend_util.h db.h defs.h  \
+                     frontend_util.h fs_ops.h fsck_ops.h fsck_util.h json.h  \
+                     lib.h macros.h uuid.h xattr.h xstd.h
 lib_LTLIBRARIES    =
 pkglib_LTLIBRARIES =
 pkgconfig_DATA     = bookmarkfs_util.pc
