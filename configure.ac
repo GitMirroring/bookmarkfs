@@ -103,8 +103,7 @@ EX_DEP([sqlite3], [>= 3.35], [SQLite3 library], , [backend-firefox])
 
 EX_DEP([jansson], [>= 2.14], [Jansson library], , [backend-chromium])
 
-EX_DEP([nettle], [>= 3.4], [Nettle library], ,
-        [backend-firefox-write], [backend-chromium-write])
+EX_DEP([nettle], [>= 3.4], [Nettle library], , [backend-chromium-write])
 
 EX_DEP([readline], [>= 6.0], [GNU Readline library], , [interactive-fsck])
 

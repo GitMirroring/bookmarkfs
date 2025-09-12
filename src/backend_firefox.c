@@ -37,12 +37,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifdef ENABLE_BACKEND_FIREFOX_WRITE
-#  include <nettle/base64.h>
-#endif
-
 #include "backend.h"
 #include "backend_util.h"
+#include "base64.h"
 #include "db.h"
 #include "hash.h"
 #include "hashmap.h"
@@ -567,12 +564,8 @@ static char *
 gen_random_guid (
     char *out
 ) {
-    struct base64_encode_ctx ctx;
-    base64url_encode_init(&ctx);
-
     uint64_t const buf[] = { prng_rand(), prng_rand() };
-    base64_encode_final(&ctx, out +
-            base64_encode_update(&ctx, out, GUID_LEN, (uint8_t const *)buf));
+    base64url_encode_nopad(out, (uint8_t const *)buf, GUID_LEN);
     return out;
 }
 
@@ -585,17 +578,8 @@ is_valid_guid (
         return false;
     }
 
-    struct base64_decode_ctx ctx;
-    base64url_decode_init(&ctx);
-
-    uint8_t buf[BASE64_DECODE_LENGTH(GUID_STR_LEN)];
-    if (!base64_decode_update(&ctx, &len, buf, len, str)) {
-        return false;
-    }
-    if (!base64_decode_final(&ctx)) {
-        return false;
-    }
-    return true;
+    uint8_t buf[GUID_LEN];
+    return 0 == base64url_decode_nopad(buf, str, len);
 }
 
 static int

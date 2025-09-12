@@ -79,7 +79,7 @@ Installation
   - `--enable-bookmarkfs-mkfs`: the `mkfs.bookmarkfs` program
   - `--enable-bookmarkctl`: the `bookmarkctl` program
   - `--enable-backend-firefox`: backend for Firefox
-    * Requires: SQLite, Nettle, bookmarkfs-util
+    * Requires: SQLite, bookmarkfs-util
   - `--enable-backend-chromium`: backend for Chromium
     * Requires: Jansson, Nettle, bookmarkfs-util
   - `--enable-fsck-handler-tcl`: Tcl-based handler for `fsck.bookmarkfs`
@@ -101,7 +101,6 @@ Installation
     * Do not use xxHash as a header-only library
   - `--disable-backend-firefox-write`
     * Build the Firefox backend without write features
-    * No longer requires: Nettle
   - `--disable-backend-chromium-write`
     * Build the Chromium backend without write features
     * No longer requires: Nettle

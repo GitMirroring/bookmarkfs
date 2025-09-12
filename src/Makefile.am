@@ -101,8 +101,7 @@ if BACKEND_FIREFOX
   backend_firefox_la_SOURCES  = $(BACKEND_SOURCES_) backend_firefox.c db.c
 
 if BACKEND_FIREFOX_WRITE
-  backend_firefox_la_CPPFLAGS += $(NETTLE_CFLAGS)
-  backend_firefox_la_LIBADD   += $(NETTLE_LIBS)
+  backend_firefox_la_SOURCES += base64.c
 endif  # BACKEND_FIREFOX_WRITE
 endif  # BACKEND_FIREFOX
 
