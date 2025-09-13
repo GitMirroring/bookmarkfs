@@ -114,7 +114,7 @@ if BACKEND_CHROMIUM
   backend_chromium_la_LDFLAGS  = $(MODULE_LDFLAGS_)
   backend_chromium_la_LIBADD   = $(UTIL_LIBS_) $(JANSSON_LIBS)
   backend_chromium_la_SOURCES  = $(BACKEND_SOURCES_) backend_chromium.c  \
-                                 json.c uuid.c
+                                 base16.c json.c uuid.c
 
 if BACKEND_CHROMIUM_WRITE
   backend_chromium_la_CPPFLAGS += $(NETTLE_CFLAGS)

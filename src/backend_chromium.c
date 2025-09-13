@@ -40,12 +40,12 @@
 #include <unistd.h>
 
 #ifdef ENABLE_BACKEND_CHROMIUM_WRITE
-#  include <nettle/base16.h>
 #  include <nettle/md5.h>
 #endif
 
 #include "backend.h"
 #include "backend_util.h"
+#include "base16.h"
 #include "hash.h"
 #include "hashmap.h"
 #include "json.h"
@@ -454,8 +454,7 @@ chksum_root (
 
     uint8_t digest[MD5_DIGEST_SIZE];
     md5_digest(&iter_ctx.mdctx, MD5_DIGEST_SIZE, digest);
-
-    base16_encode_update(buf, MD5_DIGEST_SIZE, digest);
+    base16_encode(buf, digest, MD5_DIGEST_SIZE);
     status = 0;
 
   end:
