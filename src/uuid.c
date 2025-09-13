@@ -1,5 +1,7 @@
 /**
  * bookmarkfs/src/uuid.c
+ *
+ * Utilities for manipulating RFC 4122 UUIDs.
  * ----
  *
  * Copyright (C) 2024  CismonX <admin@cismon.net>
@@ -26,104 +28,59 @@
 
 #include "uuid.h"
 
-#include <inttypes.h>
-#include <stdio.h>
 #include <string.h>
 
-#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
-#  include <nettle/base16.h>
-#endif
-
+#include "base16.h"
 #include "prng.h"
-
-#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 
 void
 uuid_bin2hex (
-    char          *restrict out,
-    uint8_t const *restrict in
+    char          *restrict dst,
+    uint8_t const *restrict src
 ) {
     size_t const parts[] = { 4, 2, 2, 2, 6 };
     for (int i = 0; i < 5; ++i) {
         size_t src_len = parts[i];
-        base16_encode_update(out, src_len, in);
+        base16_encode(dst, src, src_len);
 
-        in  += src_len;
-        out += src_len << 1;
+        src += src_len;
+        dst += src_len << 1;
         if (i < 4) {
-            *(out++) = '-';
+            *(dst++) = '-';
         }
     }
 }
 
 int
 uuid_hex2bin (
-    uint8_t    *restrict out,
-    char const *restrict in
+    uint8_t    *restrict dst,
+    char const *restrict src
 ) {
-    struct base16_decode_ctx ctx;
-    base16_decode_init(&ctx);
-
     size_t const parts[] = { 8, 4, 4, 4, 12 };
     for (int i = 0; i < 5; ++i) {
         size_t src_len = parts[i];
-        size_t dest_len;
-        if (!base16_decode_update(&ctx, &dest_len, out, src_len, in)) {
+        if (0 != base16_decode(dst, src, src_len)) {
             return -1;
         }
 
-        out += src_len >> 1;
-        in  += src_len;
-        if (i < 4 && *(in++) != '-') {
+        dst += src_len >> 1;
+        src += src_len;
+        if (i < 4 && *(src++) != '-') {
             return -1;
         }
     }
-
-    if (!base16_decode_final(&ctx)) {
-        return -1;
-    }
     return 0;
 }
-
-#else  /* !defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
-
-/**
- * This implementation is meant to get rid of the Nettle dependency
- * when building the Chromium backend without write support.
- *
- * NOTE: Result is incompatible with the above Nettle-based implementations.
- *       It also requires the input to be NUL-terminated.
- */
-int
-uuid_hex2bin (
-    uint8_t    *restrict out,
-    char const *restrict in
-) {
-    uint16_t parts[8];
-    int num_matched = sscanf(in,
-            "%4"  SCNx16 "%4"  SCNx16 "-%4" SCNx16 "-%4" SCNx16
-            "-%4" SCNx16 "-%4" SCNx16 "%4"  SCNx16 "%4"  SCNx16,
-            &parts[0], &parts[1], &parts[2], &parts[3],
-            &parts[4], &parts[5], &parts[6], &parts[7]);
-    if (num_matched != 8) {
-        return -1;
-    }
-
-    memcpy(out, parts, UUID_LEN);
-    return 0;
-}
-
-#endif  /* defined(ENABLE_BACKEND_CHROMIUM_WRITE) */
 
 void
 uuid_generate_random (
-    uint8_t *out
+    uint8_t *dst
 ) {
     uint64_t const buf[] = { prng_rand(), prng_rand() };
-    memcpy(out, buf, UUID_LEN);
+    memcpy(dst, buf, UUID_LEN);
 
-    out[7] &= 0x0f;
-    out[7] |= 0x40;
-    out[8] &= 0x3f;
-    out[8] |= 0x80;
+    dst[7] &= 0x0f;
+    dst[7] |= 0x40;
+    dst[8] &= 0x3f;
+    dst[8] |= 0x80;
 }

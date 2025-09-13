@@ -1,7 +1,7 @@
 /**
  * bookmarkfs/src/uuid.h
  *
- * Utility library for manipulating RFC 4122 UUIDs.
+ * Utilities for manipulating RFC 4122 UUIDs.
  * ----
  *
  * Copyright (C) 2024  CismonX <admin@cismon.net>
@@ -37,8 +37,8 @@
  */
 void
 uuid_bin2hex (
-    char          *restrict out,  // UUID_HEX_LEN
-    uint8_t const *restrict in    // UUUD_LEN
+    char          *restrict dst,  // UUID_HEX_LEN
+    uint8_t const *restrict src   // UUUD_LEN
 );
 
 /**
@@ -51,8 +51,8 @@ uuid_bin2hex (
  */
 int
 uuid_hex2bin (
-    uint8_t    *restrict out,  // UUID_LEN
-    char const *restrict in    // UUID_HEX_LEN
+    uint8_t    *restrict dst,  // UUID_LEN
+    char const *restrict src   // UUID_HEX_LEN
 );
 
 /**
@@ -63,7 +63,7 @@ uuid_hex2bin (
  */
 void
 uuid_generate_random (
-    uint8_t *out  // UUID_LEN
+    uint8_t *dst  // UUID_LEN
 );
 
 #endif  /* !defined(BOOKMARKFS_UUID_H_) */
