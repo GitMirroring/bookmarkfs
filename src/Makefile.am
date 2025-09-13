@@ -8,7 +8,7 @@
 
 bin_PROGRAMS       =
 pkginclude_HEADERS = backend.h common.h ioctl.h fsck_handler.h version.h
-noinst_HEADERS     = base64.h backend_util.h db.h defs.h  \
+noinst_HEADERS     = base16.h base64.h backend_util.h db.h defs.h  \
                      frontend_util.h fs_ops.h fsck_ops.h fsck_util.h json.h  \
                      lib.h macros.h uuid.h xattr.h xstd.h
 check_LTLIBRARIES  = libbookmarkfs_check.la
