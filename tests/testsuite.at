@@ -204,6 +204,9 @@ AT_TEST_HELPER_FN([rand_base64], , , [
 
 dnl  -- Test groups --
 
+AT_BANNER([Miscellaneous])
+m4_include([misc_base64.at])
+
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])
 m4_include([lib_prng.at])

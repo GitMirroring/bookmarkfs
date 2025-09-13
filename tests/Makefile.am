@@ -10,12 +10,16 @@ EXTRA_DIST = package.m4 testsuite.at $(TESTSUITE) $(TESTS_)
 
 TESTS_ = lib_hash.at lib_prng.at lib_watcher.at lib_sandbox.at  \
          lib_hashmap.at fs_basic.at fs_regrw.at fs_dents.at fs_assoc.at  \
-         fs_times.at fs_xattr.at
+         fs_times.at fs_xattr.at misc_base64.at
 
 # Helper programs for testing
 
 check_HEADERS  = check_util.h
-check_PROGRAMS =
+check_PROGRAMS = check-misc
+
+check_misc_CPPFLAGS = -I$(top_srcdir)/src
+check_misc_LDADD    = $(top_builddir)/src/libbookmarkfs_check.la
+check_misc_SOURCES  = check_misc.c
 
 if BOOKMARKFS_UTIL
   check_PROGRAMS += check-util-lib

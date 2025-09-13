@@ -1,0 +1,32 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([misc: base64 encoding])
+AT_KEYWORDS([misc base64])
+
+ATX_CHECK_SIMPLE([
+    check_base64_decode() {
+        tr '/+' '_-' | check-misc base64 -d
+    }
+    check_base64_encode() {
+        check-misc base64 | tr '_-' '/+'
+    }
+
+    ATX_RUN_REPEAT([16], [
+        str=$(ath_fn_rand_base64 3072)
+        sum=$(printf %s $str | base64 -d | sha256sum)
+
+        ATX_RUN([
+            test "$str" = "$(printf %s $str | base64 -d | check_base64_encode)"
+            test "$sum" = "$(printf %s $str | check_base64_decode | sha256sum)"
+        ])
+    ])
+])
+
+AT_CLEANUP

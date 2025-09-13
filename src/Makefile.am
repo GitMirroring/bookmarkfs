@@ -11,6 +11,7 @@ pkginclude_HEADERS = backend.h common.h ioctl.h fsck_handler.h version.h
 noinst_HEADERS     = base64.h backend_util.h db.h defs.h  \
                      frontend_util.h fs_ops.h fsck_ops.h fsck_util.h json.h  \
                      lib.h macros.h uuid.h xattr.h xstd.h
+check_LTLIBRARIES  = libbookmarkfs_check.la
 lib_LTLIBRARIES    =
 pkglib_LTLIBRARIES =
 pkgconfig_DATA     = bookmarkfs_util.pc
@@ -130,3 +131,6 @@ if FSCK_HANDLER_TCL
   fsck_handler_tcl_la_LIBADD   = $(TCL_LIBS)
   fsck_handler_tcl_la_SOURCES  = backend_util.c fsck_handler_tcl.c xstd.c
 endif  # FSCK_HANDLER_TCL
+
+libbookmarkfs_check_la_CPPFLAGS = $(BASE_CPPFLAGS_)
+libbookmarkfs_check_la_SOURCES  = base64.c xstd.c
