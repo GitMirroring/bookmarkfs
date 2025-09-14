@@ -27,6 +27,7 @@
 
 #include <unistd.h>
 
+#include "base16.h"
 #include "base64.h"
 #include "check_util.h"
 #include "frontend_util.h"
@@ -40,13 +41,49 @@ typedef ssize_t (buf_rw_cb) (
 );
 
 // Forward declaration start
+static ssize_t base16_dec_cb (void *, char *, char const *, size_t, size_t *);
+static ssize_t base16_enc_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_dec_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_enc_cb (void *, char *, char const *, size_t, size_t *);
 
 static int buf_rw_all       (char *, char *, size_t, buf_rw_cb *, void *);
 static int dispatch_subcmds (int, char *[]);
+static int subcmd_base16    (int, char *[]);
 static int subcmd_base64    (int, char *[]);
 // Forward declaration end
+
+static ssize_t
+base16_dec_cb (
+    void       *UNUSED_VAR(user_data),
+    char       *dst,
+    char const *src,
+    size_t      src_len,
+    size_t     *src_off_ptr
+) {
+    src_len += *src_off_ptr;
+    size_t rem_len = src_len % 2;
+    *src_off_ptr = rem_len;
+
+    if (0 != base16_decode((uint8_t *)dst, src, src_len - rem_len)) {
+        return -1;
+    }
+    return src_len / 2;
+}
+
+static ssize_t
+base16_enc_cb (
+    void       *UNUSED_VAR(user_data),
+    char       *dst,
+    char const *src,
+    size_t      src_len,
+    size_t     *src_off_ptr
+) {
+    src_len += *src_off_ptr;
+    *src_off_ptr = 0;
+
+    base16_encode(dst, (uint8_t *)src, src_len);
+    return src_len * 2;
+}
 
 static ssize_t
 base64_dec_cb (
@@ -130,10 +167,35 @@ dispatch_subcmds (
     int status = -1;
     if (0 == strcmp("base64", cmd)) {
         status = subcmd_base64(argc, argv);
+    } else if (0 == strcmp("base16", cmd)) {
+        status = subcmd_base16(argc, argv);
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }
     return status;
+}
+
+static int
+subcmd_base16 (
+    int   argc,
+    char *argv[]
+) {
+    int decode = 0;
+
+    OPT_START(argc, argv, "d")
+    OPT_OPT('d') {
+        decode = 1;
+        break;
+    }
+    OPT_END
+
+    if (decode) {
+        char src[4096], dst[2048];
+        return buf_rw_all(dst, src, sizeof(src), base16_dec_cb, NULL);
+    } else {
+        char src[2048], dst[4096];
+        return buf_rw_all(dst, src, sizeof(src), base16_enc_cb, NULL);
+    }
 }
 
 static int
