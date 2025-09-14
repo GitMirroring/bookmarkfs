@@ -31,6 +31,7 @@
 #include "base64.h"
 #include "check_util.h"
 #include "frontend_util.h"
+#include "uuid.h"
 
 typedef ssize_t (buf_rw_cb) (
     void       *user_data,
@@ -45,11 +46,14 @@ static ssize_t base16_dec_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base16_enc_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_dec_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_enc_cb (void *, char *, char const *, size_t, size_t *);
+static ssize_t uuid_dec_cb   (void *, char *, char const *, size_t, size_t *);
+static ssize_t uuid_enc_cb   (void *, char *, char const *, size_t, size_t *);
 
 static int buf_rw_all       (char *, char *, size_t, buf_rw_cb *, void *);
 static int dispatch_subcmds (int, char *[]);
 static int subcmd_base16    (int, char *[]);
 static int subcmd_base64    (int, char *[]);
+static int subcmd_uuid      (int, char *[]);
 // Forward declaration end
 
 static ssize_t
@@ -119,6 +123,48 @@ base64_enc_cb (
     return src_len / 3 * 4;
 }
 
+static ssize_t
+uuid_dec_cb (
+    void       *UNUSED_VAR(user_data),
+    char       *dst,
+    char const *src,
+    size_t      src_len,
+    size_t     *src_off_ptr
+) {
+    src_len += *src_off_ptr;
+    if (src_len < UUID_HEX_LEN) {
+        *src_off_ptr = src_len;
+        return 0;
+    }
+    debug_assert(src_len == UUID_HEX_LEN);
+    *src_off_ptr = 0;
+
+    if (0 != uuid_hex2bin((uint8_t *)dst, src)) {
+        return -1;
+    }
+    return UUID_LEN;
+}
+
+static ssize_t
+uuid_enc_cb (
+    void       *UNUSED_VAR(user_data),
+    char       *dst,
+    char const *src,
+    size_t      src_len,
+    size_t     *src_off_ptr
+) {
+    src_len += *src_off_ptr;
+    if (src_len < UUID_LEN) {
+        *src_off_ptr = src_len;
+        return 0;
+    }
+    debug_assert(src_len == UUID_LEN);
+    *src_off_ptr = 0;
+
+    uuid_bin2hex(dst, (uint8_t *)src);
+    return UUID_HEX_LEN;
+}
+
 static int
 buf_rw_all (
     char      *dst,
@@ -169,6 +215,8 @@ dispatch_subcmds (
         status = subcmd_base64(argc, argv);
     } else if (0 == strcmp("base16", cmd)) {
         status = subcmd_base16(argc, argv);
+    } else if (0 == strcmp("uuid", cmd)) {
+        status = subcmd_uuid(argc, argv);
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }
@@ -218,6 +266,29 @@ subcmd_base64 (
     } else {
         char src[3072], dst[4096];
         return buf_rw_all(dst, src, sizeof(src), base64_enc_cb, NULL);
+    }
+}
+
+static int
+subcmd_uuid (
+    int   argc,
+    char *argv[]
+) {
+    int decode = 0;
+
+    OPT_START(argc, argv, "d")
+    OPT_OPT('d') {
+        decode = 1;
+        break;
+    }
+    OPT_END
+
+    if (decode) {
+        char src[UUID_HEX_LEN], dst[UUID_LEN];
+        return buf_rw_all(dst, src, sizeof(src), uuid_dec_cb, NULL);
+    } else {
+        char src[UUID_LEN], dst[UUID_HEX_LEN];
+        return buf_rw_all(dst, src, sizeof(src), uuid_enc_cb, NULL);
     }
 }
 

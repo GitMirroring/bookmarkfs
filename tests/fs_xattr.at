@@ -24,13 +24,7 @@ m4_define([ATX_CHECK_FS_NEW_XATTR], [
     ])
     ATX_CHECK_FS_NEW_CHROMIUM([$1], [$2], [
         gen_guid() {
-            if test -f /proc/sys/kernel/random/uuid; then
-                cat /proc/sys/kernel/random/uuid
-            elif command -v uuidgen > /dev/null; then
-                uuidgen -r
-            else
-                exit 77
-            fi
+            ath_fn_rand_uuid
         }
         epoch_diff=11644473600
         $3

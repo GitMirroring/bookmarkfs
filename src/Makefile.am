@@ -132,5 +132,5 @@ if FSCK_HANDLER_TCL
   fsck_handler_tcl_la_SOURCES  = backend_util.c fsck_handler_tcl.c xstd.c
 endif  # FSCK_HANDLER_TCL
 
-libbookmarkfs_check_la_CPPFLAGS = $(BASE_CPPFLAGS_)
-libbookmarkfs_check_la_SOURCES  = base16.c base64.c xstd.c
+libbookmarkfs_check_la_CPPFLAGS = $(BASE_CPPFLAGS_) -DTESTING_BOOKMARKFS
+libbookmarkfs_check_la_SOURCES  = base16.c base64.c uuid.c xstd.c

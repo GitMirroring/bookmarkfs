@@ -202,11 +202,22 @@ AT_TEST_HELPER_FN([rand_base64], , , [
     head -c$1 /dev/urandom | base64 -w0
 ])
 
+AT_TEST_HELPER_FN([rand_uuid], , , [
+    if test -f /proc/sys/kernel/random/uuid; then
+        cat /proc/sys/kernel/random/uuid
+    elif command -v uuidgen > /dev/null; then
+        uuidgen -r
+    else
+        exit 77
+    fi
+])
+
 dnl  -- Test groups --
 
 AT_BANNER([Miscellaneous])
 m4_include([misc_base16.at])
 m4_include([misc_base64.at])
+m4_include([misc_uuid.at])
 
 AT_BANNER([The Utility Library])
 m4_include([lib_hash.at])

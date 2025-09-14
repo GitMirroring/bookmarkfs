@@ -72,6 +72,8 @@ uuid_hex2bin (
     return 0;
 }
 
+#ifndef TESTING_BOOKMARKFS
+
 void
 uuid_generate_random (
     uint8_t *dst
@@ -84,3 +86,5 @@ uuid_generate_random (
     dst[8] &= 0x3f;
     dst[8] |= 0x80;
 }
+
+#endif  /* !defined(TESTING_BOOKMARKFS) */
