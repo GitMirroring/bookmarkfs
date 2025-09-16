@@ -31,6 +31,7 @@
 #include "base64.h"
 #include "check_util.h"
 #include "frontend_util.h"
+#include "md5.h"
 #include "uuid.h"
 
 typedef ssize_t (buf_rw_cb) (
@@ -46,6 +47,7 @@ static ssize_t base16_dec_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base16_enc_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_dec_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t base64_enc_cb (void *, char *, char const *, size_t, size_t *);
+static ssize_t md5_digest_cb (void *, char *, char const *, size_t, size_t *);
 static ssize_t uuid_dec_cb   (void *, char *, char const *, size_t, size_t *);
 static ssize_t uuid_enc_cb   (void *, char *, char const *, size_t, size_t *);
 
@@ -53,6 +55,7 @@ static int buf_rw_all       (char *, char *, size_t, buf_rw_cb *, void *);
 static int dispatch_subcmds (int, char *[]);
 static int subcmd_base16    (int, char *[]);
 static int subcmd_base64    (int, char *[]);
+static int subcmd_md5       (void);
 static int subcmd_uuid      (int, char *[]);
 // Forward declaration end
 
@@ -121,6 +124,26 @@ base64_enc_cb (
 
     base64url_encode_nopad(dst, (uint8_t *)src, src_len - rem_len);
     return src_len / 3 * 4;
+}
+
+static ssize_t
+md5_digest_cb (
+    void       *user_data,
+    char       *dst,
+    char const *src,
+    size_t      src_len,
+    size_t     *src_off_ptr
+) {
+    struct md5_ctx *ctx = user_data;
+
+    debug_assert(*src_off_ptr == 0);
+    if (src_len > 0) {
+        md5_update(ctx, (uint8_t *)src, src_len);
+        return 0;
+    } else {
+        md5_digest(ctx, (uint8_t *)dst);
+        return MD5_DIGEST_SIZE;
+    }
 }
 
 static ssize_t
@@ -217,6 +240,8 @@ dispatch_subcmds (
         status = subcmd_base16(argc, argv);
     } else if (0 == strcmp("uuid", cmd)) {
         status = subcmd_uuid(argc, argv);
+    } else if (0 == strcmp("md5", cmd)) {
+        status = subcmd_md5();
     } else {
         log_printf("bad subcmd '%s'", cmd);
     }
@@ -267,6 +292,16 @@ subcmd_base64 (
         char src[3072], dst[4096];
         return buf_rw_all(dst, src, sizeof(src), base64_enc_cb, NULL);
     }
+}
+
+static int
+subcmd_md5 (void)
+{
+    struct md5_ctx ctx;
+    md5_init(&ctx);
+
+    char src[4096], dst[MD5_DIGEST_SIZE];
+    return buf_rw_all(dst, src, sizeof(src), md5_digest_cb, &ctx);
 }
 
 static int

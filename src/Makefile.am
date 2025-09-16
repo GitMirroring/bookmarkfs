@@ -133,4 +133,4 @@ if FSCK_HANDLER_TCL
 endif  # FSCK_HANDLER_TCL
 
 libbookmarkfs_check_la_CPPFLAGS = $(BASE_CPPFLAGS_) -DTESTING_BOOKMARKFS
-libbookmarkfs_check_la_SOURCES  = base16.c base64.c uuid.c xstd.c
+libbookmarkfs_check_la_SOURCES  = base16.c base64.c md5.c uuid.c xstd.c

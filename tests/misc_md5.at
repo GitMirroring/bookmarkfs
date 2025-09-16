@@ -1,0 +1,28 @@
+dnl
+dnl  Copyright (C) 2025  CismonX <admin@cismon.net>
+dnl
+dnl  Copying and distribution of this file, with or without modification,
+dnl  are permitted in any medium without royalty,
+dnl  provided the copyright notice and this notice are preserved.
+dnl  This file is offered as-is, without any warranty.
+dnl
+
+AT_SETUP([misc: md5 checksum])
+AT_KEYWORDS([misc md5])
+
+ATX_CHECK_SIMPLE([
+    check_md5sum() {
+        cat $1 | check-misc md5 | check-misc base16
+    }
+
+    ATX_RUN_REPEAT([8], [
+        bytes=$(od -vAn -N2 -tu2 /dev/urandom | tr -d ' ')
+
+        head -c$bytes /dev/urandom > data.tmp
+        ATX_RUN([
+            test "$(md5sum data.tmp | head -c32)" = "$(check_md5sum data.tmp)"
+        ])
+    ])
+])
+
+AT_CLEANUP

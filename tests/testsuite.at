@@ -217,6 +217,7 @@ dnl  -- Test groups --
 AT_BANNER([Miscellaneous])
 m4_include([misc_base16.at])
 m4_include([misc_base64.at])
+m4_include([misc_md5.at])
 m4_include([misc_uuid.at])
 
 AT_BANNER([The Utility Library])
