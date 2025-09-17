@@ -12,7 +12,7 @@ packages: [
   autoconf, automake, libtool, autoconf-archive, pkgconf, pdpmake, tcc,
   texinfo, musl-dev, tcc-libs-static,
   # lib
-  fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev, nettle-dev,
+  fuse3-dev, libseccomp-dev, sqlite-dev, jansson-dev,
   readline-dev, tcl-dev, xxhash-dev,
   # for managing FUSE mounts
   busybox-mdev-openrc, fuse-openrc, fuse3, umount,

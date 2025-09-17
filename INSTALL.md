@@ -28,7 +28,6 @@ Requirements
   | libseccomp   | 2.5             |
   | SQLite       | 3.35            |
   | [Jansson]    | 2.14            |
-  | [Nettle]     | 3.4             |
   | GNU Readline | 6.0             |
   | [Tcl]        | 8.6             |
   | xxHash       | 0.8             |
@@ -81,7 +80,7 @@ Installation
   - `--enable-backend-firefox`: backend for Firefox
     * Requires: SQLite, bookmarkfs-util
   - `--enable-backend-chromium`: backend for Chromium
-    * Requires: Jansson, Nettle, bookmarkfs-util
+    * Requires: Jansson, bookmarkfs-util
   - `--enable-fsck-handler-tcl`: Tcl-based handler for `fsck.bookmarkfs`
     * Requires: Tcl
 
@@ -103,7 +102,6 @@ Installation
     * Build the Firefox backend without write features
   - `--disable-backend-chromium-write`
     * Build the Chromium backend without write features
-    * No longer requires: Nettle
   - `--enable-boookmarkfs-debug`
     * Add more run-time checks and logs for debugging
   - `--disable-native-watcher`
@@ -182,6 +180,5 @@ Notes
 <!-- reflinks -->
 
 [Jansson]:  https://github.com/akheron/jansson
-[Nettle]:   https://www.lysator.liu.se/~nisse/nettle/
 [Landlock]: https://docs.kernel.org/userspace-api/landlock.html
 [Tcl]:      https://www.tcl-lang.org/
