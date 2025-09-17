@@ -39,10 +39,6 @@
 #include <iconv.h>
 #include <unistd.h>
 
-#ifdef ENABLE_BACKEND_CHROMIUM_WRITE
-#  include <nettle/md5.h>
-#endif
-
 #include "backend.h"
 #include "backend_util.h"
 #include "base16.h"
@@ -51,6 +47,7 @@
 #include "json.h"
 #include "lib.h"
 #include "macros.h"
+#include "md5.h"
 #include "prng.h"
 #include "sandbox.h"
 #include "uuid.h"
@@ -408,7 +405,7 @@ chksum_iter_cb (
     char const   *id      = json_string_value(id_node);
     size_t        id_len  = json_string_length(id_node);
     debug_assert(id != NULL);
-    md5_update(&ctx->mdctx, id_len, (uint8_t const *)id);
+    md5_update(&ctx->mdctx, (uint8_t const *)id, id_len);
 
     json_t const *name_node = json_object_sget(node, "name");
     char const   *name      = json_string_value(name_node);
@@ -419,15 +416,15 @@ chksum_iter_cb (
     }
 
     if (children != NULL) {
-        md5_update(&ctx->mdctx, strlen("folder"), (uint8_t const *)"folder");
+        md5_update(&ctx->mdctx, (uint8_t const *)"folder", strlen("folder"));
     } else {
-        md5_update(&ctx->mdctx, strlen("url"), (uint8_t const *)"url");
+        md5_update(&ctx->mdctx, (uint8_t const *)"url", strlen("url"));
 
         json_t const *url_node = json_object_sget(node, "url");
         char const   *url      = json_string_value(url_node);
         size_t        url_len  = json_string_length(url_node);
         debug_assert(url != NULL);
-        md5_update(&ctx->mdctx, url_len, (uint8_t const *)url);
+        md5_update(&ctx->mdctx, (uint8_t const *)url, url_len);
     }
     return 0;
 }
@@ -453,7 +450,7 @@ chksum_root (
     }
 
     uint8_t digest[MD5_DIGEST_SIZE];
-    md5_digest(&iter_ctx.mdctx, MD5_DIGEST_SIZE, digest);
+    md5_digest(&iter_ctx.mdctx, digest);
     base16_encode(buf, digest, MD5_DIGEST_SIZE);
     status = 0;
 
@@ -483,7 +480,7 @@ chksum_utf16 (
         log_printf("iconv(): %s", xstrerror(errno));
         return -1;
     }
-    md5_update(&ctx->mdctx, out_buf - ctx->buf, (uint8_t const *)ctx->buf);
+    md5_update(&ctx->mdctx, (uint8_t const *)ctx->buf, out_buf - ctx->buf);
     return 0;
 }
 

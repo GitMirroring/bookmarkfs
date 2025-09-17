@@ -117,8 +117,7 @@ if BACKEND_CHROMIUM
                                  base16.c json.c uuid.c
 
 if BACKEND_CHROMIUM_WRITE
-  backend_chromium_la_CPPFLAGS += $(NETTLE_CFLAGS)
-  backend_chromium_la_LIBADD   += $(LIBICONV_LIBS) $(NETTLE_LIBS)
+  backend_chromium_la_SOURCES += md5.c
 endif  # BACKEND_CHROMIUM_WRITE
 endif  # BACKEND_CHROMIUM
 
