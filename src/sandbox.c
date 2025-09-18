@@ -83,6 +83,21 @@
  */
 #define SCMP_ARG_FD(n)  SCMP_A##n##_32(SCMP_CMP_MASKED_EQ, (1u << 31), 0)
 
+#ifdef ENABLE_SANDBOX_LANDLOCK
+
+#define landlock_create_ruleset(attr, attr_size, flags)  \
+    syscall(SYS_landlock_create_ruleset,  \
+            attr, (size_t)(attr_size), (uint32_t)(flags))
+
+#define landlock_add_rule(ruleset_fd, rule_type, rule_attr, flags)  \
+    syscall(SYS_landlock_add_rule, ruleset_fd,  \
+            rule_type, (void const *)(rule_attr), (uint32_t)(flags))
+
+#define landlock_restrict_self(ruleset_fd, flags)  \
+    syscall(SYS_landlock_restrict_self, ruleset_fd, (uint32_t)(flags))
+
+#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
+
 struct scmp_rule_def {
     int                        syscall_num;
     int                        argc;
@@ -93,14 +108,6 @@ struct scmp_rule_def {
 // Forward declaration start
 static int add_scmp_rules (scmp_filter_ctx, struct scmp_rule_def const *,
                            size_t);
-
-#ifdef ENABLE_SANDBOX_LANDLOCK
-static int landlock_create_ruleset (struct landlock_ruleset_attr const *,
-                                    size_t, uint32_t);
-static int landlock_add_rule       (int, enum landlock_rule_type,
-                                    void const *, uint32_t);
-static int landlock_restrict_self  (int, uint32_t);
-#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
 // Forward declaration end
 
 static int
@@ -127,38 +134,6 @@ add_scmp_rules (
     }
     return 0;
 }
-
-#ifdef ENABLE_SANDBOX_LANDLOCK
-
-static int
-landlock_create_ruleset (
-    struct landlock_ruleset_attr const *attr,
-    size_t                              attr_size,
-    uint32_t                            flags
-) {
-    return syscall(SYS_landlock_create_ruleset, attr, attr_size, flags);
-}
-
-static int
-landlock_add_rule (
-    int                      ruleset_fd,
-    enum landlock_rule_type  rule_type,
-    void const              *rule_attr,
-    uint32_t                 flags
-) {
-    return syscall(SYS_landlock_add_rule, ruleset_fd, rule_type, rule_attr,
-            flags);
-}
-
-static int
-landlock_restrict_self (
-    int      ruleset_fd,
-    uint32_t flags
-) {
-    return syscall(SYS_landlock_restrict_self, ruleset_fd, flags);
-}
-
-#endif  /* defined(ENABLE_SANDBOX_LANDLOCK) */
 
 int
 sandbox_enter (
