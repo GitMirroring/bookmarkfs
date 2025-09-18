@@ -61,12 +61,6 @@
 #  endif  /* defined(HAVE_FUNC_ATTRIBUTE_NORETURN) */
 #endif
 
-#ifdef HAVE_FUNC_ATTRIBUTE_PURE
-#  define FUNCATTR_PURE  __attribute__((pure))
-#else
-#  define FUNCATTR_PURE
-#endif  /* defined(HAVE_FUNC_ATTRIBUTE_PURE) */
-
 #ifdef HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL
 #  define FUNCATTR_RETURNS_NONNULL  __attribute__((returns_nonnull))
 #else

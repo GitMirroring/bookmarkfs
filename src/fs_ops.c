@@ -200,7 +200,7 @@ static int  bm_create      (fuse_ino_t, char const *, int, struct stat *);
 static int  bm_delete      (fuse_ino_t, char const *, uint32_t);
 static int  bm_do_write    (fuse_ino_t, struct fs_file_handle *);
 static void bm_fh_free     (struct fs_file_handle *, long);
-static struct fs_file_handle * FUNCATTR_PURE
+static struct fs_file_handle *
             bm_fh_get      (fuse_ino_t, unsigned long *, unsigned long *);
 static struct fs_file_handle *
             bm_fh_new      (fuse_ino_t);
