@@ -2258,6 +2258,9 @@ fs_op_rename (
 
     uint32_t rflags = 0;
 #if defined(__linux__) && defined(_GNU_SOURCE)
+#ifndef RENAME_NOREPLACE
+#  define RENAME_NOREPLACE  (1u << 0)
+#endif
     if (flags & RENAME_NOREPLACE) {
         rflags |=  BOOKMARKFS_BOOKMARK_RENAME_NOREPLACE;
         flags  &= ~RENAME_NOREPLACE;
