@@ -32,7 +32,8 @@
 #endif
 
 #define BOOKMARKFS_IOC_MAGIC_     0xbf
-#define BOOKMARKFS_IOC_(rw, ...)  _IO##rw(BOOKMARKFS_IOC_MAGIC_, __VA_ARGS__)
+#define BOOKMARKFS_IOC_(rw, ...)  \
+    ( (unsigned)_IO##rw(BOOKMARKFS_IOC_MAGIC_, __VA_ARGS__) )
 #define BOOKMARKFS_IOC_RW_(rw, nr, name)  \
     BOOKMARKFS_IOC_(rw, nr, struct bookmarkfs_##name##_data)
 
