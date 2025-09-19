@@ -24,7 +24,6 @@
 #define BOOKMARKFS_XSTD_H_
 
 #include <stdio.h>
-#include <time.h>
 
 #include <dirent.h>
 #include <sys/syscall.h>
@@ -92,6 +91,8 @@
 #elif defined(__FreeBSD__)
 #  define xgetdents(fd, buf, bufsz)  getdents(fd, buf, bufsz)
 #endif
+
+struct timespec;
 
 /**
  * Prints a message to standard error, and then aborts.

@@ -24,7 +24,6 @@
 #define BOOKMARKFS_BACKEND_H_
 
 #include <stdint.h>
-#include <time.h>
 
 #include <sys/types.h>
 
@@ -92,6 +91,7 @@ struct bookmarkfs_backend_conf;
 struct bookmarkfs_backend_create_resp;
 struct bookmarkfs_bookmark_entry;
 struct bookmarkfs_bookmark_stat;
+struct timespec;
 
 typedef int (bookmarkfs_backend_create_func) (
     struct bookmarkfs_backend_conf const  *conf,
