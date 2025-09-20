@@ -25,9 +25,6 @@
 
 #include <stdio.h>
 
-#include <dirent.h>
-#include <sys/syscall.h>
-
 #include "defs.h"
 
 #ifdef HAVE___BUILTIN_EXPECT
@@ -86,12 +83,6 @@
     } while (0)
 #endif
 
-#if defined(__linux__)
-#  define xgetdents(fd, buf, bufsz)  syscall(SYS_getdents64, fd, buf, bufsz)
-#elif defined(__FreeBSD__)
-#  define xgetdents(fd, buf, bufsz)  getdents(fd, buf, bufsz)
-#endif
-
 struct timespec;
 
 /**
@@ -128,6 +119,14 @@ BOOKMARKFS_INTERNAL
 int
 xfsync (
     int fd
+);
+
+BOOKMARKFS_INTERNAL
+ssize_t
+xgetdents (
+    int     fd,
+    void   *buf,
+    size_t  bufsz
 );
 
 /**

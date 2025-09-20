@@ -39,7 +39,7 @@ if BOOKMARKFS_MOUNT
   check_PROGRAMS += check-fs
 
   check_fs_CPPFLAGS = -I$(top_srcdir)/src
-  check_fs_LDADD    =
+  check_fs_LDADD    = $(top_builddir)/src/libbookmarkfs_check.la
   check_fs_SOURCES  = check_fs.c check_fs_dents.c check_fs_regrw.c  \
                       check_fs_times.c check_util.c
 

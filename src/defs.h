@@ -67,7 +67,7 @@
 #  define FUNCATTR_RETURNS_NONNULL
 #endif  /* defined(HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL) */
 
-#ifdef HAVE_FUNC_ATTRIBUTE_VISIBILITY
+#if defined(HAVE_FUNC_ATTRIBUTE_VISIBILITY) && !defined(TESTING_BOOKMARKFS)
 #  define BOOKMARKFS_API       __attribute__((visibility("default")))
 #  define BOOKMARKFS_INTERNAL  __attribute__((visibility("hidden")))
 #else

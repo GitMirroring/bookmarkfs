@@ -31,8 +31,10 @@
 #include <string.h>
 #include <time.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <locale.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 void
@@ -85,6 +87,24 @@ xfsync (
         }
     }
     return 0;
+}
+
+ssize_t
+xgetdents (
+    int     fd,
+    void   *buf,
+    size_t  bufsz
+) {
+#if defined(__linux__)
+    // Definition of `struct linux_dirent64` is equivalent to
+    // the `struct dirent` defined in dirent.h,
+    // since we mandate 64-bit off_t (, ino_t, ...).
+    return syscall(SYS_getdents64, fd, buf, bufsz);
+#elif defined(__FreeBSD__)
+    return getdents(fd, buf, bufsz);
+#else
+#  error "not implemented"
+#endif
 }
 
 void
