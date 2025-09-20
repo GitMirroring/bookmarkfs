@@ -31,6 +31,7 @@
 #include <string.h>
 
 #include <fcntl.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include "frontend_util.h"
@@ -337,22 +338,20 @@ subcmd_xattr_set (
     }
     int status = -1;
 
-    size_t  val_size = 0;
+    size_t  val_size = 4096;
     char   *buf      = val;
     if (buf == NULL) {
-        size_t buf_size = 4096;
-        buf = xmalloc(buf_size);
-        do {
-            if (val_size == buf_size) {
-                buf_size += buf_size >> 1;
-                buf = xrealloc(buf, buf_size);
-            }
-            val_size += fread(buf + val_size, 1, buf_size - val_size, stdin);
-            if (ferror(stdin)) {
-                log_printf("fread(): %s", strerror(errno));
+        for (size_t off = 0; ; off = val_size, val_size += val_size >> 1) {
+            buf = xrealloc(buf, val_size);
+            ssize_t len = xread(STDIN_FILENO, buf + off, val_size - off);
+            if (len < 0) {
                 goto end;
             }
-        } while (!feof(stdin));
+            if (off + len < val_size) {
+                val_size = off + len;
+                break;
+            }
+        }
     } else {
         val_size = strlen(buf);
     }
@@ -372,13 +371,18 @@ xattr_get_cb (
     void   *buf,
     size_t  buf_len
 ) {
-    struct xattr_get_ctx const *ctx = user_data;
+    struct xattr_get_ctx *ctx = user_data;
 
-    if (ctx->quiet < 1) {
-        if (0 > printf("%s%c", ctx->prefix, ctx->sep)) {
-            log_printf("printf(): %s", strerror(errno));
-            return -1;
+    struct iovec iov[4] = {
+        { (char *)ctx->prefix, 0 }, { &ctx->sep, 0 },
+        { buf, buf_len },           { &ctx->eol, 0 },
+    };
+    if (ctx->quiet < 2) {
+        if (ctx->quiet < 1) {
+            iov[0].iov_len = strlen(iov[0].iov_base);
+            iov[1].iov_len = 1;
         }
+        iov[3].iov_len = 1;
     }
     if (!ctx->binary) {
         for (unsigned char *s = buf, *end = s; s < end; ++s) {
@@ -387,17 +391,7 @@ xattr_get_cb (
             }
         }
     }
-    if (buf_len != fwrite(buf, 1, buf_len, stdout)) {
-        log_printf("fwrite(): %s", strerror(errno));
-        return -1;
-    }
-    if (ctx->quiet < 2) {
-        if (EOF == fputc(ctx->eol, stdout)) {
-            log_printf("fputc(): %s", strerror(errno));
-            return -1;
-        }
-    }
-    return 0;
+    return xwritev(STDOUT_FILENO, iov, 4);
 }
 
 static int
