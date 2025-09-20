@@ -141,12 +141,9 @@ main (
     int   argc,
     char *argv[]
 ) {
-    int status = EXIT_FAILURE;
     if (0 != dispatch_subcmds(argc, argv)) {
-        goto end;
+        return EXIT_FAILURE;
     }
-    status = EXIT_SUCCESS;
 
-  end:
-    return status;
+    return EXIT_SUCCESS;
 }

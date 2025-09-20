@@ -17,7 +17,7 @@ m4_define([ATX_CHECK_FS_NEW_XATTR], [
     ATX_FEAT_PREREQ([bookmarkctl])
     ATX_CHECK_FS_NEW_FIREFOX([$1], [$2], [
         gen_guid() {
-            ath_fn_rand_base64 9 | tr '+/' '-_'
+            ath_fn_rand_base64 9 | tr '/+' '_-'
         }
         epoch_diff=0
         $3

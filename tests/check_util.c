@@ -24,27 +24,24 @@
 
 #include "check_util.h"
 
-#include <inttypes.h>
-#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "base16.h"
 #include "prng.h"
 
 int
 prng_seed_from_env (void)
 {
-    char const *seed_str = getenv("BOOKMARKFS_TEST_PRNG_SEED");
-    if (seed_str == NULL) {
+    char const *seed = getenv("BOOKMARKFS_TEST_PRNG_SEED");
+    if (seed == NULL) {
         return prng_seed(NULL);
     }
 
-    uint64_t seed[4];
-    int cnt = sscanf(seed_str,
-            "%16" SCNx64 "%16" SCNx64 "%16" SCNx64 "%16" SCNx64,
-            &seed[0], &seed[1], &seed[2], &seed[3]);
-    if (cnt != 4) {
+    uint64_t buf[4];
+    if (64 != strlen(seed) || 0 != base16_decode((uint8_t *)buf, seed, 64)) {
         log_puts("bad prng seed");
         return -1;
     }
-    return prng_seed(seed);
+    return prng_seed(buf);
 }

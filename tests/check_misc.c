@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include "base16.h"
@@ -36,20 +37,20 @@
 
 typedef ssize_t (buf_rw_cb) (
     void       *user_data,
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 );
 
 // Forward declaration start
-static ssize_t base16_dec_cb (void *, char *, char const *, size_t, size_t *);
-static ssize_t base16_enc_cb (void *, char *, char const *, size_t, size_t *);
-static ssize_t base64_dec_cb (void *, char *, char const *, size_t, size_t *);
-static ssize_t base64_enc_cb (void *, char *, char const *, size_t, size_t *);
-static ssize_t md5_digest_cb (void *, char *, char const *, size_t, size_t *);
-static ssize_t uuid_dec_cb   (void *, char *, char const *, size_t, size_t *);
-static ssize_t uuid_enc_cb   (void *, char *, char const *, size_t, size_t *);
+static ssize_t base16_dec_cb (void *, void *, void const *, size_t, size_t *);
+static ssize_t base16_enc_cb (void *, void *, void const *, size_t, size_t *);
+static ssize_t base64_dec_cb (void *, void *, void const *, size_t, size_t *);
+static ssize_t base64_enc_cb (void *, void *, void const *, size_t, size_t *);
+static ssize_t md5_digest_cb (void *, void *, void const *, size_t, size_t *);
+static ssize_t uuid_dec_cb   (void *, void *, void const *, size_t, size_t *);
+static ssize_t uuid_enc_cb   (void *, void *, void const *, size_t, size_t *);
 
 static int buf_rw_all       (char *, char *, size_t, buf_rw_cb *, void *);
 static int dispatch_subcmds (int, char *[]);
@@ -62,8 +63,8 @@ static int subcmd_uuid      (int, char *[]);
 static ssize_t
 base16_dec_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -71,7 +72,7 @@ base16_dec_cb (
     size_t rem_len = src_len % 2;
     *src_off_ptr = rem_len;
 
-    if (0 != base16_decode((uint8_t *)dst, src, src_len - rem_len)) {
+    if (0 != base16_decode(dst, src, src_len - rem_len)) {
         return -1;
     }
     return src_len / 2;
@@ -80,23 +81,23 @@ base16_dec_cb (
 static ssize_t
 base16_enc_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
     src_len += *src_off_ptr;
     *src_off_ptr = 0;
 
-    base16_encode(dst, (uint8_t *)src, src_len);
+    base16_encode(dst, src, src_len);
     return src_len * 2;
 }
 
 static ssize_t
 base64_dec_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -104,7 +105,7 @@ base64_dec_cb (
     size_t rem_len = src_len % 4;
     *src_off_ptr = rem_len;
 
-    if (0 != base64url_decode_nopad((uint8_t *)dst, src, src_len - rem_len)) {
+    if (0 != base64url_decode_nopad(dst, src, src_len - rem_len)) {
         return -1;
     }
     return src_len / 4 * 3;
@@ -113,8 +114,8 @@ base64_dec_cb (
 static ssize_t
 base64_enc_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -122,15 +123,15 @@ base64_enc_cb (
     size_t rem_len = src_len % 3;
     *src_off_ptr = rem_len;
 
-    base64url_encode_nopad(dst, (uint8_t *)src, src_len - rem_len);
+    base64url_encode_nopad(dst, src, src_len - rem_len);
     return src_len / 3 * 4;
 }
 
 static ssize_t
 md5_digest_cb (
     void       *user_data,
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -138,10 +139,10 @@ md5_digest_cb (
 
     debug_assert(*src_off_ptr == 0);
     if (src_len > 0) {
-        md5_update(ctx, (uint8_t *)src, src_len);
+        md5_update(ctx, src, src_len);
         return 0;
     } else {
-        md5_digest(ctx, (uint8_t *)dst);
+        md5_digest(ctx, dst);
         return MD5_DIGEST_SIZE;
     }
 }
@@ -149,8 +150,8 @@ md5_digest_cb (
 static ssize_t
 uuid_dec_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -162,7 +163,7 @@ uuid_dec_cb (
     debug_assert(src_len == UUID_HEX_LEN);
     *src_off_ptr = 0;
 
-    if (0 != uuid_hex2bin((uint8_t *)dst, src)) {
+    if (0 != uuid_hex2bin(dst, src)) {
         return -1;
     }
     return UUID_LEN;
@@ -171,8 +172,8 @@ uuid_dec_cb (
 static ssize_t
 uuid_enc_cb (
     void       *UNUSED_VAR(user_data),
-    char       *dst,
-    char const *src,
+    void       *dst,
+    void const *src,
     size_t      src_len,
     size_t     *src_off_ptr
 ) {
@@ -196,28 +197,24 @@ buf_rw_all (
     buf_rw_cb *callback,
     void      *user_data
 ) {
-    for (size_t src_off = 0; ; ) {
-        ssize_t src_len = read(STDIN_FILENO, src + src_off, src_max - src_off);
+    for (size_t off = 0; ; ) {
+        ssize_t src_len = xread(STDIN_FILENO, src + off, src_max - off);
         if (src_len < 0) {
             return -1;
         }
-        ssize_t dst_max = callback(user_data, dst, src, src_len, &src_off);
-        if (dst_max < 0) {
+        ssize_t dst_len = callback(user_data, dst, src, src_len, &off);
+        if (dst_len < 0) {
             return -1;
         }
-        for (size_t dst_off = 0; dst_max > 0; ) {
-            ssize_t dst_len = write(STDOUT_FILENO, dst + dst_off, dst_max);
-            if (dst_len <= 0) {
-                return -1;
-            }
-            dst_off += dst_len;
-            dst_max -= dst_len;
+        struct iovec iov = { dst, dst_len };
+        if (0 != xwritev(STDOUT_FILENO, &iov, 1)) {
+            return -1;
         }
         if (src_len == 0) {
-            return src_off == 0 ? 0 : -1;
+            return off == 0 ? 0 : -1;
         }
-        if ((size_t)src_len > src_off) {
-            memmove(src, src + src_len - src_off, src_off);
+        if ((size_t)src_len > off) {
+            memmove(src, src + src_len - off, off);
         }
     }
 }
@@ -332,12 +329,9 @@ main (
     int   argc,
     char *argv[]
 ) {
-    int status = EXIT_FAILURE;
     if (0 != dispatch_subcmds(argc, argv)) {
-        goto end;
+        return EXIT_FAILURE;
     }
-    status = EXIT_SUCCESS;
 
-  end:
-    return status;
+    return EXIT_SUCCESS;
 }
