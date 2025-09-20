@@ -511,7 +511,7 @@ fsck_apply (
             .len = name_len,
         },
     };
-    unsigned long hashcode = hash_digest(name, name_len);
+    unsigned long hashcode = hash_digest_one(name, name_len);
     if (map == NULL) {
         map = hashmap_create(dentmap_comp, dentmap_hash);
         fctx->dentry_map = map;
@@ -648,7 +648,7 @@ mozbm_check_cb (
             .len = name_len,
         },
     };
-    unsigned long hashcode = hash_digest(name, name_len);
+    unsigned long hashcode = hash_digest_one(name, name_len);
     struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry == NULL || dentry->id == (uint64_t)ctx->id) {
         // fsck_apply() was given an ID not previously returned by fsck_next().
@@ -2370,7 +2370,7 @@ bookmark_check_cb (
             .len = name_len,
         },
     };
-    unsigned long hashcode = hash_digest(name, name_len);
+    unsigned long hashcode = hash_digest_one(name, name_len);
     struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry == NULL) {
         dentry = xmalloc(sizeof(*dentry) + name_len);
@@ -2469,7 +2469,7 @@ bookmark_list_cb (
             .len = name_len,
         },
     };
-    unsigned long hashcode = hash_digest(name, name_len);
+    unsigned long hashcode = hash_digest_one(name, name_len);
     struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry != NULL) {
         if (dentry->id == (uint64_t)id) {

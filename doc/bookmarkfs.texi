@@ -3825,80 +3825,53 @@ for the same input.
 If this function is never called, the hash function bahaves as if it is
 seeded with all bits zero.
 
+@item hash_init
+Creates a new hash context.
+
+@example c
+struct hash_ctx *
+hash_init (void);
+@end example
+
+@item hash_update
+Appends more data to the the given hash context.
+
+@example c
+void
+hash_update (
+    struct hash_ctx *ctx,
+    void const      *src,
+    size_t           src_len
+);
+@end example
+
+The @code{src_len} argument is the number of bytes to read from @code{src}.
+
 @item hash_digest
-Calculates the digest of the given input.
+Calculates the digest of the given hash context.
 
 @example c
 uint64_t
 hash_digest (
-    void const *input,
-    size_t      len
+    struct hash_ctx *ctx
 );
 @end example
 
-@item hash_digestv
-Like @code{hash_digest()}, but takes input from multiple buffers.
+Upon return, the hash context referred to by @code{ctx} is destroyed.
+
+@item hash_digest_one
+Calculates the digest of the data referred to by @code{src} and @code{src_len}.
 
 @example c
 uint64_t
-hash_digestv (
-    struct iovec const *bufv,
-    int                 bufcnt
+hash_digest_one (
+    void const *src,
+    size_t      src_len
 );
 @end example
 
-The function is guaranteed not to modify the buffer data of each
-@code{struct iovec} object.
-
-@item hash_digestcb
-Like @code{hash_digestv()}, but takes input buffers from a callback function.
-
-@example c
-uint64_t
-hash_digestcb (
-    hash_digestcb_func *callback,
-    void               *user_data
-);
-@end example
-
-Function arguments:
-
-@table @code
-@item callback
-The function to provide input buffers.
-It must not be @code{NULL}.
-
-Type of the @code{callback} function is defined as:
-
-@example c
-typedef size_t (hash_digestcb_func) (
-    void        *user_data,
-    void const **buf_ptr
-);
-@end example
-
-Function arguments:
-
-@table @code
-@item user_data
-Equals to the @code{user_data} pointer passed to the current
-@code{hash_digest} function call.
-
-@item buf_ptr
-Unless returning @t{0}, the callback function should store the pointer to
-an input buffer to the location pointed to by @code{buf_ptr}.
-
-The buffer must be valid until the next call to the callback function,
-or until @code{hash_digestcb()} returns.
-@end table
-
-The callback function should return the number of bytes to be read from
-the input buffer.
-It is called continuously until it returns @t{0}.
-
-@item user_data
-An opaque pointer to be passed to the @code{callback} function.
-@end table
+Equivalent to calling @code{hash_update()} only once on a hash context,
+and then call @code{hash_digest()}.
 @end table
 
 

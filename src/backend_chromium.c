@@ -331,7 +331,7 @@ build_node_guid (
         uuid_generate_random(guid);
 
         union hashmap_key key      = { .ptr = guid };
-        unsigned long     hashcode = hash_digest(guid, UUID_LEN);
+        unsigned long     hashcode = hash_digest_one(guid, UUID_LEN);
         if (unlikely(NULL != hashmap_search(guid_map, key, hashcode, NULL))) {
             continue;
         }
@@ -741,10 +741,10 @@ build_maps (
         .node     = root,
         .children = children,
     };
-    unsigned long hashcode_id = hash_digest(&root_id, sizeof(root_id));
+    unsigned long hashcode_id = hash_digest_one(&root_id, sizeof(root_id));
     hashmap_insert(id_map, hashcode_id, root_entry);
 
-    unsigned long hashcode_guid = hash_digest(root_entry->guid, UUID_LEN);
+    unsigned long hashcode_guid = hash_digest_one(root_entry->guid, UUID_LEN);
     hashmap_insert(guid_map, hashcode_guid, root_entry);
 
     struct idmap_iter_ctx iter_ctx = {
@@ -941,7 +941,7 @@ guidmap_hash (
 ) {
     struct node_entry const *e = entry;
 
-    return hash_digest(e->guid, UUID_LEN);
+    return hash_digest_one(e->guid, UUID_LEN);
 }
 
 static unsigned long
@@ -950,11 +950,10 @@ hash_assoc (
     char const *name,
     size_t      name_len
 ) {
-    struct iovec const bufv[] = {
-        { .iov_base = &parent_id,   .iov_len = sizeof(parent_id) },
-        { .iov_base = (char *)name, .iov_len = name_len          },
-    };
-    return hash_digestv(bufv, 2);
+    struct hash_ctx *ctx = hash_init();
+    hash_update(ctx, &parent_id, sizeof(parent_id));
+    hash_update(ctx, name, name_len);
+    return hash_digest(ctx);
 }
 
 static int
@@ -976,7 +975,7 @@ idmap_hash (
 ) {
     struct node_entry const *e = entry;
 
-    return hash_digest(&e->id, sizeof(uint64_t));
+    return hash_digest_one(&e->id, sizeof(uint64_t));
 }
 
 static int
@@ -1104,7 +1103,7 @@ lookup_guid (
     unsigned long         *entry_id_ptr
 ) {
     union hashmap_key key      = { .ptr = guid };
-    unsigned long     hashcode = hash_digest(guid, UUID_LEN);
+    unsigned long     hashcode = hash_digest_one(guid, UUID_LEN);
     if (hashcode_ptr != NULL) {
         *hashcode_ptr = hashcode;
     }
@@ -1120,7 +1119,7 @@ lookup_id (
     unsigned long        *entry_id_ptr
 ) {
     union hashmap_key key      = { .u64 = id };
-    unsigned long     hashcode = hash_digest(&id, sizeof(id));
+    unsigned long     hashcode = hash_digest_one(&id, sizeof(id));
     if (hashcode_ptr != NULL) {
         *hashcode_ptr = hashcode;
     }
@@ -1196,7 +1195,7 @@ maps_iter_cb (
     }
 
     union hashmap_key key      = { .u64 = id };
-    unsigned long     hashcode = hash_digest(&id, sizeof(id));
+    unsigned long     hashcode = hash_digest_one(&id, sizeof(id));
     if (unlikely(NULL != hashmap_search(ctx->id_map, key, hashcode, NULL))) {
         log_printf("duplicate bookmark ID %" PRIu64, id);
         return -1;
@@ -1211,7 +1210,7 @@ maps_iter_cb (
         return -1;
     }
     union hashmap_key key_guid      = { .ptr = guid };
-    unsigned long     hashcode_guid = hash_digest(guid, UUID_LEN);
+    unsigned long     hashcode_guid = hash_digest_one(guid, UUID_LEN);
     if (NULL != hashmap_search(ctx->guid_map, key_guid, hashcode_guid, NULL)) {
         log_printf("duplicate bookmark GUID %s (ID: %" PRIu64 ")",
                 guid_str, id);
@@ -2168,7 +2167,7 @@ bookmark_create (
         .node      = node,
         .children  = is_dir ? json_object_sget(node, "children") : NULL,
     };
-    hashmap_insert(ctx->id_map, hash_digest(&id, sizeof(id)), entry);
+    hashmap_insert(ctx->id_map, hash_digest_one(&id, sizeof(id)), entry);
 
     void          *guid          = lctx.guid;
     unsigned long  hashcode_guid = lctx.hashcode;

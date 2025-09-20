@@ -26,7 +26,8 @@ if BOOKMARKFS_UTIL
   check_PROGRAMS += check-util-lib
 
   check_util_lib_CPPFLAGS = -I$(top_srcdir)/src
-  check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la
+  check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la  \
+                            $(top_builddir)/src/libbookmarkfs_check.la
   check_util_lib_SOURCES  = check_lib.c check_watcher.c  \
                             check_hashmap.c check_util.c
 

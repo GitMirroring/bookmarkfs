@@ -41,26 +41,32 @@
 
 static uint64_t seed;
 
+struct hash_ctx *
+hash_init (void)
+{
+    XXH3_state_t *state = XXH3_createState();
+    xassert(state != NULL);
+
+    xassert(0 == XXH3_64bits_reset_withSeed(state, seed));
+    return (struct hash_ctx *)state;
+}
+
+void
+hash_update (
+    struct hash_ctx *ctx,
+    void const      *src,
+    size_t           src_len
+) {
+    XXH3_state_t *state = (XXH3_state_t *)ctx;
+
+    xassert(0 == XXH3_64bits_update(state, src, src_len));
+}
+
 uint64_t
 hash_digest (
-    void const *input,
-    size_t      len
+    struct hash_ctx *ctx
 ) {
-    return XXH3_64bits_withSeed(input, len, seed);
-}
-
-uint64_t
-hash_digestv (
-    struct iovec const *bufv,
-    int                 bufcnt
-) {
-    XXH3_state_t *state = XXH3_createState();
-    xassert(state != NULL);
-
-    xassert(0 == XXH3_64bits_reset_withSeed(state, seed));
-    for (struct iovec const *end = bufv + bufcnt; bufv < end; ++bufv) {
-        xassert(0 == XXH3_64bits_update(state, bufv->iov_base, bufv->iov_len));
-    }
+    XXH3_state_t *state = (XXH3_state_t *)ctx;
 
     uint64_t result = XXH3_64bits_digest(state);
     XXH3_freeState(state);
@@ -68,26 +74,11 @@ hash_digestv (
 }
 
 uint64_t
-hash_digestcb (
-    hash_digestcb_func *callback,
-    void               *user_data
+hash_digest_one (
+    void const *src,
+    size_t      src_len
 ) {
-    XXH3_state_t *state = XXH3_createState();
-    xassert(state != NULL);
-
-    xassert(0 == XXH3_64bits_reset_withSeed(state, seed));
-    while (1) {
-        void const *buf;
-        size_t data_len = callback(user_data, &buf);
-        if (data_len == 0) {
-            break;
-        }
-        xassert(0 == XXH3_64bits_update(state, buf, data_len));
-    }
-
-    uint64_t result = XXH3_64bits_digest(state);
-    XXH3_freeState(state);
-    return result;
+    return XXH3_64bits_withSeed(src, src_len, seed);
 }
 
 void

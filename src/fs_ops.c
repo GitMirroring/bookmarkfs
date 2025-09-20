@@ -480,7 +480,7 @@ bm_fh_get (
     unsigned long *hashcode_ptr,
     unsigned long *entry_id_ptr
 ) {
-    unsigned long hashcode = hash_digest(&ino, sizeof(ino));
+    unsigned long hashcode = hash_digest_one(&ino, sizeof(ino));
     if (hashcode_ptr != NULL) {
         *hashcode_ptr = hashcode;
     }

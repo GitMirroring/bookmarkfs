@@ -35,10 +35,9 @@
 #include "prng.h"
 
 // Forward declaration start
-static int    dispatch_subcmds (int, char *[]);
-static size_t hash_check_cb    (void *, void const **);
-static int    subcmd_hash      (int, char *[]);
-static int    subcmd_prng      (int, char *[]);
+static int dispatch_subcmds (int, char *[]);
+static int subcmd_hash      (int, char *[]);
+static int subcmd_prng      (int, char *[]);
 // Forward declaration end
 
 static int
@@ -71,17 +70,6 @@ dispatch_subcmds (
     return status;
 }
 
-static size_t
-hash_check_cb (
-    void        *UNUSED_VAR(user_data),
-    void const **buf_ptr
-) {
-    static char buf[4096];
-
-    *buf_ptr = buf;
-    return fread(buf, 1, sizeof(buf), stdin);
-}
-
 static int
 subcmd_hash (
     int   argc,
@@ -97,8 +85,18 @@ subcmd_hash (
     OPT_END
 
     hash_seed(seed);
-    printf("%016" PRIx64 "\n", hash_digestcb(hash_check_cb, NULL));
-    return 0;
+    for (struct hash_ctx *ctx = hash_init(); ; ) {
+        char buf[4096];
+        ssize_t len = xread(STDIN_FILENO, buf, sizeof(buf));
+        if (len < 0) {
+            return -1;
+        }
+        hash_update(ctx, buf, len);
+        if ((size_t)len < sizeof(buf)) {
+            printf("%016" PRIx64 "\n", hash_digest(ctx));
+            return 0;
+        }
+    }
 }
 
 static int

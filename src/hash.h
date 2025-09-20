@@ -25,31 +25,30 @@
 #ifndef BOOKMARKFS_HASH_H_
 #define BOOKMARKFS_HASH_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
-#include <sys/uio.h>
+struct hash_ctx;
 
-typedef size_t (hash_digestcb_func) (
-    void        *user_data,
-    void const **buf_ptr
+struct hash_ctx *
+hash_init (void);
+
+void
+hash_update (
+    struct hash_ctx *ctx,
+    void const      *src,
+    size_t           src_len
 );
 
 uint64_t
 hash_digest (
-    void const *input,
-    size_t      len
+    struct hash_ctx *ctx
 );
 
 uint64_t
-hash_digestv (
-    struct iovec const *bufv,
-    int                 bufcnt
-);
-
-uint64_t
-hash_digestcb (
-    hash_digestcb_func *callback,
-    void               *user_data
+hash_digest_one (
+    void const *src,
+    size_t      src_len
 );
 
 void
