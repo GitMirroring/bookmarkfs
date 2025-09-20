@@ -83,6 +83,7 @@
     } while (0)
 #endif
 
+struct iovec;
 struct timespec;
 
 /**
@@ -163,6 +164,19 @@ xpipe2 (
 );
 
 /**
+ * Like read(), buf attempts to read as much data as possible.
+ *
+ * Reading fewer bytes than bufsz indicates EOF.
+ */
+BOOKMARKFS_INTERNAL
+ssize_t
+xread (
+    int     fd,
+    void   *buf,
+    size_t  bufsz
+);
+
+/**
  * Like realloc(), but never returns NULL.
  *
  * On failure, the calling process aborts.
@@ -197,6 +211,19 @@ FUNCATTR_RETURNS_NONNULL
 char const *
 xstrerror_save (
     int *errnum_ptr
+);
+
+/**
+ * Like writev(), but attempts to write all data if possible.
+ *
+ * Returns 0 on success, and -1 on error.
+ */
+BOOKMARKFS_INTERNAL
+int
+xwritev (
+    int           fd,
+    struct iovec *iov,
+    int           iovcnt
 );
 
 #endif  /* !defined(BOOKMARKFS_XSTD_H_) */

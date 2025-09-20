@@ -51,8 +51,7 @@ struct dump_ctx {
 };
 
 // Forward declaration start
-static int  dump_cb   (char const *, size_t, void *);
-static int  write_iov (int, struct iovec *, int);
+static int dump_cb (char const *, size_t, void *);
 // Forward declaration end
 
 static int
@@ -76,50 +75,12 @@ dump_cb (
         { .iov_base = ctx->buf,    .iov_len = ctx->data_len },
         { .iov_base = (char *)buf, .iov_len = buf_len       },
     };
-    if (0 != write_iov(ctx->fd, bufv, 2)) {
+    if (0 != xwritev(ctx->fd, bufv, 2)) {
         return -1;
     }
     memcpy(ctx->buf, buf + buf_len, new_len);
     ctx->data_len = new_len;
     return 0;
-}
-
-static int
-write_iov (
-    int           fd,
-    struct iovec *bufv,
-    int           bufcnt
-) {
-    while (1) {
-        ssize_t nbytes = writev(fd, bufv, bufcnt);
-        if (unlikely(nbytes < 0)) {
-            int err;
-            log_printf("writev(): %s", xstrerror_save(&err));
-
-            switch (err) {
-              case EIO:
-#ifdef __FreeBSD__
-              case EINTEGRITY:
-#endif
-                abort();
-
-              case EINTR:
-                continue;
-
-              default:
-                return -1;
-            }
-        }
-
-        while ((size_t)nbytes >= bufv->iov_len) {
-            nbytes -= (bufv++)->iov_len;
-            if (--bufcnt == 0) {
-                return 0;
-            }
-        }
-        bufv->iov_base = (char *)(bufv->iov_base) + nbytes;
-        bufv->iov_len -= nbytes;
-    }
 }
 
 size_t
@@ -225,7 +186,7 @@ json_dumpfd_ex (
             .iov_base = ctx.buf,
             .iov_len  = ctx.data_len,
         };
-        if (0 != write_iov(fd, &buf, 1)) {
+        if (0 != xwritev(fd, &buf, 1)) {
             return -1;
         }
     }

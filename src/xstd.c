@@ -35,6 +35,7 @@
 #include <fcntl.h>
 #include <locale.h>
 #include <sys/syscall.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 void
@@ -171,6 +172,23 @@ xpipe2 (
 #endif
 }
 
+ssize_t
+xread (
+    int     fd,
+    void   *buf,
+    size_t  bufsz
+) {
+    size_t off = 0;
+    for (ssize_t len = -1; len != 0 && off < bufsz; off += len) {
+        len = read(fd, (char *)buf + off, bufsz - off);
+        if (len < 0) {
+            log_printf("read(): %s", xstrerror(errno));
+            return -1;
+        }
+    }
+    return off;
+}
+
 void *
 xrealloc (
     void   *p,
@@ -210,4 +228,42 @@ xstrerror_save (
 
     *errnum_ptr = err;
     return xstrerror(err);
+}
+
+int
+xwritev (
+    int           fd,
+    struct iovec *iov,
+    int           iovcnt
+) {
+    while (1) {
+        ssize_t nbytes = writev(fd, iov, iovcnt);
+        if (unlikely(nbytes < 0)) {
+            int err;
+            log_printf("writev(): %s", xstrerror_save(&err));
+
+            switch (err) {
+              case EIO:
+#ifdef __FreeBSD__
+              case EINTEGRITY:
+#endif
+                abort();
+
+              case EINTR:
+                continue;
+
+              default:
+                return -1;
+            }
+        }
+
+        while ((size_t)nbytes >= iov->iov_len) {
+            nbytes -= (iov++)->iov_len;
+            if (--iovcnt == 0) {
+                return 0;
+            }
+        }
+        iov->iov_base = (char *)(iov->iov_base) + nbytes;
+        iov->iov_len -= nbytes;
+    }
 }
