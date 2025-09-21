@@ -40,6 +40,12 @@
 
 #define WATCHER_SANDBOX_FLAGS_OFFSET  16
 
+// Name mangling start
+#define watcher_create   bookmarkfs_watcher_create
+#define watcher_destroy  bookmarkfs_watcher_destroy
+#define watcher_poll     bookmarkfs_watcher_poll
+// Name mangling end
+
 struct watcher;
 
 struct watcher *

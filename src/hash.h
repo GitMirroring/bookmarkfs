@@ -28,6 +28,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Name mangling start
+#define hash_init        bookmarkfs_hash_init
+#define hash_update      bookmarkfs_hash_update
+#define hash_digest      bookmarkfs_hash_digest
+#define hash_digest_one  bookmarkfs_hash_digest_one
+#define hash_seed        bookmarkfs_hash_seed
+// Name mangling end
+
 struct hash_ctx;
 
 struct hash_ctx *

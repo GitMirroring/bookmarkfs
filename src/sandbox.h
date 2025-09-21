@@ -29,6 +29,10 @@
 #define SANDBOX_NO_LANDLOCK  ( 1u << 1 )
 #define SANDBOX_NOOP         ( 1u << 2 )
 
+// Name mangling start
+#define sandbox_enter  bookmarkfs_sandbox_enter
+// Name mangling end
+
 int
 sandbox_enter (
     int      dirfd,

@@ -25,6 +25,15 @@
 
 #include <stdint.h>
 
+// Name mangling start
+#define hashmap_create   bookmarkfs_hashmap_create
+#define hashmap_destroy  bookmarkfs_hashmap_destroy
+#define hashmap_foreach  bookmarkfs_hashmap_foreach
+#define hashmap_search   bookmarkfs_hashmap_search
+#define hashmap_insert   bookmarkfs_hashmap_insert
+#define hashmap_delete   bookmarkfs_hashmap_delete
+// Name mangling end
+
 struct hashmap;
 
 union hashmap_key {
