@@ -631,8 +631,7 @@ bm_getxattr_cb (
 
     size_t buf_max = gctx->buf_max;
     if (buf_max == 0) {
-        send_reply(xattr, gctx->req, xattr_len);
-        return 0;
+        return send_reply(xattr, gctx->req, xattr_len);
     }
 
     if (xattr_len > buf_max) {
@@ -1253,11 +1252,8 @@ do_readdir (
     int status = -EIO;
 
     if (unlikely(buf_max > ctx.buf_len)) {
-        // Most likely that a process has just called getdirentries()
-        // with a custom buffer size.  Should not happen on Linux.
-        debug_printf("bm_readdir(): reply_buf_max > page_size (%zu > %zu)",
-                buf_max, ctx.buf_len);
-        buf_max = ctx.buf_len;
+        ctx.buf_len = buf_max;
+        ctx.buf     = xrealloc(ctx.buf, buf_max);
     }
 
     void *cookie = uint2ptr(fi->fh);
