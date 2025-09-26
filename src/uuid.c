@@ -32,23 +32,22 @@
 
 #include "base16.h"
 #include "prng.h"
+#include "xstd.h"
 
 void
 uuid_bin2hex (
     char          *restrict dst,
     uint8_t const *restrict src
 ) {
-    size_t const parts[] = { 4, 2, 2, 2, 6 };
-    for (int i = 0; i < 5; ++i) {
-        size_t src_len = parts[i];
-        base16_encode(dst, src, src_len);
-
-        src += src_len;
-        dst += src_len << 1;
-        if (i < 4) {
-            *(dst++) = '-';
-        }
-    }
+    base16_encode(dst, src, 4);
+    *(dst += 8) = '-';
+    base16_encode(++dst, src += 4, 2);
+    *(dst += 4) = '-';
+    base16_encode(++dst, src += 2, 2);
+    *(dst += 4) = '-';
+    base16_encode(++dst, src += 2, 2);
+    *(dst += 4) = '-';
+    base16_encode(++dst, src += 2, 6);
 }
 
 int
@@ -56,19 +55,18 @@ uuid_hex2bin (
     uint8_t    *restrict dst,
     char const *restrict src
 ) {
-    size_t const parts[] = { 8, 4, 4, 4, 12 };
-    for (int i = 0; i < 5; ++i) {
-        size_t src_len = parts[i];
-        if (0 != base16_decode(dst, src, src_len)) {
-            return -1;
-        }
+#define ASSERT_EQ(v, e)  if (unlikely((v) != (e))) return -1
 
-        dst += src_len >> 1;
-        src += src_len;
-        if (i < 4 && *(src++) != '-') {
-            return -1;
-        }
-    }
+    ASSERT_EQ(0, base16_decode(dst, src, 8));
+    ASSERT_EQ('-', *(src += 8));
+    ASSERT_EQ(0, base16_decode(dst += 4, ++src, 4));
+    ASSERT_EQ('-', *(src += 4));
+    ASSERT_EQ(0, base16_decode(dst += 2, ++src, 4));
+    ASSERT_EQ('-', *(src += 4));
+    ASSERT_EQ(0, base16_decode(dst += 2, ++src, 4));
+    ASSERT_EQ('-', *(src += 4));
+    ASSERT_EQ(0, base16_decode(dst += 2, ++src, 12));
+
     return 0;
 }
 
