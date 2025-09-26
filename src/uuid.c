@@ -79,8 +79,8 @@ uuid_generate_random (
     uint64_t const buf[] = { prng_rand(), prng_rand() };
     memcpy(dst, buf, UUID_LEN);
 
-    dst[7] &= 0x0f;
-    dst[7] |= 0x40;
+    dst[6] &= 0x0f;
+    dst[6] |= 0x40;
     dst[8] &= 0x3f;
     dst[8] |= 0x80;
 }
