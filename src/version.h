@@ -27,7 +27,7 @@
 
 #define BOOKMARKFS_VER_MAJOR  0
 #define BOOKMARKFS_VER_MINOR  1
-#define BOOKMARKFS_VER_PATCH  4
+#define BOOKMARKFS_VER_PATCH  5
 
 #define bookmarkfs_make_vernum(major, minor, patch)  \
     ( ((major) << 16) | ((minor) << 8) | ((patch) << 0) )
