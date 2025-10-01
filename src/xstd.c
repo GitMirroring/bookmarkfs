@@ -82,10 +82,8 @@ xfsync (
 
           case EINTR:
             continue;
-
-          default:
-            return -1;
         }
+        return -1;
     }
     return 0;
 }
@@ -251,17 +249,15 @@ xwritev (
 
               case EINTR:
                 continue;
-
-              default:
-                return -1;
             }
+            return -1;
         }
 
         while ((size_t)nbytes >= iov->iov_len) {
-            nbytes -= (iov++)->iov_len;
             if (--iovcnt == 0) {
                 return 0;
             }
+            nbytes -= (iov++)->iov_len;
         }
         iov->iov_base = (char *)(iov->iov_base) + nbytes;
         iov->iov_len -= nbytes;

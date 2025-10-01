@@ -122,6 +122,13 @@ xfsync (
     int fd
 );
 
+/**
+ * Platform-specific getdents() wrapper.
+ * Stores objects of type `struct dirent` (from dirent.h) into `buf`.
+ *
+ * NOTE: There's a posix_getdents() added in POSIX.1-2024,
+ *       but not yet widely supported.
+ */
 BOOKMARKFS_INTERNAL
 ssize_t
 xgetdents (
