@@ -124,10 +124,10 @@ md5_digest (
     *(uint64_t *)(ctx->buf + MD5_LAST_SIZE) = htole64(ctx->len * 8);
     md5_update_one(ctx->state, ctx->buf);
 
-    memcpy(dst, ctx->state, MD5_DIGEST_SIZE);
     for (int i = 0; i < 4; ++i) {
-        dst[i] = htole32(dst[i]);
+        ctx->state[i] = htole32(ctx->state[i]);
     }
+    memcpy(dst, ctx->state, MD5_DIGEST_SIZE);
 }
 
 void
