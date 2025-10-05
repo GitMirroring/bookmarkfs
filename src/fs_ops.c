@@ -332,7 +332,7 @@ inval_dir (
  * being processed on it.  Meanwhile, FUSE_NOTIFY_INVAL_INODE also requires
  * locking the vnode, which may block (on writing to the FUSE device).
  *
- * Once FUSE_NOTIFY_INVAL_INODE blocks, we're not able to precess other
+ * Once FUSE_NOTIFY_INVAL_INODE blocks, we're not able to process other
  * requests until write(2) returns.
  * This results in a deadlock since we're using a single-threaded event loop.
  */
