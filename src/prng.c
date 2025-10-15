@@ -95,3 +95,10 @@ prng_seed (
             state[0], state[1], state[2], state[3]);
     return 0;
 }
+
+void
+prng_state (
+    uint64_t dst[4]
+) {
+    memcpy(dst, state, sizeof(state));
+}

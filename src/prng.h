@@ -28,8 +28,9 @@
 #include <stdint.h>
 
 // Name mangling start
-#define prng_rand  bookmarkfs_prng_rand
-#define prng_seed  bookmarkfs_prng_seed
+#define prng_rand   bookmarkfs_prng_rand
+#define prng_seed   bookmarkfs_prng_seed
+#define prng_state  bookmarkfs_prng_state
 // Name mangling end
 
 uint64_t
@@ -38,6 +39,11 @@ prng_rand (void);
 int
 prng_seed (
     uint64_t const seed[4]
+);
+
+void
+prng_state (
+    uint64_t dst[4]
 );
 
 #endif  /* !defined(BOOKMARKFS_PRNG_H_) */

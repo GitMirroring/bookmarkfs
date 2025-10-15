@@ -4174,6 +4174,20 @@ number sequence.
 @quotation Note
 This function is MT-Unsafe.
 @end quotation
+
+@item prng_state
+Retrieves the current state of the PRNG.
+
+@example c
+void
+prng_state (
+    uint64_t dst[4]
+);
+@end example
+
+The function stores the current state of the PRNG to @code{dst},
+which could later be used as the argument for @code{prng_seed()}
+to set the PRNG to a previous state.
 @end table
 
 
