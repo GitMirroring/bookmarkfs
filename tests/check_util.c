@@ -33,12 +33,21 @@
 int
 prng_seed_from_env (void)
 {
+    uint64_t buf[4];
+
     char const *seed = getenv("BOOKMARKFS_TEST_PRNG_SEED");
-    if (seed == NULL) {
-        return prng_seed(NULL);
+    if (seed == NULL || seed[0] == '\0') {
+        if (0 != prng_seed(NULL)) {
+            return -1;
+        }
+        prng_state(buf);
+
+        char out[64];
+        base16_encode(out, (uint8_t *)buf, sizeof(buf));
+        debug_printf("prng seed: %.64s", out);
+        return 0;
     }
 
-    uint64_t buf[4];
     if (64 != strlen(seed) || 0 != base16_decode((uint8_t *)buf, seed, 64)) {
         log_puts("bad prng seed");
         return -1;

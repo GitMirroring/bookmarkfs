@@ -29,7 +29,6 @@
 #include "prng.h"
 
 #include <errno.h>
-#include <inttypes.h>
 #include <string.h>
 
 #include <sys/random.h>
@@ -90,9 +89,6 @@ prng_seed (
     // as many bytes as requested.
     // This is guaranteed on both Linux and FreeBSD.
     debug_assert(nbytes == sizeof(state));
-    debug_printf("prng seed: "
-            "%016" PRIx64 "%016" PRIx64 "%016" PRIx64 "%016" PRIx64,
-            state[0], state[1], state[2], state[3]);
     return 0;
 }
 
