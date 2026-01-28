@@ -192,12 +192,18 @@ An error occurred.
 .
 .SH NOTES
 .SS Availability on FreeBSD
-By the time this manual is written, this program is not available on
-stable releases of FreeBSD, since the latter does not yet support
-.BR ioctl (2)
-in its
+Before 16.0 (not yet released), the FreeBSD
 .BR fusefs (5)
-implementation.
+implementation does not support
+.BR FUSE_IOCTL .
+.PP
+On such systems, the
+.B permd
+and
+.B fsck
+sub-commands (which depends on
+.BR ioctl (2))
+does not work.
 .
 .SH SEE ALSO
 .BR fsck.bookmarkfs (1),

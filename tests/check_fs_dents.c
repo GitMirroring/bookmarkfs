@@ -213,7 +213,7 @@ do_check_fs_dents (
         if (i1 == i2 || bits >> 63) {
             ASSERT_EQ(0, dent_delete(dirfd, i1));
             ASSERT_EQ(0, dent_delete(dirfd, i2));
-#if !defined(__FreeBSD__)
+#ifdef HAVE_FUSE_IOCTL
         } else {
             if (i1->flags & ITEM_DELETED && i2->flags & ITEM_DELETED) {
                 continue;

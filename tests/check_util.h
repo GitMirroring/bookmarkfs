@@ -35,6 +35,10 @@
         action_if_false                                         \
     } while (0)
 
+#if defined(__linux__) || (defined(__FreeBSD__) && __FreeBSD__ >= 16)
+#  define HAVE_FUSE_IOCTL  1
+#endif
+
 int
 check_fs_dents (
     int   argc,

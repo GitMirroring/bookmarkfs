@@ -136,8 +136,8 @@ unless sandboxing is explicitly disabled by the caller.
 @node Limitations on FreeBSD
 @section Limitations on FreeBSD
 
-Currently, the FreeBSD @freebsdmanpage{fusefs, 5} implementation does not
-support @code{FUSE_IOCTL}.
+Before 16.0 (not yet released), the FreeBSD @freebsdmanpage{fusefs, 5}
+implementation does not support @code{FUSE_IOCTL}.
 All custom @freebsdmanpage{ioctl, 2} calls on a FUSE filesystem fail
 with @code{ENOTTY} without the requests being sent to the FUSE server.
 
