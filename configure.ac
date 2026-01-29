@@ -8,7 +8,7 @@ dnl  This file is offered as-is, without any warranty.
 dnl
 
 AC_PREREQ([2.70])
-AC_INIT([bookmarkfs], [0.1.5], [bug-bookmarkfs@nongnu.org])
+AC_INIT([bookmarkfs], [0.1.6], [bug-bookmarkfs@nongnu.org])
 AC_CONFIG_SRCDIR([src/bookmarkfs_util.pc.in])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
