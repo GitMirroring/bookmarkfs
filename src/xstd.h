@@ -42,13 +42,16 @@
 #endif
 
 #ifdef ENABLE_BOOKMARKFS_DEBUG
+#  ifdef HAVE_STDC_23
+#    undef unreachable
+#  endif
 #  define debug_assert(e)  xassert(e)
 #  define unreachable()    xassert(0)
 #else  /* !defined(ENABLE_BOOKMARKFS_DEBUG) */
 #  define debug_assert(e)  if (!(e)) { unreachable(); }
-#  ifdef HAVE___BUILTIN_UNREACHABLE
+#  if defined(HAVE___BUILTIN_UNREACHABLE)
 #    define unreachable()  __builtin_unreachable()
-#  else
+#  elif !defined(HAVE_STDC_23)
 #    define unreachable()
 #  endif
 #endif  /* defined(ENABLE_BOOKMARKFS_DEBUG) */
@@ -89,8 +92,8 @@ struct timespec;
 /**
  * Prints a message to standard error, and then aborts.
  */
+FUNCATTR_NORETURN FUNCATTR_COLD
 BOOKMARKFS_INTERNAL
-FUNCATTR_COLD FUNCATTR_NORETURN
 void
 xabort_ (
 #ifdef ENABLE_BOOKMARKFS_DEBUG
