@@ -240,8 +240,7 @@ static struct node_entry *
             lookup_guid   (struct hashmap const *, uint8_t const *,
                            unsigned long *, unsigned long *);
 static struct node_entry *
-            lookup_id     (struct hashmap const *, uint64_t, unsigned long *,
-                           unsigned long *);
+            lookup_id     (struct hashmap const *, uint64_t);
 static int  lookup_name   (struct backend_ctx const *, uint64_t, char const *,
                            size_t, struct lookup_ctx *, struct node_entry **);
 static int  maps_iter_cb  (void *, json_t *, json_t *, void **);
@@ -497,7 +496,7 @@ fsck_apply (
     char const *name  = fsck_data->name;
     int         result;
 
-    struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry *entry = lookup_id(ctx->id_map, id);
     if (entry == NULL || entry->parent_id != parent_id) {
         return -ENOENT;
     }
@@ -830,8 +829,7 @@ fsck_next (
 
         uint64_t id;
         debug_assert(0 == parse_id(child, &id));
-        struct node_entry const *entry
-            = lookup_id(ctx->id_map, id, NULL, NULL);
+        struct node_entry const *entry = lookup_id(ctx->id_map, id);
         // Since `children` could be a copy, the corresponding entry
         // may already be gone.
         if (entry == NULL || entry->name != NULL) {
@@ -1114,17 +1112,11 @@ lookup_guid (
 static struct node_entry *
 lookup_id (
     struct hashmap const *id_map,
-    uint64_t              id,
-    unsigned long        *hashcode_ptr,
-    unsigned long        *entry_id_ptr
+    uint64_t              id
 ) {
     union hashmap_key key      = { .u64 = id };
     unsigned long     hashcode = hash_digest_one(&id, sizeof(id));
-    if (hashcode_ptr != NULL) {
-        *hashcode_ptr = hashcode;
-    }
-
-    return hashmap_search(id_map, key, hashcode, entry_id_ptr);
+    return hashmap_search(id_map, key, hashcode, NULL);
 }
 
 static int
@@ -1293,7 +1285,7 @@ parse_entry (
     uint64_t id;
     debug_assert(0 == parse_id(node, &id));
 
-    struct node_entry const *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry const *entry = lookup_id(ctx->id_map, id);
     if (entry == NULL || entry->name == NULL) {
         return -1;
     }
@@ -1795,8 +1787,7 @@ bookmark_check (
         }
     }
     // Unlike bookmark_list(), always fetch the latest entries during fsck.
-    struct node_entry const *entry
-        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
+    struct node_entry const *entry = lookup_id(ctx->id_map, parent_id);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -1867,7 +1858,7 @@ bookmark_get (
     return -EAGAIN;
 
   lookup:  ;
-    struct node_entry const *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry const *entry = lookup_id(ctx->id_map, id);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -1937,7 +1928,7 @@ bookmark_list (
             }
         }
     }
-    entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    entry = lookup_id(ctx->id_map, id);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2005,7 +1996,7 @@ bookmark_lookup (
         return status;
     }
 
-    struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry *entry = lookup_id(ctx->id_map, id);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2111,8 +2102,7 @@ bookmark_create (
     }
 
     // Lookup parent entry
-    struct node_entry *parent_entry
-        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
+    struct node_entry *parent_entry = lookup_id(ctx->id_map, parent_id);
     if (unlikely(parent_entry == NULL || parent_entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2205,8 +2195,7 @@ bookmark_delete (
     }
 
     // Lookup parent entry
-    struct node_entry *parent_entry
-        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
+    struct node_entry *parent_entry = lookup_id(ctx->id_map, parent_id);
     if (unlikely(parent_entry == NULL || parent_entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2284,8 +2273,7 @@ bookmark_permute (
         return -EINVAL;
     }
 
-    struct node_entry const *parent_entry
-        = lookup_id(ctx->id_map, parent_id, NULL, NULL);
+    struct node_entry const *parent_entry = lookup_id(ctx->id_map, parent_id);
     if (unlikely(parent_entry == NULL || parent_entry->name == NULL)) {
         return -ESTALE;
     }
@@ -2367,8 +2355,7 @@ bookmark_rename (
     }
 
     // Lookup old entry
-    struct node_entry *old_parent
-        = lookup_id(ctx->id_map, old_parent_id, NULL, NULL);
+    struct node_entry *old_parent = lookup_id(ctx->id_map, old_parent_id);
     if (unlikely(old_parent == NULL || old_parent->name == NULL)) {
         return -ESTALE;
     }
@@ -2389,7 +2376,7 @@ bookmark_rename (
     // Lookup new entry
     struct node_entry *new_parent = old_parent;
     if (old_parent_id != new_parent_id) {
-        new_parent = lookup_id(ctx->id_map, new_parent_id, NULL, NULL);
+        new_parent = lookup_id(ctx->id_map, new_parent_id);
         if (unlikely(new_parent == NULL || new_parent->name == NULL)) {
             return -ESTALE;
         }
@@ -2505,7 +2492,7 @@ bookmark_set (
         return status;
     }
 
-    struct node_entry *entry = lookup_id(ctx->id_map, id, NULL, NULL);
+    struct node_entry *entry = lookup_id(ctx->id_map, id);
     if (unlikely(entry == NULL || entry->name == NULL)) {
         return -ESTALE;
     }
