@@ -227,6 +227,7 @@ sandbox_enter (
         SCMP_RULE_NOARG(futex,           40),
         SCMP_RULE_NOARG(getrandom,       40),
         SCMP_RULE_NOARG(poll,            40),
+        SCMP_RULE_NOARG(ppoll,           40),
         SCMP_RULE_NOARG(pselect6,        40),
         SCMP_RULE_NOARG(pselect6_time64, 40),
     };
