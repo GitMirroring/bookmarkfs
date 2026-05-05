@@ -23,6 +23,7 @@
 #ifndef BOOKMARKFS_XSTD_H_
 #define BOOKMARKFS_XSTD_H_
 
+#include <stddef.h>
 #include <stdio.h>
 
 #include "defs.h"
@@ -49,9 +50,10 @@
 #  define unreachable()    xassert(0)
 #else  /* !defined(ENABLE_BOOKMARKFS_DEBUG) */
 #  define debug_assert(e)  if (!(e)) { unreachable(); }
-#  if defined(HAVE___BUILTIN_UNREACHABLE)
+#  if defined(HAVE_STDC_23)
+#  elif defined(HAVE___BUILTIN_UNREACHABLE)
 #    define unreachable()  __builtin_unreachable()
-#  elif !defined(HAVE_STDC_23)
+#  else
 #    define unreachable()
 #  endif
 #endif  /* defined(ENABLE_BOOKMARKFS_DEBUG) */
