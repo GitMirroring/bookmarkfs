@@ -38,7 +38,7 @@
 @end macro
 
 @macro tcldoc {name, path}
-@uref{https://www.tcl.tk/man/tcl8.6.16/\path\, \name\}
+@uref{https://www.tcl.tk/man/tcl8.6.17/\path\, \name\}
 @end macro
 
 @copying
@@ -109,7 +109,7 @@ Currently, BookmarkFS only runs on GNU/Linux and FreeBSD.
 Although BookmarkFS sticks hard to POSIX and avoids platform-specific
 features, porting it to other operating systems is not trivial.
 
-The major pitfall is the @linuxdoc{FUSE, filesystems/fuse.html} dependency.
+The major pitfall is the @linuxdoc{FUSE, filesystems/fuse/} dependency.
 FUSE was originally Linux-only.
 Recent versions of the FreeBSD kernel partially implements the FUSE protocol,
 however, that's not the case for other operating systems.
