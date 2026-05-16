@@ -64,11 +64,8 @@
 
 #define BOOKMARKFS_BOOKMARK_LOOKUP_VALIDATE_GUID  ( 1u << 8 )
 
-#define GUID_LEN     9
-#define GUID_STR_LEN 12
-
-#define BOOKMARKS_ROOT_GUID  "root________"
-#define TAGS_ROOT_GUID       "tags________"
+#define GUID_LEN      9
+#define GUID_STR_LEN  12
 
 #define DO_QUERY(ctx, stmt_idx, sql, query_cb, query_cb_data,        \
                  result, BEFORE_PREPARE, ...)                        \
@@ -145,23 +142,23 @@ enum {
 
 struct backend_ctx {
     sqlite3  *db;
-    uint64_t  bookmarks_root_id;
+    uint64_t  bm_root_id;
     uint64_t  tags_root_id;
     uint32_t  flags;
 
     struct sqlite3_stmt *stmts[PERSISTED_STMT_END];
 };
 
-struct bookmark_gcookie {
+struct bm_gcookie {
     int64_t data_version;
 };
 
-struct bookmark_lcookie {
+struct bm_lcookie {
     struct hashmap *dentry_map;
     size_t          idx;         // fsck only
 };
 
-struct bookmark_dentry {
+struct bm_dentry {
     uint64_t      id;
     unsigned long hashcode;
 
@@ -169,12 +166,12 @@ struct bookmark_dentry {
     char   name[];
 };
 
-struct bookmark_name_key {
+struct bm_name_key {
     size_t      len;
     char const *val;
 };
 
-struct bookmark_get_ctx {
+struct bm_get_ctx {
     uint64_t                    tags_root_id;
     bookmarkfs_bookmark_get_cb *callback;
     void                       *user_data;
@@ -182,7 +179,7 @@ struct bookmark_get_ctx {
     int status;
 };
 
-struct bookmark_list_ctx {
+struct bm_list_ctx {
     uint64_t           tags_root_id;
     size_t             next;
     struct hashmap    *dentry_map;
@@ -198,7 +195,7 @@ struct bookmark_list_ctx {
     int status;
 };
 
-struct bookmark_lookup_ctx {
+struct bm_lookup_ctx {
     uint64_t                         tags_root_id;
     struct bookmarkfs_bookmark_stat *stat_buf;
 
@@ -264,11 +261,11 @@ struct mozplace {
     size_t      desc_len;
 };
 
-struct parsed_mkfsopts {
+struct mkfsopts {
     int64_t date_added;
 };
 
-struct parsed_mntopts {
+struct mntopts {
     uint32_t flags;
 };
 
@@ -281,7 +278,7 @@ static int     bookmark_do_delete (struct backend_ctx *, uint64_t,
                                    char const *, size_t, bool);
 static int     fsck_apply         (struct backend_ctx *, uint64_t,
                                    struct bookmarkfs_fsck_data const *,
-                                   struct bookmark_list_ctx *);
+                                   struct bm_list_ctx *);
 static char *  gen_random_guid    (char *);
 static bool    is_valid_guid      (char const *, size_t);
 static int     keyword_create     (struct backend_ctx *, char const *, size_t,
@@ -325,7 +322,7 @@ static int     mozplace_purge     (struct backend_ctx *, int64_t);
 static int     mozplace_update    (struct backend_ctx *, struct mozplace *);
 static int64_t mozplace_url_hash  (char const *, size_t);
 static int     parse_mkfsopts     (struct bookmarkfs_conf_opt const *,
-                                   struct parsed_mkfsopts *);
+                                   struct mkfsopts *);
 static int     parse_mozurl       (char const *, size_t, struct mozorigin *);
 static int     parse_usecs        (char const *, size_t, int64_t *);
 static int     store_new          (sqlite3 *, int64_t);
@@ -344,9 +341,9 @@ static int64_t usecs_now          (struct timespec *);
 #endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
 
 static int     bookmark_do_get    (struct backend_ctx *, uint64_t, int,
-                                   struct bookmark_get_ctx *);
+                                   struct bm_get_ctx *);
 static int     bookmark_do_list   (struct backend_ctx *, uint64_t, off_t,
-                                   uint32_t, struct bookmark_list_ctx *);
+                                   uint32_t, struct bm_list_ctx *);
 static int     bookmark_do_lookup (struct backend_ctx *, uint64_t,
                                    char const *, size_t, uint32_t,
                                    struct bookmarkfs_bookmark_stat *);
@@ -357,7 +354,6 @@ static int     bookmark_lookup_cb (void *, sqlite3_stmt *);
 static int     dentmap_comp       (union hashmap_key, void const *);
 static unsigned long
                dentmap_hash       (void const *);
-static void    free_blcookie      (struct bookmark_lcookie *);
 static void    free_dentmap       (struct hashmap *);
 static void    free_dentmap_entry (void *, void *);
 static int     get_xattr_id       (char const *, uint32_t);
@@ -365,7 +361,7 @@ static int64_t get_data_version   (struct backend_ctx *);
 static bool    is_valid_id        (int64_t);
 static void    usecs_to_timespec  (struct timespec *, int64_t);
 static int     parse_mntopts      (struct bookmarkfs_conf_opt const *,
-                                   uint32_t, struct parsed_mntopts *);
+                                   uint32_t, struct mntopts *);
 static void    print_help         (uint32_t);
 static void    print_version      (void);
 static int     store_init         (sqlite3 *, uint64_t *, uint64_t *);
@@ -383,7 +379,7 @@ bookmark_do_create (
     bool                             is_dir,
     struct bookmarkfs_bookmark_stat *stat_buf
 ) {
-    if (parent_id == ctx->bookmarks_root_id) {
+    if (parent_id == ctx->bm_root_id) {
         return -EPERM;
     }
 
@@ -443,7 +439,7 @@ bookmark_do_delete (
     size_t              name_len,
     bool                is_dir
 ) {
-    if (parent_id == ctx->bookmarks_root_id) {
+    if (parent_id == ctx->bm_root_id) {
         return -EPERM;
     }
 
@@ -472,7 +468,7 @@ fsck_apply (
     struct backend_ctx                *ctx,
     uint64_t                           parent_id,
     struct bookmarkfs_fsck_data const *fsck_data,
-    struct bookmark_list_ctx          *fctx
+    struct bm_list_ctx                *fctx
 ) {
     int status = txn_begin(ctx);
     if (unlikely(status < 0)) {
@@ -506,7 +502,7 @@ fsck_apply (
     }
 
     union hashmap_key key = {
-        .ptr = &(struct bookmark_name_key) {
+        .ptr = &(struct bm_name_key) {
             .val = name,
             .len = name_len,
         },
@@ -517,7 +513,7 @@ fsck_apply (
         fctx->dentry_map = map;
         goto update_name;
     }
-    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
+    struct bm_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry != NULL) {
         extra  = dentry->id;
         result = BOOKMARKFS_FSCK_RESULT_NAME_DUPLICATE;
@@ -643,13 +639,13 @@ mozbm_check_cb (
         return 1;
     }
     union hashmap_key key = {
-        .ptr = &(struct bookmark_name_key) {
+        .ptr = &(struct bm_name_key) {
             .val = name,
             .len = name_len,
         },
     };
     unsigned long hashcode = hash_digest_one(name, name_len);
-    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
+    struct bm_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry == NULL || dentry->id == (uint64_t)ctx->id) {
         // fsck_apply() was given an ID not previously returned by fsck_next().
         ctx->status = -ENOENT;
@@ -1553,7 +1549,7 @@ mozplace_url_hash (
 static int
 parse_mkfsopts (
     struct bookmarkfs_conf_opt const *opts,
-    struct parsed_mkfsopts           *parsed_opts
+    struct mkfsopts                  *dst
 ) {
     BACKEND_OPT_START(opts)
     BACKEND_OPT_KEY("date_added") {
@@ -1563,7 +1559,7 @@ parse_mkfsopts (
         if (*end != '\0' || val < 0 || val == LLONG_MAX) {
             return BACKEND_OPT_BAD_VAL();
         }
-        parsed_opts->date_added = val;
+        dst->date_added = val;
     }
     BACKEND_OPT_END
 
@@ -1848,10 +1844,10 @@ store_new (
         .guid      = (guid_),                          \
     }
     struct mozbm const bmroots[] = {
-        MOZBM_ROOT(1, 0, 0, "",        BOOKMARKS_ROOT_GUID),
+        MOZBM_ROOT(1, 0, 0, "",        "root________"),
         MOZBM_ROOT(2, 1, 0, "menu",    "menu________"),
         MOZBM_ROOT(3, 1, 1, "toolbar", "toolbar_____"),
-        MOZBM_ROOT(4, 1, 2, "tags",    TAGS_ROOT_GUID),
+        MOZBM_ROOT(4, 1, 2, "tags",    "tags________"),
         MOZBM_ROOT(5, 1, 3, "unfiled", "unfiled_____"),
         MOZBM_ROOT(6, 1, 4, "mobile",  "mobile______"),
     };
@@ -2073,10 +2069,10 @@ usecs_now (
 
 static int
 bookmark_do_get (
-    struct backend_ctx      *ctx,
-    uint64_t                 id,
-    int                      xattr_id,
-    struct bookmark_get_ctx *qctx
+    struct backend_ctx *ctx,
+    uint64_t            id,
+    int                 xattr_id,
+    struct bm_get_ctx  *qctx
 ) {
 #define BOOKMARK_GET_(cols, join)  "SELECT CASE ? " cols "END "  \
     "FROM `moz_bookmarks` `b` " join "WHERE `b`.`id` = ?"
@@ -2123,11 +2119,11 @@ bookmark_do_get (
 
 static int
 bookmark_do_list (
-    struct backend_ctx       *ctx,
-    uint64_t                  id,
-    off_t                     off,
-    uint32_t                  flags,
-    struct bookmark_list_ctx *qctx
+    struct backend_ctx *ctx,
+    uint64_t            id,
+    off_t               off,
+    uint32_t            flags,
+    struct bm_list_ctx *qctx
 ) {
 #define BOOKMARK_LIST_(col, join)  \
     "SELECT `b`.`id`, `b`.`position`, " col "FROM `moz_bookmarks` `b` " join  \
@@ -2302,7 +2298,7 @@ bookmark_do_lookup (
     sql = sql_table[bookmark_type][filename_is_guid];
 
   query:  ;
-    struct bookmark_lookup_ctx qctx;
+    struct bm_lookup_ctx qctx;
     qctx.tags_root_id = name == NULL ? UINT64_MAX : ctx->tags_root_id;
     qctx.stat_buf     = stat_buf;
 
@@ -2329,7 +2325,7 @@ bookmark_check_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
-    struct bookmark_list_ctx *ctx = user_data;
+    struct bm_list_ctx *ctx = user_data;
 
     int64_t id = sqlite3_column_int64(stmt, 0);
     if (unlikely(!is_valid_id(id))) {
@@ -2365,13 +2361,13 @@ bookmark_check_cb (
         return 0;
     }
     union hashmap_key key = {
-        .ptr = &(struct bookmark_name_key) {
+        .ptr = &(struct bm_name_key) {
             .val = name,
             .len = name_len,
         },
     };
     unsigned long hashcode = hash_digest_one(name, name_len);
-    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
+    struct bm_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry == NULL) {
         dentry = xmalloc(sizeof(*dentry) + name_len);
         dentry->id       = id;
@@ -2406,7 +2402,7 @@ bookmark_get_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
-    struct bookmark_get_ctx *ctx = user_data;
+    struct bm_get_ctx *ctx = user_data;
 
     char const *val = (char const *)sqlite3_column_text(stmt, 0);
     size_t      len = sqlite3_column_bytes(stmt, 0);
@@ -2423,7 +2419,7 @@ bookmark_list_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
-    struct bookmark_list_ctx *ctx = user_data;
+    struct bm_list_ctx *ctx = user_data;
 
     struct bookmarkfs_bookmark_entry entry;
 
@@ -2464,13 +2460,13 @@ bookmark_list_cb (
     }
 
     union hashmap_key key = {
-        .ptr = &(struct bookmark_name_key) {
+        .ptr = &(struct bm_name_key) {
             .val = name,
             .len = name_len,
         },
     };
     unsigned long hashcode = hash_digest_one(name, name_len);
-    struct bookmark_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
+    struct bm_dentry *dentry = hashmap_search(map, key, hashcode, NULL);
     if (dentry != NULL) {
         if (dentry->id == (uint64_t)id) {
             goto set_name;
@@ -2511,7 +2507,7 @@ bookmark_lookup_cb (
     void         *user_data,
     sqlite3_stmt *stmt
 ) {
-    struct bookmark_lookup_ctx *ctx = user_data;
+    struct bm_lookup_ctx *ctx = user_data;
 
     struct bookmarkfs_bookmark_stat *stat_buf = ctx->stat_buf;
 
@@ -2547,8 +2543,8 @@ dentmap_comp (
     union hashmap_key  key,
     void const        *entry
 ) {
-    struct bookmark_name_key const *name   = key.ptr;
-    struct bookmark_dentry const   *dentry = entry;
+    struct bm_name_key const *name   = key.ptr;
+    struct bm_dentry const   *dentry = entry;
 
     if (name->len != dentry->name_len) {
         return -1;
@@ -2560,17 +2556,9 @@ static unsigned long
 dentmap_hash (
     void const *entry
 ) {
-    struct bookmark_dentry const *dentry = entry;
+    struct bm_dentry const *dentry = entry;
 
     return dentry->hashcode;
-}
-
-static void
-free_blcookie (
-    struct bookmark_lcookie *cookie
-) {
-    free_dentmap(cookie->dentry_map);
-    free(cookie);
 }
 
 static void
@@ -2590,7 +2578,7 @@ free_dentmap_entry (
     void *UNUSED_VAR(user_data),
     void *entry
 ) {
-    struct bookmark_dentry *dentry = entry;
+    struct bm_dentry *dentry = entry;
 
     free(dentry);
 }
@@ -2676,7 +2664,7 @@ static int
 parse_mntopts (
     struct bookmarkfs_conf_opt const *opts,
     uint32_t                          flags,
-    struct parsed_mntopts            *parsed_opts
+    struct mntopts                   *dst
 ) {
     unsigned backend_flags = BACKEND_EXCLUSIVE_LOCK;
     if (flags & BOOKMARKFS_BACKEND_FSCK_ONLY) {
@@ -2714,7 +2702,7 @@ parse_mntopts (
     BACKEND_OPT_END
 
   end:
-    parsed_opts->flags = backend_flags;
+    dst->flags = backend_flags;
     return 0;
 }
 
@@ -2754,7 +2742,7 @@ print_version (void)
 static int
 store_init (
     sqlite3  *db,
-    uint64_t *bookmarks_root_id_ptr,
+    uint64_t *bm_root_id_ptr,
     uint64_t *tags_root_id_ptr
 ) {
     if (0 != db_check(db)) {
@@ -2787,8 +2775,8 @@ store_init (
         struct db_stmt_bind_item bind_item;
         uint64_t                 id;
     } check_args[] = {
-        { .bind_item = DB_QUERY_BIND_TEXT(BOOKMARKS_ROOT_GUID, GUID_STR_LEN) },
-        { .bind_item = DB_QUERY_BIND_TEXT(TAGS_ROOT_GUID,      GUID_STR_LEN) },
+        { .bind_item = DB_QUERY_BIND_TEXT("root________", GUID_STR_LEN) },
+        { .bind_item = DB_QUERY_BIND_TEXT("tags________", GUID_STR_LEN) },
     };
     size_t num_args = sizeof(check_args) / sizeof(struct store_check_args);
 
@@ -2809,8 +2797,8 @@ store_init (
     if (!is_valid_id(check_args[0].id) || !is_valid_id(check_args[1].id)) {
         goto end;
     }
-    *bookmarks_root_id_ptr = check_args[0].id;
-    *tags_root_id_ptr      = check_args[1].id;
+    *bm_root_id_ptr   = check_args[0].id;
+    *tags_root_id_ptr = check_args[1].id;
     status = 0;
 
   end:
@@ -2856,7 +2844,7 @@ backend_create (
 #endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
     }
 
-    struct parsed_mntopts opts = { 0 };
+    struct mntopts opts = { 0 };
     if (0 != parse_mntopts(conf->opts, conf->flags, &opts)) {
         return -1;
     }
@@ -2898,12 +2886,12 @@ backend_create (
         goto close_db;
     }
 
-    uint64_t bookmarks_root_id = UINT64_MAX;
-    uint64_t tags_root_id      = UINT64_MAX;
+    uint64_t bm_root_id   = UINT64_MAX;
+    uint64_t tags_root_id = UINT64_MAX;
     if (conf->flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
         // Defer initialization in sandbox mode, so that
         // user-provided data is only read after entering sandbox.
-        if (0 != store_init(db, &bookmarks_root_id, &tags_root_id)) {
+        if (0 != store_init(db, &bm_root_id, &tags_root_id)) {
             goto close_db;
         }
     }
@@ -2914,10 +2902,10 @@ backend_create (
 
     struct backend_ctx *ctx = xmalloc(sizeof(*ctx));
     *ctx = (struct backend_ctx) {
-        .db                = db,
-        .bookmarks_root_id = bookmarks_root_id,
-        .tags_root_id      = tags_root_id,
-        .flags             = conf->flags | opts.flags,
+        .db           = db,
+        .bm_root_id   = bm_root_id,
+        .tags_root_id = tags_root_id,
+        .flags        = conf->flags | opts.flags,
     };
 
     uint32_t resp_flags = BOOKMARKFS_BACKEND_HAS_KEYWORD;
@@ -2932,7 +2920,7 @@ backend_create (
 
     resp->name              = "firefox";
     resp->backend_ctx       = ctx;
-    resp->bookmarks_root_id = bookmarks_root_id;
+    resp->bookmarks_root_id = bm_root_id;
     resp->tags_root_id      = tags_root_id;
     resp->xattr_names       = xattr_names;
     resp->flags             = resp_flags;
@@ -3032,12 +3020,10 @@ backend_sandbox (
     // Deferred db init (see backend_create()).
     // Processing untrusted data before entering sandbox is a potential
     // vulnerability, and should be avoided if possible.
-    if (0 != store_init(ctx->db, &ctx->bookmarks_root_id,
-                &ctx->tags_root_id)
-    ) {
+    if (0 != store_init(ctx->db, &ctx->bm_root_id, &ctx->tags_root_id)) {
         return -1;
     }
-    resp->bookmarks_root_id = ctx->bookmarks_root_id;
+    resp->bookmarks_root_id = ctx->bm_root_id;
     resp->tags_root_id      = ctx->tags_root_id;
     return 0;
 }
@@ -3069,7 +3055,7 @@ bookmark_check (
     }
 
     struct hashmap *dentry_map = NULL;
-    struct bookmark_lcookie *cookie;
+    struct bm_lcookie *cookie;
     size_t idx = 0;
     if (cookie_ptr != NULL) {
         cookie = *cookie_ptr;
@@ -3088,7 +3074,7 @@ bookmark_check (
         goto end;
     }
 
-    struct bookmark_list_ctx qctx;
+    struct bm_list_ctx qctx;
     qctx.dentry_map     = dentry_map;
     qctx.next           = idx;
     qctx.row_func       = bookmark_check_cb;
@@ -3143,7 +3129,7 @@ bookmark_get (
     if (data_version < 0) {
         return data_version;
     }
-    struct bookmark_gcookie *cookie = *cookie_ptr;
+    struct bm_gcookie *cookie = *cookie_ptr;
     if (cookie != NULL) {
         if (cookie->data_version == data_version) {
             return -EAGAIN;
@@ -3151,7 +3137,7 @@ bookmark_get (
     }
 
   query:  ;
-    struct bookmark_get_ctx qctx;
+    struct bm_get_ctx qctx;
     qctx.tags_root_id = ctx->tags_root_id;
     qctx.callback     = callback;
     qctx.user_data    = user_data;
@@ -3183,7 +3169,7 @@ bookmark_list (
     struct backend_ctx *ctx = backend_ctx;
 
     struct hashmap *dentry_map = NULL;
-    struct bookmark_lcookie *cookie;
+    struct bm_lcookie *cookie;
     if (cookie_ptr != NULL) {
         cookie = *cookie_ptr;
         if (cookie != NULL) {
@@ -3201,7 +3187,7 @@ bookmark_list (
         dentry_map = NULL;
     }
 
-    struct bookmark_list_ctx qctx;
+    struct bm_list_ctx qctx;
     qctx.dentry_map    = dentry_map;
     qctx.row_func      = bookmark_list_cb;
     qctx.callback.list = callback;
@@ -3250,18 +3236,11 @@ cookie_free (
         return;
     }
 
-    switch (cookie_type) {
-      case BOOKMARKFS_COOKIE_TYPE_WATCH:
-        free(cookie);
-        break;
-
-      case BOOKMARKFS_COOKIE_TYPE_LIST:
-        free_blcookie(cookie);
-        break;
-
-      default:
-        unreachable();
+    if (cookie_type == BOOKMARKFS_COOKIE_TYPE_LIST) {
+        struct bm_lcookie *c = cookie;
+        free_dentmap(c->dentry_map);
     }
+    free(cookie);
 }
 
 #ifdef ENABLE_BACKEND_FIREFOX_WRITE
@@ -3270,7 +3249,7 @@ static int
 backend_mkfs (
     struct bookmarkfs_backend_conf const *conf
 ) {
-    struct parsed_mkfsopts opts = {
+    struct mkfsopts opts = {
         .date_added = -1,
     };
     if (0 != parse_mkfsopts(conf->opts, &opts)) {
@@ -3523,8 +3502,8 @@ bookmark_rename (
     int bookmark_type = flags & BOOKMARKFS_BOOKMARK_TYPE_MASK;
     switch (bookmark_type) {
       case BOOKMARKFS_BOOKMARK_TYPE(BOOKMARK):
-        if (old_parent_id == ctx->bookmarks_root_id
-                || new_parent_id == ctx->bookmarks_root_id
+        if (old_parent_id == ctx->bm_root_id
+                || new_parent_id == ctx->bm_root_id
         ) {
             return -EPERM;
         }
