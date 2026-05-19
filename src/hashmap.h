@@ -85,14 +85,14 @@ void
 hashmap_insert (
     struct hashmap *map,
     unsigned long   hashcode,
-    void           *entry
+    void const     *entry
 );
 
 void
 hashmap_update (
     struct hashmap *map,
     void const     *entry,
-    void           *new_entry,
+    void const     *new_entry,
     long            entry_id
 );
 

@@ -90,7 +90,7 @@ struct bucket {
      */
     unsigned long bits;
 
-    void *entry;
+    void const *entry;
 };
 
 struct hashmap {
@@ -252,7 +252,7 @@ rehash (
     struct bucket *old_b_end    = map->buckets + map->num_buckets;
     unsigned long  new_hop_mask = BUCKET_HOP_MASK(new_exp);
     for (struct bucket *old_b = map->buckets; old_b < old_b_end; ++old_b) {
-        void *old_e = old_b->entry;
+        void const *old_e = old_b->entry;
         if (old_e == NULL) {
             continue;
         }
@@ -336,7 +336,7 @@ hashmap_foreach (
     struct bucket *end = map->buckets + map->num_buckets;
     for (struct bucket *b = map->buckets; b < end; ++b) {
         if (b->entry != NULL) {
-            walk_func(user_data, b->entry);
+            walk_func(user_data, (void *)b->entry);
         }
     }
 }
@@ -345,7 +345,7 @@ void
 hashmap_update (
     struct hashmap *map,
     void const     *entry,
-    void           *new_entry,
+    void const     *new_entry,
     long            entry_id
 ) {
     struct bucket *home;
@@ -381,7 +381,7 @@ void
 hashmap_insert (
     struct hashmap *map,
     unsigned long   hashcode,
-    void           *entry
+    void const     *entry
 ) {
     unsigned       exp      = map->exp;
     size_t         hash_idx = HASH_TO_IDX(hashcode, exp);
@@ -431,7 +431,7 @@ hashmap_search (
         if ((b->bits & hash_mask) != (hashcode << exp)) {
             continue;
         }
-        void *e = b->entry;
+        void const *e = b->entry;
         debug_assert(e != NULL);
         if (0 != map->entry_comp(key, e)) {
             continue;
@@ -439,6 +439,6 @@ hashmap_search (
         if (entry_id_ptr != NULL) {
             *entry_id_ptr = PACK_ID(hash_idx, hop_idx);
         }
-        return e;
+        return (void *)e;
     }
 }
