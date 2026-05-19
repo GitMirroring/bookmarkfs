@@ -3935,7 +3935,7 @@ typedef unsigned long (hashmap_hash_func) (
 @end example
 
 This function is only called during rehashing,
-and during @code{hashmap_delete} with a negative @code{entry_id}.
+and during @code{hashmap_update()} with a negative @code{entry_id}.
 @end table
 
 Returns an opaque pointer referring to the new hash table.
@@ -4007,23 +4007,24 @@ The hash code for the entry to search.
 @item entry_id_ptr
 If not @code{NULL}, and a matching entry is found,
 the function sets @code{*entry_id_ptr} to an opaque integer value,
-which can be used to identify the entry when calling @code{hashmap_delete()}.
+which can be used to identify the entry when calling @code{hashmap_update()}.
 
-A subsequent call to @code{hashmap_insert()} and @code{hashmap_delete()}
-on this hash table invalidates that value.
+A subsequent call to @code{hashmap_insert()} or @code{hashmap_update()}
+with @code{NULL} @code{new_entry} on this hash table invalidates that value.
 @end table
 
 Returns the pointer associated with the entry,
 or @code{NULL} if no matching entry is found.
 
-@item hashmap_delete
-Removes an entry from a hash table.
+@item hashmap_update
+Updates or removes an entry from a hash table.
 
 @example c
 void
-hashmap_delete (
+hashmap_update (
     struct hashmap *map,
     void const     *entry,
+    void           *new_entry,
     long            entry_id
 );
 @end example
@@ -4035,9 +4036,13 @@ Function arguments:
 The hash table to delete entry from.
 
 @item entry
-The entry to be deleted from the hash table.
+The entry to be updated or deleted from the hash table.
 
 If the hash table does not contain this entry, function behavior is undefined.
+
+@item new_entry
+The entry to replace the original one in the hash table.
+If @code{NULL}, removes the original entry.
 
 @item entry_id
 An opaque integer obtained from @code{hashmap_search()} which identifies

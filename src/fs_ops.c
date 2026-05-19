@@ -470,7 +470,7 @@ bm_fh_free (
     struct fs_file_handle *fh,
     long                   entry_id
 ) {
-    hashmap_delete(ctx.fh_map, fh, entry_id);
+    hashmap_update(ctx.fh_map, fh, NULL, entry_id);
     free(fh);
 }
 

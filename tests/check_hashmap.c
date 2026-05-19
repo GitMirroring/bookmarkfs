@@ -64,7 +64,7 @@ check_one_round (
                 log_puts("unexpected item in hashmap");
                 return -1;
             }
-            hashmap_delete(map, item, entry_id);
+            hashmap_update(map, item, NULL, entry_id);
         } else {
             if (found != NULL) {
                 log_puts("unexpected item in hashmap");
@@ -113,7 +113,7 @@ do_check_hashmap (
 
         if (item->id & 1) {
             --cnt;
-            hashmap_delete(map, item, -1);
+            hashmap_update(map, item, NULL, -1);
         }
     }
     if (cnt != 0) {

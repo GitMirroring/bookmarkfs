@@ -342,9 +342,10 @@ hashmap_foreach (
 }
 
 void
-hashmap_delete (
+hashmap_update (
     struct hashmap *map,
     void const     *entry,
+    void           *new_entry,
     long            entry_id
 ) {
     struct bucket *home;
@@ -359,7 +360,10 @@ hashmap_delete (
 
     struct bucket *b = home + hop_idx;
     debug_assert(b->entry == entry);
-    b->entry = NULL;
+    b->entry = new_entry;
+    if (new_entry != NULL) {
+        return;
+    }
 
     size_t buckets_used = --map->num_used;
     if (map->exp <= EXP_MIN) {

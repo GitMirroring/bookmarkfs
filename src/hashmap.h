@@ -31,7 +31,7 @@
 #define hashmap_foreach  bookmarkfs_hashmap_foreach
 #define hashmap_search   bookmarkfs_hashmap_search
 #define hashmap_insert   bookmarkfs_hashmap_insert
-#define hashmap_delete   bookmarkfs_hashmap_delete
+#define hashmap_update   bookmarkfs_hashmap_update
 // Name mangling end
 
 struct hashmap;
@@ -89,9 +89,10 @@ hashmap_insert (
 );
 
 void
-hashmap_delete (
+hashmap_update (
     struct hashmap *map,
     void const     *entry,
+    void           *new_entry,
     long            entry_id
 );
 

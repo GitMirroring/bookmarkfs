@@ -673,7 +673,7 @@ update_guid (
     uint8_t           *guid,
     unsigned long      hashcode
 ) {
-    hashmap_delete(guid_map, entry, old_entry_id);
+    hashmap_update(guid_map, entry, NULL, old_entry_id);
     hashmap_insert(guid_map, hashcode, entry);
 
     memcpy(entry->guid, guid, UUID_LEN);
@@ -2232,10 +2232,10 @@ bookmark_delete (
     long guidmap_entry_id = lctx.entry_id;
     if (!(ctx->flags & BACKEND_FILENAME_GUID)) {
         guidmap_entry_id = -1;
-        hashmap_delete(ctx->assoc_map, entry, lctx.entry_id);
+        hashmap_update(ctx->assoc_map, entry, NULL, lctx.entry_id);
     }
-    hashmap_delete(ctx->guid_map, entry, guidmap_entry_id);
-    hashmap_delete(ctx->id_map, entry, -1);
+    hashmap_update(ctx->guid_map, entry, NULL, guidmap_entry_id);
+    hashmap_update(ctx->id_map, entry, NULL, -1);
     free(entry);
 
     ctx->dirty = DIRTY_LEVEL_DATA;
@@ -2445,10 +2445,10 @@ bookmark_rename (
         long new_guidmap_entry_id = new_lctx.entry_id;
         if (!filename_is_guid) {
             new_guidmap_entry_id = -1;
-            hashmap_delete(ctx->assoc_map, new_entry, new_lctx.entry_id);
+            hashmap_update(ctx->assoc_map, new_entry, NULL, new_lctx.entry_id);
         }
-        hashmap_delete(ctx->guid_map, new_entry, new_guidmap_entry_id);
-        hashmap_delete(ctx->id_map, new_entry, -1);
+        hashmap_update(ctx->guid_map, new_entry, NULL, new_guidmap_entry_id);
+        hashmap_update(ctx->id_map, new_entry, NULL, -1);
         free(new_entry);
     }
 
@@ -2456,7 +2456,7 @@ bookmark_rename (
         update_guid(old_entry, ctx->guid_map, old_lctx.entry_id, new_lctx.guid,
                 new_lctx.hashcode);
     } else {
-        hashmap_delete(ctx->assoc_map, old_entry, old_lctx.entry_id);
+        hashmap_update(ctx->assoc_map, old_entry, NULL, old_lctx.entry_id);
         hashmap_insert(ctx->assoc_map, new_lctx.hashcode, old_entry);
     }
     ctx->dirty = DIRTY_LEVEL_DATA;
