@@ -393,16 +393,18 @@ bookmark_do_create (
     }
 
     struct mozplace mp;
-    mp.id      = -1;
-    mp.url     = "about:blank";
-    mp.url_len = strlen(mp.url);
-    stat_buf->value_len = -1;
-    if (!is_dir) {
-        stat_buf->value_len = 0;
+    if (is_dir) {
+        mp.id = -1;
+        memset(&stat_buf->atime, 0, sizeof(stat_buf->atime));
+        stat_buf->value_len = -1;
+    } else {
+        mp.url     = "about:blank";
+        mp.url_len = strlen(mp.url);
         status = mozplace_addref(ctx, &mp, &stat_buf->atime);
         if (status < 0) {
             return status;
         }
+        stat_buf->value_len = 0;
     }
 
     char const *guid = name;
