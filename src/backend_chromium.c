@@ -284,7 +284,7 @@ build_node (
     xgetrealtime(&ts);
     build_tsnode(&ts, &date_added);
     json_object_sset_new(node, "date_added", date_added);
-    json_object_sset_new(node, "date_last_used", json_sstring("0"));
+    json_object_sset_copy(node, "date_last_used", date_added);
 
     if (unlikely(0 != build_node_id(node, &ctx->max_id))) {
         return -EIO;
