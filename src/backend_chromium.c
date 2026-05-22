@@ -2477,13 +2477,17 @@ bookmark_set (
             if (!valid_ts_sec(times[0].tv_sec)) {
                 return -EINVAL;
             }
-            build_tsnode(&times[0], &ts_node);
-            json_object_sset_new(node, "date_last_used", ts_node);
         }
         if (flags & BOOKMARK_FLAG(SET_MTIME)) {
             if (!valid_ts_sec(times[1].tv_sec)) {
                 return -EINVAL;
             }
+        }
+        if (flags & BOOKMARK_FLAG(SET_ATIME)) {
+            build_tsnode(&times[0], &ts_node);
+            json_object_sset_new(node, "date_last_used", ts_node);
+        }
+        if (flags & BOOKMARK_FLAG(SET_MTIME)) {
             build_tsnode(&times[1], &ts_node);
             json_object_sset_new(node, "date_modified", ts_node);
         }
