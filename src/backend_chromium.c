@@ -188,7 +188,7 @@ struct parsed_mkfsopts {
 #ifdef ENABLE_BACKEND_CHROMIUM_WRITE
 static int  build_node      (struct backend_ctx *, json_t *, char const **,
                              size_t, bool, struct build_node_ctx *);
-static int  build_node_guid (json_t *, struct hashmap const *, uint8_t *,
+static void build_node_guid (json_t *, struct hashmap const *, uint8_t *,
                              unsigned long *);
 static int  build_node_id   (json_t *, uint64_t *);
 static void build_tsnode    (struct timespec const *, json_t **);
@@ -212,8 +212,6 @@ static int  assocmap_comp (union hashmap_key, void const *);
 static unsigned long
             assocmap_hash (void const *);
 static int  build_maps    (struct backend_ctx *);
-static void free_bgcookie (struct bookmark_gcookie *);
-static void free_blcookie (struct bookmark_lcookie *);
 static void free_entry_cb (void *, void *);
 static void free_maps     (struct hashmap *, struct hashmap *,
                            struct hashmap *);
@@ -301,11 +299,7 @@ build_node (
         // No need to validate.  Already done in lookup_name().
         json_object_sset_copy(node, "guid", name_node);
     } else {
-        if (unlikely(0 != build_node_guid(node, ctx->guid_map, bctx->guid,
-                        &bctx->hashcode))
-        ) {
-            return -EIO;
-        }
+        build_node_guid(node, ctx->guid_map, bctx->guid, &bctx->hashcode);
     }
 
     if (bctx->stat_buf != NULL) {
@@ -319,7 +313,7 @@ build_node (
     return 0;
 }
 
-static int
+static void
 build_node_guid (
     json_t               *node,
     struct hashmap const *guid_map,
@@ -345,7 +339,6 @@ build_node_guid (
 
     json_t *guid_node = json_stringn_nocheck(guid_str_buf, UUID_HEX_LEN);
     json_object_sset_new(node, "guid", guid_node);
-    return 0;
 }
 
 static int
@@ -770,22 +763,6 @@ build_maps (
     json_decref(root);
     free_maps(id_map, assoc_map, guid_map);
     return -1;
-}
-
-static void
-free_bgcookie (
-    struct bookmark_gcookie *cookie
-) {
-    json_decref(cookie->checksum);
-    free(cookie);
-}
-
-static void
-free_blcookie (
-    struct bookmark_lcookie *cookie
-) {
-    json_decref(cookie->children);
-    free(cookie);
 }
 
 static void
@@ -1872,9 +1849,6 @@ bookmark_get (
         return status;
     }
 
-    if (callback == NULL) {
-        goto end;
-    }
     char const *value = json_string_value(value_node);
     if (unlikely(value == NULL)) {
         return -EIO;
@@ -1884,7 +1858,6 @@ bookmark_get (
         return status;
     }
 
-  end:
     if (cookie_ptr != NULL) {
         if (cookie == NULL) {
             cookie = xmalloc(sizeof(*cookie));
@@ -2033,18 +2006,14 @@ cookie_free (
         return;
     }
 
-    switch (cookie_type) {
-      case BOOKMARKFS_COOKIE_TYPE_WATCH:
-        free_bgcookie(cookie);
-        break;
-
-      case BOOKMARKFS_COOKIE_TYPE_LIST:
-        free_blcookie(cookie);
-        break;
-
-      default:
-        unreachable();
+    if (cookie_type == BOOKMARKFS_COOKIE_TYPE_WATCH) {
+        struct bookmark_gcookie *c = cookie;
+        json_decref(c->checksum);
+    } else if (cookie_type == BOOKMARKFS_COOKIE_TYPE_LIST) {
+        struct bookmark_lcookie *c = cookie;
+        json_decref(c->children);
     }
+    free(cookie);
 }
 
 #ifdef ENABLE_BACKEND_CHROMIUM_WRITE
