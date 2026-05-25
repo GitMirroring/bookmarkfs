@@ -103,8 +103,8 @@ enum {
     STMT_BOOKMARK_LOOKUP_TAG_ASSOC,
     STMT_DATA_VERSION,
 #ifdef ENABLE_BACKEND_FIREFOX_WRITE
-    PERSISTED_STMT_WRITE_START,
-    STMT_BEGIN = PERSISTED_STMT_WRITE_START,
+    PERSISTENT_STMT_WRITE_START,
+    STMT_BEGIN = PERSISTENT_STMT_WRITE_START,
     STMT_COMMIT,
     STMT_ROLLBACK,
     STMT_MP_ADDREF,
@@ -137,16 +137,16 @@ enum {
     STMT_MK_PURGE,
     STMT_MK_RENAME,
 #endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
-    PERSISTED_STMT_END,
+    PERSISTENT_STMT_END,
 };
 
 struct backend_ctx {
     sqlite3  *db;
-    uint64_t  bm_root_id;
+    uint64_t  root_id;
     uint64_t  tags_root_id;
     uint32_t  flags;
 
-    struct sqlite3_stmt *stmts[PERSISTED_STMT_END];
+    struct sqlite3_stmt *stmts[PERSISTENT_STMT_END];
 };
 
 struct bm_gcookie {
@@ -379,7 +379,7 @@ bookmark_do_create (
     bool                             is_dir,
     struct bookmarkfs_bookmark_stat *stat_buf
 ) {
-    if (parent_id == ctx->bm_root_id) {
+    if (parent_id == ctx->root_id) {
         return -EPERM;
     }
 
@@ -441,7 +441,7 @@ bookmark_do_delete (
     size_t              name_len,
     bool                is_dir
 ) {
-    if (parent_id == ctx->bm_root_id) {
+    if (parent_id == ctx->root_id) {
         return -EPERM;
     }
 
@@ -1487,25 +1487,24 @@ mozplace_update (
     struct backend_ctx *ctx,
     struct mozplace    *mp
 ) {
-    if (mp->url == NULL) {
-        goto do_update;
-    }
-    int64_t old_id = mp->id;
-    int status = mozplace_addref(ctx, mp, NULL);
-    if (status < 0) {
-        return status;
-    }
-    status = mozplace_delref(ctx, old_id, 1);
-    if (status < 0) {
-        return status;
+    if (mp->url != NULL) {
+        int64_t old_id = mp->id;
+        int status = mozplace_addref(ctx, mp, NULL);
+        if (status < 0) {
+            return status;
+        }
+        status = mozplace_delref(ctx, old_id, 1);
+        if (status < 0) {
+            return status;
+        }
     }
 
-  do_update:  ;
     char const *sql = "UPDATE `moz_places` "
         "SET (`last_visit_date`, `description`) "
             "= (ifnull(?, `last_visit_date`), ifnull(?, `description`)) "
         "WHERE `id` = ?";
 
+    int status;
     DO_QUERY(ctx, STMT_MP_UPDATE, sql, NULL, NULL, status, ,
         DB_QUERY_BIND_INT64(mp->last_visit_date),
         DB_QUERY_BIND_TEXT(mp->desc, mp->desc_len),
@@ -2744,7 +2743,7 @@ print_version (void)
 static int
 store_init (
     sqlite3  *db,
-    uint64_t *bm_root_id_ptr,
+    uint64_t *root_id_ptr,
     uint64_t *tags_root_id_ptr
 ) {
     if (0 != db_check(db)) {
@@ -2799,7 +2798,7 @@ store_init (
     if (!is_valid_id(check_args[0].id) || !is_valid_id(check_args[1].id)) {
         goto end;
     }
-    *bm_root_id_ptr   = check_args[0].id;
+    *root_id_ptr      = check_args[0].id;
     *tags_root_id_ptr = check_args[1].id;
     status = 0;
 
@@ -2888,12 +2887,12 @@ backend_create (
         goto close_db;
     }
 
-    uint64_t bm_root_id   = UINT64_MAX;
+    uint64_t root_id      = UINT64_MAX;
     uint64_t tags_root_id = UINT64_MAX;
     if (conf->flags & BOOKMARKFS_BACKEND_NO_SANDBOX) {
         // Defer initialization in sandbox mode, so that
         // user-provided data is only read after entering sandbox.
-        if (0 != store_init(db, &bm_root_id, &tags_root_id)) {
+        if (0 != store_init(db, &root_id, &tags_root_id)) {
             goto close_db;
         }
     }
@@ -2905,7 +2904,7 @@ backend_create (
     struct backend_ctx *ctx = xmalloc(sizeof(*ctx));
     *ctx = (struct backend_ctx) {
         .db           = db,
-        .bm_root_id   = bm_root_id,
+        .root_id      = root_id,
         .tags_root_id = tags_root_id,
         .flags        = conf->flags | opts.flags,
     };
@@ -2922,7 +2921,7 @@ backend_create (
 
     resp->name              = "firefox";
     resp->backend_ctx       = ctx;
-    resp->bookmarks_root_id = bm_root_id;
+    resp->bookmarks_root_id = root_id;
     resp->tags_root_id      = tags_root_id;
     resp->xattr_names       = xattr_names;
     resp->flags             = resp_flags;
@@ -2942,10 +2941,10 @@ backend_destroy (
         return;
     }
 
-    int end = PERSISTED_STMT_END;
+    int end = PERSISTENT_STMT_END;
 #ifdef ENABLE_BACKEND_FIREFOX_WRITE
     if (ctx->flags & BOOKMARKFS_BACKEND_READONLY) {
-        end = PERSISTED_STMT_WRITE_START;
+        end = PERSISTENT_STMT_WRITE_START;
     }
 #endif  /* defined(ENABLE_BACKEND_FIREFOX_WRITE) */
     for (int idx = 0; idx < end; ++idx) {
@@ -3022,10 +3021,10 @@ backend_sandbox (
     // Deferred db init (see backend_create()).
     // Processing untrusted data before entering sandbox is a potential
     // vulnerability, and should be avoided if possible.
-    if (0 != store_init(ctx->db, &ctx->bm_root_id, &ctx->tags_root_id)) {
+    if (0 != store_init(ctx->db, &ctx->root_id, &ctx->tags_root_id)) {
         return -1;
     }
-    resp->bookmarks_root_id = ctx->bm_root_id;
+    resp->bookmarks_root_id = ctx->root_id;
     resp->tags_root_id      = ctx->tags_root_id;
     return 0;
 }
@@ -3504,9 +3503,7 @@ bookmark_rename (
     int bookmark_type = flags & BOOKMARKFS_BOOKMARK_TYPE_MASK;
     switch (bookmark_type) {
       case BOOKMARKFS_BOOKMARK_TYPE(BOOKMARK):
-        if (old_parent_id == ctx->bm_root_id
-                || new_parent_id == ctx->bm_root_id
-        ) {
+        if (old_parent_id == ctx->root_id || new_parent_id == ctx->root_id) {
             return -EPERM;
         }
         break;
