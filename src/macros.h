@@ -28,7 +28,7 @@
 #  define STRINGIFY_IMPL_(arg)  #arg
 #endif
 
-#define STR_WITHLEN(str)  str, strlen(str)
+#define STR_WITHLEN(str)  (str), (sizeof(str) - 1)
 
 #define TENTH_ARG_(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, ...)  a10
 #define NUM_ARGS(...)  TENTH_ARG_(__VA_ARGS__, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
