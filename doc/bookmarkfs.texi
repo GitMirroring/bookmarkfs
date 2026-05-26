@@ -1063,6 +1063,9 @@ The backend does not support rearranging entries for this directory.
 To ensure that the order change is visible to further @code{readdir()} calls,
 @code{fsync()} or @code{close()} the directory.
 
+Also note that rearranging directory entries between @code{readdir()} calls
+may cause some entries to appear more than once or not at all.
+
 
 @node Filesystem Check
 @section Filesystem Check
