@@ -26,8 +26,7 @@ if BOOKMARKFS_UTIL
   check_PROGRAMS += check-util-lib
 
   check_util_lib_CPPFLAGS = -I$(top_srcdir)/src
-  check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_util.la  \
-                            $(top_builddir)/src/libbookmarkfs_check.la
+  check_util_lib_LDADD    = $(top_builddir)/src/libbookmarkfs_check.la
   check_util_lib_SOURCES  = check_lib.c check_watcher.c  \
                             check_hashmap.c check_util.c
 
@@ -43,12 +42,6 @@ if BOOKMARKFS_MOUNT
   check_fs_LDADD    = $(top_builddir)/src/libbookmarkfs_check.la
   check_fs_SOURCES  = check_fs.c check_fs_dents.c check_fs_regrw.c  \
                       check_fs_times.c check_util.c
-
-if BOOKMARKFS_UTIL
-  check_fs_LDADD += $(top_builddir)/src/libbookmarkfs_util.la
-else
-  check_fs_LDADD += $(BOOKMARKFS_UTIL_LIBS)
-endif  # BOOKMARKFS_UTIL
 endif  # BOOKMARKFS_MOUNT
 
 # Autotest setup
