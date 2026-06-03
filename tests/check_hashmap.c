@@ -77,18 +77,12 @@ check_one_round (
     return 0;
 }
 
-int
+static int
 do_check_hashmap (
     size_t items_cnt,
     int    rounds
 ) {
-    size_t buf_size = sizeof(struct check_item) * items_cnt;
-    struct check_item *items = mmap(NULL, buf_size, PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (items == MAP_FAILED) {
-        log_puts("failed to allocate memory");
-        return -1;
-    }
+    struct check_item *items = xmalloc(sizeof(struct check_item) * items_cnt);
     struct hashmap *map = hashmap_create(item_comp_func, item_hash_func);
 
     for (size_t i = 0; i < items_cnt; ++i) {
@@ -129,7 +123,7 @@ do_check_hashmap (
     status = 0;
 
   end:
-    munmap(items, buf_size);
+    free(items);
     hashmap_destroy(map);
     return status;
 }

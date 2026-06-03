@@ -109,12 +109,7 @@ do_check_fs_regrw (
 #define ASSERT_EQ(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) == r_, goto end;)
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
-    void *buf = mmap(NULL, file_max, PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (buf == MAP_FAILED) {
-        log_puts("failed to allocate memory");
-        return -1;
-    }
+    void *buf = xmalloc(file_max);
     int status = -1;
 
     // Random read/write testing is less useful without O_DIRECT,
@@ -158,7 +153,7 @@ do_check_fs_regrw (
     if (fd >= 0) {
         close(fd);
     }
-    munmap(buf, file_max);
+    free(buf);
     return status;
 }
 
