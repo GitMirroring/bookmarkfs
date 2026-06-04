@@ -20,11 +20,11 @@ ATX_CHECK_SIMPLE([
 
     ATX_RUN_REPEAT([16], [
         str=$(ath_fn_rand_base64 3072)
-        sum=$(printf %s $str | base64 -d | sha256sum)
 
+        printf %s "$str" | base64 -d > decoded.tmp
         ATX_RUN([
-            test "$str" = "$(printf %s $str | base64 -d | check_base64_encode)"
-            test "$sum" = "$(printf %s $str | check_base64_decode | sha256sum)"
+            test "$str" = "$(cat decoded.tmp | check_base64_encode)"
+            printf %s "$str" | check_base64_decode | cmp - decoded.tmp
         ])
     ])
 ])
