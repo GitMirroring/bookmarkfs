@@ -104,12 +104,12 @@ check_rand_rw (
 static int
 do_check_fs_regrw (
     char const *path,
-    size_t      file_max
+    size_t      cnt
 ) {
 #define ASSERT_EQ(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) == r_, goto end;)
 #define ASSERT_NE(val, expr)  ASSERT_EXPR_INT(expr, r_, (val) != r_, goto end;)
 
-    void *buf = xmalloc(file_max);
+    uint64_t *buf = xcalloc(cnt, sizeof(uint64_t));
     int status = -1;
 
     // Random read/write testing is less useful without O_DIRECT,
@@ -124,7 +124,7 @@ do_check_fs_regrw (
     ASSERT_EQ(0, fstat(fd, &stat_buf));
     ASSERT_EQ(0, stat_buf.st_size);
 
-    off_t nbytes = check_rand_rw(fd, buf, file_max / sizeof(uint64_t));
+    off_t nbytes = check_rand_rw(fd, buf, cnt);
     ASSERT_NE(-1, nbytes);
     ASSERT_EQ(0, fstat(fd, &stat_buf));
     ASSERT_EQ(nbytes, stat_buf.st_size);
@@ -184,5 +184,5 @@ check_fs_regrw (
     if (0 != prng_seed_from_env()) {
         return -1;
     }
-    return do_check_fs_regrw(path, file_max);
+    return do_check_fs_regrw(path, file_max / sizeof(uint64_t));
 }
