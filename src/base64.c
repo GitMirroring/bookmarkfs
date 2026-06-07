@@ -81,13 +81,7 @@ base64url_encode_nopad (
 ) {
     debug_assert(src_len % 3 == 0);
 
-    static char const lut[64] = {
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-        'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_',
-    };
+    static char const lut[64] = { BASE64URL_CHARS };
     for (uint8_t const *end = src + src_len; src < end; src += 3, dst += 4) {
         uint32_t bits = 0;
         bits |= src[0] << 16;

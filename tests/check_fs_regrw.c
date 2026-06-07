@@ -29,6 +29,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include "base64.h"
 #include "check_util.h"
 #include "frontend_util.h"
 #include "prng.h"
@@ -131,8 +132,7 @@ do_check_fs_regrw (
 
     // File data must be valid URI to be persisted to bookmark storage.
     memcpy(buf, "foo:bar/", 8);
-    uint8_t lut[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" "abcdefghijklmnopqrstuvwxyz"
-        "0123456789" "-_";
+    static char const lut[64] = { BASE64URL_CHARS };
     for (uint8_t *b = (uint8_t *)buf + 8; b < (uint8_t *)buf + nbytes; ++b) {
         *b = lut[*b & 0x3f];
     }
