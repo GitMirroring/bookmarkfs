@@ -42,8 +42,7 @@ AC_PROG_MAKE_SET
 EX_FEAT([bookmarkctl], [E], [the bookmarkctl program])
 
 EX_FEAT([bookmarkfs-fsck], [E], [the fsck.bookmarkfs program], [
-    AS_VAR_SET([enable_bookmarkfs_util],  [yes])
-    AS_VAR_SET([enable_interactive_fsck], [yes])
+    AS_VAR_SET([enable_bookmarkfs_util], [yes])
 ])
 
 EX_FEAT([bookmarkfs-mkfs], [E], [the mkfs.bookmarkfs program])
@@ -79,7 +78,11 @@ EX_FEAT([backend-chromium-write], [DE],
 
 EX_FEAT([native-watcher], [YD], [platform-specific file watcher])
 
-EX_FEAT([interactive-fsck], [DE], [interactive features for fsck.bookmarkfs])
+EX_FEAT([interactive-fsck], [YD], [interactive features for fsck.bookmarkfs], [
+    AS_VAR_IF([enable_bookmarkfs_fsck], [no], [
+        AS_VAR_SET([enable_interactive_fsck], [no])
+    ])
+])
 
 EX_FEAT([fsck-handler-tcl], [E], [Tcl-based fsck handler])
 

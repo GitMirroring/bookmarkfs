@@ -65,16 +65,11 @@ endif  # BOOKMARKCTL
 if BOOKMARKFS_FSCK
   bin_PROGRAMS += fsck.bookmarkfs
 
-  fsck_bookmarkfs_CPPFLAGS = $(BASE_CPPFLAGS_)
-  fsck_bookmarkfs_LDADD    = $(UTIL_LIBS_)
+  fsck_bookmarkfs_CPPFLAGS = $(BASE_CPPFLAGS_) $(READLINE_CFLAGS)
+  fsck_bookmarkfs_LDADD    = $(UTIL_LIBS_) $(READLINE_LIBS)
   fsck_bookmarkfs_SOURCES  = $(FRONTEND_SOURCES_) backend_util.c fsck.c  \
                              fsck_handler_simple.c fsck_offline.c  \
                              fsck_online.c fsck_util.c lib.c
-
-if INTERACTIVE_FSCK
-  fsck_bookmarkfs_CPPFLAGS += $(READLINE_CFLAGS)
-  fsck_bookmarkfs_LDADD    += $(READLINE_LIBS)
-endif  # INTERACTIVE_FSCK
 endif  # BOOKMARKFS_FSCK
 
 if BOOKMARKFS_MKFS

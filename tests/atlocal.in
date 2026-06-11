@@ -21,5 +21,4 @@ buildsrcdir="$top_builddir/src"
 @BACKEND_FIREFOX_WRITE_TRUE@  feat_backend_firefox_write=y
 @BACKEND_CHROMIUM_TRUE@       feat_backend_chromium=y
 @BACKEND_CHROMIUM_WRITE_TRUE@ feat_backend_chromium_write=y
-@INTERACTIVE_FSCK_TRUE@       feat_interactive_fsck=y
 @FSCK_HANDLER_TCL_TRUE@       feat_fsck_handler_tcl=y
