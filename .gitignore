@@ -41,3 +41,28 @@ Makefile.in
 
 # The build tree
 /build/
+
+# In case we're using the src tree as build tree...
+/config.h
+/config.log
+/config.status
+/libtool
+/src/bookmarkctl
+/src/bookmarkfs_util.pc
+/src/fsck.bookmarkfs
+/src/mkfs.bookmarkfs
+/src/mount.bookmarkfs
+/stamp-h*
+/tests/atconfig
+/tests/atlocal
+/tests/check-fs
+/tests/check-misc
+/tests/check-util-lib
+/tests/testsuite.dir/
+/tests/testsuite.log
+*.o
+*.la
+*.lo
+.deps/
+.libs/
+Makefile
