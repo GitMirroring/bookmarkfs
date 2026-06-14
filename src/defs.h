@@ -49,17 +49,11 @@
 #  define FUNCATTR_MALLOC
 #endif  /* defined(HAVE_FUNC_ATTRIBUTE_MALLOC) */
 
-#if defined(HAVE_STDC_23)
-#  define FUNCATTR_NORETURN  [[noreturn]]
-#elif defined(HAVE_STDC_11)
-#  define FUNCATTR_NORETURN  _Noreturn
+#ifdef HAVE_FUNC_ATTRIBUTE_NORETURN
+#  define FUNCATTR_NORETURN  __attribute__((noreturn))
 #else
-#  ifdef HAVE_FUNC_ATTRIBUTE_NORETURN
-#    define FUNCATTR_NORETURN  __attribute__((noreturn))
-#  else
-#    define FUNCATTR_NORETURN
-#  endif  /* defined(HAVE_FUNC_ATTRIBUTE_NORETURN) */
-#endif
+#  define FUNCATTR_NORETURN
+#endif  /* defined(HAVE_FUNC_ATTRIBUTE_NORETURN) */
 
 #ifdef HAVE_FUNC_ATTRIBUTE_RETURNS_NONNULL
 #  define FUNCATTR_RETURNS_NONNULL  __attribute__((returns_nonnull))
@@ -75,16 +69,12 @@
 #  define BOOKMARKFS_INTERNAL
 #endif  /* defined(HAVE_FUNC_ATTRIBUTE_VISIBILITY) */
 
-#if defined(HAVE_STDC_23)
-#  define UNUSED_VAR(name)
+#ifdef HAVE_VAR_ATTRIBUTE_UNUSED
+#  define VARATTR_UNUSED_  __attribute__((unused))
 #else
-#  ifdef HAVE_VAR_ATTRIBUTE_UNUSED
-#    define VARATTR_UNUSED_  __attribute__((unused))
-#  else
-#    define VARATTR_UNUSED_
-#  endif  /* defined(HAVE_VAR_ATTRIBUTE_UNUSED) */
-#  define UNUSED_VAR(name)  name##_unused_ VARATTR_UNUSED_
-#endif  /* defined(HAVE_STDC_23) */
+#  define VARATTR_UNUSED_
+#endif  /* defined(HAVE_VAR_ATTRIBUTE_UNUSED) */
+#define UNUSED_VAR(name)  name##_unused_ VARATTR_UNUSED_
 
 #ifndef __FreeBSD__
 #  define O_RESOLVE_BENEATH  0
@@ -107,6 +97,5 @@
 #endif
 
 #define BOOKMARKFS_HOMEPAGE_URL  "https://www.nongnu.org/bookmarkfs/"
-#define BOOKMARKFS_XATTR_PREFIX  "user.bookmarkfs."
 
 #endif  /* !defined(BOOKMARKFS_DEFS_H_) */

@@ -25,6 +25,8 @@
 
 #include <stddef.h>
 
+#define BOOKMARKFS_XATTR_PREFIX  "user.bookmarkfs."
+
 typedef int (bookmarkfs_xattr_cb) (
     void   *user_data,
     void   *buf,

@@ -43,6 +43,7 @@
 #include "hashmap.h"
 #include "ioctl.h"
 #include "macros.h"
+#include "xattr.h"
 #include "xstd.h"
 
 #define FS_FILEMODE_REG   ( S_IFREG | (ctx.flags.accmode & ~0111u) )
