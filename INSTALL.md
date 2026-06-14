@@ -127,13 +127,9 @@ Installation
 
     $ make check
 
-  Install the binaries:
+  Install binaries and development files:
 
-    $ make install-exec
-
-  Install headers, man pages and the pkg-config file:
-
-    $ make install-data
+    $ make install
 
   Install the user manual:
 
