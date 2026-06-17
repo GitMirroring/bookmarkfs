@@ -30,11 +30,7 @@
 
 #include <string.h>
 
-#if defined(__linux__)
-#  include <endian.h>
-#elif defined(__FreeBSD__)
-#  include <sys/endian.h>
-#endif
+#include <endian.h>
 
 // Forward declaration start
 static void md5_update_one (uint32_t *, uint8_t const *);
