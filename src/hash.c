@@ -33,7 +33,6 @@
 #endif
 #ifdef ENABLE_XXHASH_INLINE
 #  define XXH_INLINE_ALL
-#  define XXH_IMPLEMENTATION
 #endif
 #include <xxhash.h>
 
