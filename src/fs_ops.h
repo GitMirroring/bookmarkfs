@@ -23,6 +23,11 @@
 #ifndef BOOKMARKFS_FS_OPS_H_
 #define BOOKMARKFS_FS_OPS_H_
 
+// XXX: Prevent 'fuse_log.h' from being included.
+//      Since 3.18 (commit 3e2cd9e46c), it has an unconditional use of
+//      the 'format' GCC function attribute (on function 'fuse_log'),
+//      which is not supported by some compilers (e.g., TinyCC).
+#define FUSE_LOG_H_
 #define FUSE_USE_VERSION 35
 #include <fuse_lowlevel.h>
 
