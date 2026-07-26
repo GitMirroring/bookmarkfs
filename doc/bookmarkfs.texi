@@ -38,7 +38,7 @@
 @end macro
 
 @macro tcldoc {name, path}
-@uref{https://www.tcl.tk/man/tcl8.6.17/\path\, \name\}
+@uref{https://www.tcl.tk/man/tcl8.6/\path\, \name\}
 @end macro
 
 @copying
@@ -974,7 +974,7 @@ relaxed manner.
 There could be extra overhead to maintain a predictable ordering of
 directory entries, since they may not have a linear structure on modern
 on-disk filesystems (e.g., ext4 uses
-@linuxdoc{htree, filesystems/ext4/dynamic.html#hash-tree-directories}
+@linuxdoc{htree, filesystems/ext4/directory.html#hash-tree-directories}
 for large directories).
 
 As for users of a filesystem, the order of directory entries generally
