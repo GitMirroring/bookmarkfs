@@ -35,5 +35,5 @@ Copying
   the license.  For more information, see the file 'COPYING'.
 
   The user manual and other supporting files in this codebase
-  are distributed under separeate licenses.
+  are distributed under separate licenses.
   Refer to the corresponding license notice for details.
