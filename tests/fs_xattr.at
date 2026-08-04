@@ -34,7 +34,7 @@ m4_define([ATX_CHECK_FS_NEW_XATTR], [
 ATX_CHECK_FS_NEW_XATTR(, , [
     gen_timestamp() {
         secs=$(od -vAn -N4 -tu4 /dev/urandom | tr -d ' ')
-        echo "$(($secs + $epoch_diff))000000"
+        echo "$((secs + epoch_diff))000000"
     }
 
     bookmarkctl="$buildsrcdir/bookmarkctl"

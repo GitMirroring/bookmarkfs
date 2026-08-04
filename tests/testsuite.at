@@ -67,7 +67,7 @@ m4_define([ATX_RUN_REPEAT], [
     atx_counter_=$1
     while test $atx_counter_ -gt 0; do
         $2
-        atx_counter_=$(($atx_counter_ - 1))
+        atx_counter_=$((atx_counter_ - 1))
     done
 ])
 
