@@ -128,7 +128,7 @@ count_tz (
     // Interestingly, gcc (but not clang) understands this,
     // and can treat it as if it *is* __builtin_ctzl().
     // Also applies to the 32-bit variant.
-    static int lut[] = {
+    static int const lut[] = {
          0,  1, 48,  2, 57, 49, 28,  3, 61, 58, 50, 42, 38, 29, 17,  4,
         62, 55, 59, 36, 53, 51, 43, 22, 45, 39, 33, 30, 24, 18, 12,  5,
         63, 47, 56, 27, 60, 41, 37, 16, 54, 35, 52, 21, 44, 32, 23, 11,
@@ -140,7 +140,7 @@ count_tz (
 #ifdef HAVE___BUILTIN_CTZ
     return __builtin_ctz(val);
 #else
-    static int lut[] = {
+    static int const lut[] = {
          0,  1, 28,  2, 29, 14, 24,  3, 30, 22, 20, 15, 25, 17,  4,  8,
         31, 27, 13, 23, 21, 19, 16,  7, 26, 12, 18,  6, 11,  5, 10,  9,
     };
