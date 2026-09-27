@@ -1269,7 +1269,7 @@ When mounting the filesystem, this pathname shall be passed as the @var{src}
 argument (@pxref{mount.bookmarkfs}):
 
 @example
-~/.mozilla/firefox/@var{$@{profile_name@}}/places.sqlite
+~/.config/mozilla/firefox/@var{$@{profile_name@}}/places.sqlite
 @end example
 
 Actual path for the profile directories may differ across distributions.
